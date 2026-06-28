@@ -334,7 +334,22 @@
     }
 
     .navbar-inner {
-        padding: 0 var(--space-4);
+        padding: var(--space-2) var(--space-4);
+        flex-wrap: wrap;
+        height: auto;
+    }
+
+    .navbar-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    .navbar-actions .btn-secondary {
+        flex-basis: 100%;
+        order: 99;
+        justify-content: center;
+        margin-top: var(--space-2);
+        margin-bottom: var(--space-2);
     }
 
     .nav-action-btn.cart-btn,
