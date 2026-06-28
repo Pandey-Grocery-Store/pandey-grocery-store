@@ -91,8 +91,8 @@ export default function AdminUsers() {
             </div>
 
             {/* Users table */}
-            <div className="card" style={{ overflow: 'auto' }}>
-                <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="card" style={{ overflowX: 'auto' }}>
+                <table className="data-table" style={{ width: '100%', minWidth: '800px', borderCollapse: 'collapse' }}>
                     <thead>
                         <tr>
                             <th style={{ textAlign: 'left', padding: '0.75rem 1rem' }}>User</th>
