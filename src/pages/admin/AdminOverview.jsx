@@ -78,14 +78,22 @@ export default function AdminOverview() {
                     <h3 className="overview-card-title">Revenue Overview</h3>
                     <div className="chart-placeholder">
                         <div className="mini-bars">
-                            {[65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88, 72].map((h, i) => (
+                            {stats.monthlyRevenue ? stats.monthlyRevenue.map((d, i) => {
+                                const maxRev = Math.max(...stats.monthlyRevenue.map(m => m.revenue)) || 1;
+                                const h = Math.max(10, Math.round((d.revenue / maxRev) * 100));
+                                return (
+                                    <div key={i} className="mini-bar" style={{ height: `${h}%`, animationDelay: `${i * 0.05}s` }} title={`₹${d.revenue}`}>
+                                        <span className="mini-bar-label">{d.month}</span>
+                                    </div>
+                                );
+                            }) : [65, 45, 80, 55, 90, 70].map((h, i) => (
                                 <div key={i} className="mini-bar" style={{ height: `${h}%`, animationDelay: `${i * 0.05}s` }}>
-                                    <span className="mini-bar-label">{['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i]}</span>
+                                    <span className="mini-bar-label">{['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][i]}</span>
                                 </div>
                             ))}
                         </div>
                         <div className="chart-legend">
-                            <span>📈 12.5% growth from last month</span>
+                            <span>📈 Based on actual order data</span>
                         </div>
                     </div>
                 </div>

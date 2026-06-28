@@ -318,7 +318,7 @@ app.patch('/api/orders/:id/status', authenticate, authorize('MANAGEMENT', 'ADMIN
 app.get('/api/dashboard/stats', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
     try {
         const [orders, products, users] = await Promise.all([
-            prisma.order.findMany({ select: { total: true, status: true } }),
+            prisma.order.findMany({ select: { total: true, status: true, createdAt: true } }),
             prisma.product.findMany({ where: { isActive: true }, select: { stock: true } }),
             prisma.user.count({ where: { role: 'CUSTOMER' } }),
         ]);
@@ -326,7 +326,25 @@ app.get('/api/dashboard/stats', authenticate, authorize('MANAGEMENT', 'ADMIN'), 
         const activeOrders = orders.filter(o => ['new', 'packing', 'packed', 'dispatched'].includes(o.status)).length;
         const statusCounts = {};
         orders.forEach(o => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
-        res.json({ stats: { totalRevenue, activeOrders, customers: users, lowStock: products.filter(p => p.stock <= 10).length, totalProducts: products.length, totalOrders: orders.length }, statusCounts });
+        
+        // Compute real monthly revenue (last 6 months)
+        const monthlyRevenue = [];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const now = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            monthlyRevenue.push({ month: monthNames[d.getMonth()], revenue: 0 });
+        }
+        orders.forEach(o => {
+            const d = new Date(o.createdAt);
+            const m = monthNames[d.getMonth()];
+            const record = monthlyRevenue.find(r => r.month === m);
+            if (record && d.getFullYear() === now.getFullYear() || (d.getFullYear() === now.getFullYear() - 1 && now.getMonth() - d.getMonth() < 6)) {
+                if (record) record.revenue += o.total;
+            }
+        });
+
+        res.json({ stats: { totalRevenue, activeOrders, customers: users, lowStock: products.filter(p => p.stock <= 10).length, totalProducts: products.length, totalOrders: orders.length, monthlyRevenue }, statusCounts });
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to fetch stats' }); }
 });
 
