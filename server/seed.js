@@ -20,9 +20,9 @@ async function main() {
         create: { name: 'Staff Member', email: 'staff@pandeygrocery.com', password: passwordHash, role: 'STAFF', emailVerified: true },
     });
     const admin = await prisma.user.upsert({
-        where: { email: 'admin@pandeygrocery.com' },
+        where: { email: 'grocerypandey.store@gmail.com' },
         update: {},
-        create: { name: 'Admin', email: 'admin@pandeygrocery.com', password: passwordHash, role: 'ADMIN', emailVerified: true },
+        create: { name: 'Admin', email: 'grocerypandey.store@gmail.com', password: passwordHash, role: 'ADMIN', emailVerified: true },
     });
     console.log('✅ Users seeded (customer, staff, admin) — password: password123');
 

@@ -50,7 +50,7 @@ export default function Footer() {
                         </div>
                         <div className="footer-contact">
                             <Mail size={15} />
-                            <span>contact@pandeygrocerystore.com</span>
+                            <span>grocerypandey.store@gmail.com</span>
                         </div>
                         <div className="footer-contact">
                             <Clock size={15} />
