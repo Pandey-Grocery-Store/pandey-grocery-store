@@ -1,9 +1,8 @@
 import { useParams, useSearchParams } from 'react-router-dom';
-import { useState, useMemo } from 'react';
-import { SlidersHorizontal, Grid3X3, List } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { SlidersHorizontal, Grid3X3, List, Loader } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
-import { getProductsByCategory, getProductsBySubcategory } from '../../data/products';
-import { getCategoryById } from '../../data/categories';
+import { productsApi, categoriesApi } from '../../lib/api';
 import './CategoryPage.css';
 
 export default function CategoryPage() {
@@ -11,17 +10,43 @@ export default function CategoryPage() {
     const [searchParams] = useSearchParams();
     const subId = searchParams.get('sub');
 
-    const category = getCategoryById(categoryId);
+    const [category, setCategory] = useState(null);
+    const [allProducts, setAllProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+
     const [sortBy, setSortBy] = useState('popular');
     const [priceRange, setPriceRange] = useState('all');
     const [activeSub, setActiveSub] = useState(subId || 'all');
     const [viewMode, setViewMode] = useState('grid');
 
-    const allProducts = useMemo(() => {
-        if (activeSub && activeSub !== 'all') {
-            return getProductsBySubcategory(categoryId, activeSub);
-        }
-        return getProductsByCategory(categoryId);
+    // Fetch Category & Products
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Fetch categories to find the current one by slug
+                const catsRes = await categoriesApi.getAll();
+                if (catsRes?.categories) {
+                    const currentCat = catsRes.categories.find(c => c.slug === categoryId);
+                    setCategory(currentCat || null);
+                }
+
+                // Fetch products for this category
+                const params = { category: categoryId };
+                if (activeSub && activeSub !== 'all') {
+                    params.subcategory = activeSub;
+                }
+                const prodRes = await productsApi.getAll(params);
+                if (prodRes?.products) {
+                    setAllProducts(prodRes.products);
+                }
+            } catch (err) {
+                console.error("Failed to load category data", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
     }, [categoryId, activeSub]);
 
     const filteredProducts = useMemo(() => {
@@ -43,6 +68,10 @@ export default function CategoryPage() {
         return result;
     }, [allProducts, sortBy, priceRange]);
 
+    if (loading) {
+        return <div className="container section" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}><Loader className="spin" size={40} /></div>;
+    }
+
     if (!category) return <div className="container section"><h2>Category not found</h2></div>;
 
     return (
@@ -57,20 +86,22 @@ export default function CategoryPage() {
 
             <div className="container category-content">
                 {/* Subcategory Pills */}
-                <div className="sub-pills">
-                    <button className={`sub-pill ${activeSub === 'all' ? 'active' : ''}`} onClick={() => setActiveSub('all')}>
-                        All
-                    </button>
-                    {category.subcategories.map((sub) => (
-                        <button
-                            key={sub.id}
-                            className={`sub-pill ${activeSub === sub.id ? 'active' : ''}`}
-                            onClick={() => setActiveSub(sub.id)}
-                        >
-                            {sub.name}
+                {category.subcategories && category.subcategories.length > 0 && (
+                    <div className="sub-pills">
+                        <button className={`sub-pill ${activeSub === 'all' ? 'active' : ''}`} onClick={() => setActiveSub('all')}>
+                            All
                         </button>
-                    ))}
-                </div>
+                        {category.subcategories.map((sub) => (
+                            <button
+                                key={sub.id}
+                                className={`sub-pill ${activeSub === sub.id ? 'active' : ''}`}
+                                onClick={() => setActiveSub(sub.id)}
+                            >
+                                {sub.name}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 {/* Toolbar */}
                 <div className="category-toolbar">

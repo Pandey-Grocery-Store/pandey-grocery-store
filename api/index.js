@@ -175,6 +175,14 @@ app.post('/api/user/addresses', authenticate, async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed to add address' }); }
 });
 
+// ════════════════════ CATEGORIES ════════════════════
+app.get('/api/categories', async (req, res) => {
+    try {
+        const categories = await prisma.category.findMany();
+        res.json({ categories: categories.map(c => ({ ...c, subcategories: JSON.parse(c.subcategories) })) });
+    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to fetch categories' }); }
+});
+
 // ════════════════════ PRODUCTS ════════════════════
 app.get('/api/products', async (req, res) => {
     try {

@@ -49,6 +49,11 @@ export const userApi = {
     deleteAddress: (id) => request(`/user/address/${id}`, { method: 'DELETE' }),
 };
 
+// ── Categories API ──
+export const categoriesApi = {
+    getAll: () => tryRequest('/categories'),
+};
+
 // ── Products API ──
 export const productsApi = {
     getAll: (params = {}) => {

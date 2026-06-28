@@ -1,14 +1,36 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Truck, Shield, Clock, Tag, Star, MapPin, ExternalLink } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
-import { categories } from '../../data/categories';
-import { getFeaturedProducts, getBestSellers } from '../../data/products';
 import StoreGallery from '../../components/StoreGallery';
+import { productsApi, categoriesApi } from '../../lib/api';
 import './HomePage.css';
 
 export default function HomePage() {
-    const featured = getFeaturedProducts();
-    const bestSellers = getBestSellers();
+    const [categories, setCategories] = useState([]);
+    const [featured, setFeatured] = useState([]);
+    const [bestSellers, setBestSellers] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchHomeData = async () => {
+            try {
+                const [catsRes, featRes, bestRes] = await Promise.all([
+                    categoriesApi.getAll(),
+                    productsApi.getAll({ sort: 'rating', limit: 8 }),
+                    productsApi.getAll({ sort: 'reviews', limit: 5 })
+                ]);
+                if (catsRes?.categories) setCategories(catsRes.categories);
+                if (featRes?.products) setFeatured(featRes.products);
+                if (bestRes?.products) setBestSellers(bestRes.products);
+            } catch (err) {
+                console.error("Failed to load home data", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchHomeData();
+    }, []);
 
     return (
         <div className="home-page">
@@ -97,22 +119,26 @@ export default function HomePage() {
                 <div className="container">
                     <h2 className="section-title">Shop by Category</h2>
                     <p className="section-subtitle">Browse our wide selection of groceries and kitchen essentials</p>
-                    <div className="category-grid">
-                        {categories.map((cat) =>
-                            cat.subcategories.map((sub, i) => (
-                                <Link
-                                    key={sub.id}
-                                    to={`/category/${cat.id}?sub=${sub.id}`}
-                                    className="category-card card animate-fade-in"
-                                    style={{ animationDelay: `${i * 0.05}s` }}
-                                >
-                                    <div className="category-card-icon">{cat.icon}</div>
-                                    <span className="category-card-name">{sub.name}</span>
-                                    <span className="category-card-name-hi">{sub.nameHi}</span>
-                                </Link>
-                            ))
-                        )}
-                    </div>
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>Loading categories...</div>
+                    ) : (
+                        <div className="category-grid">
+                            {categories.map((cat) =>
+                                cat.subcategories?.map((sub, i) => (
+                                    <Link
+                                        key={sub.id}
+                                        to={`/category/${cat.slug}?sub=${sub.id}`}
+                                        className="category-card card animate-fade-in"
+                                        style={{ animationDelay: `${i * 0.05}s` }}
+                                    >
+                                        <div className="category-card-icon">{cat.icon}</div>
+                                        <span className="category-card-name">{sub.name}</span>
+                                        <span className="category-card-name-hi">{sub.nameHi}</span>
+                                    </Link>
+                                ))
+                            )}
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -128,11 +154,15 @@ export default function HomePage() {
                             View All <ArrowRight size={16} />
                         </Link>
                     </div>
-                    <div className="grid grid-4">
-                        {featured.map((product) => (
-                            <ProductCard key={product.id} product={product} />
-                        ))}
-                    </div>
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>Loading products...</div>
+                    ) : (
+                        <div className="grid grid-4">
+                            {featured.map((product) => (
+                                <ProductCard key={product.id} product={product} />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -180,11 +210,15 @@ export default function HomePage() {
                             View All <ArrowRight size={16} />
                         </Link>
                     </div>
-                    <div className="grid grid-5">
-                        {bestSellers.slice(0, 5).map((product) => (
-                            <ProductCard key={product.id} product={product} />
-                        ))}
-                    </div>
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>Loading products...</div>
+                    ) : (
+                        <div className="grid grid-5">
+                            {bestSellers.map((product) => (
+                                <ProductCard key={product.id} product={product} />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 

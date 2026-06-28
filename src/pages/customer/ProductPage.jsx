@@ -1,26 +1,55 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState } from 'react';
-import { ShoppingCart, Heart, Star, Minus, Plus, Truck, Shield, RotateCcw, Share2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ShoppingCart, Heart, Star, Minus, Plus, Truck, Shield, RotateCcw, Share2, Loader } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
-import { getProductById, getProductsBySubcategory } from '../../data/products';
+import { productsApi } from '../../lib/api';
 import { useCart } from '../../context/CartContext';
 import './ProductPage.css';
 
 export default function ProductPage() {
     const { productId } = useParams();
-    const product = getProductById(Number(productId));
-    const { addItem, items, updateQty } = useCart();
+    const { addItem, items } = useCart();
+    
+    const [product, setProduct] = useState(null);
+    const [related, setRelated] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [qty, setQty] = useState(1);
     const [wishlisted, setWishlisted] = useState(false);
+
+    useEffect(() => {
+        const fetchProductData = async () => {
+            setLoading(true);
+            try {
+                const res = await productsApi.getById(productId);
+                if (res?.product) {
+                    setProduct(res.product);
+                    // Fetch related products in the same subcategory
+                    const relRes = await productsApi.getAll({ subcategory: res.product.subcategory, limit: 5 });
+                    if (relRes?.products) {
+                        setRelated(relRes.products.filter((p) => p.id !== res.product.id).slice(0, 4));
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load product data", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProductData();
+        // Reset state on ID change
+        setQty(1);
+        window.scrollTo(0, 0);
+    }, [productId]);
+
+    if (loading) {
+        return <div className="container section" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}><Loader className="spin" size={40} /></div>;
+    }
 
     if (!product) return <div className="container section"><h2>Product not found</h2></div>;
 
     const discount = Math.round(((product.mrp - product.price) / product.mrp) * 100);
     const savings = product.mrp - product.price;
     const inCart = items.find((i) => i.id === product.id);
-    const related = getProductsBySubcategory(product.category, product.subcategory)
-        .filter((p) => p.id !== product.id)
-        .slice(0, 4);
 
     const handleAddToCart = () => {
         for (let i = 0; i < qty; i++) addItem(product);
