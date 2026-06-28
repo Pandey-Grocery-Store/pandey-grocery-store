@@ -33,7 +33,7 @@ export default function Navbar() {
                         <span>Delivering to Haldwani, Uttarakhand</span>
                     </div>
                     <div className="top-strip-right">
-                        <span>📞 Help: 8273287789</span>
+                        <span>📞 Help: +91 9410516899</span>
                         {!isLoggedIn ? (
                             <Link to="/login" className="top-link">Sign In</Link>
                         ) : (

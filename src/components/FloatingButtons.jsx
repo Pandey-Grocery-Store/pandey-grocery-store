@@ -17,7 +17,7 @@ export default function FloatingButtons() {
         <div className="floating-buttons">
             {/* WhatsApp */}
             <a
-                href="https://wa.me/918273287789?text=Hi%20Pandey%20Grocery%20Store!%20I%20need%20help%20with%20my%20order."
+                href="https://wa.me/919410516899?text=Hi%20Pandey%20Grocery%20Store!%20I%20need%20help%20with%20my%20order."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="floating-btn whatsapp-btn"
