@@ -17,12 +17,12 @@ export default function HomePage() {
                     <div className="hero-content animate-fade-in">
                         <span className="hero-badge">🎉 Now Online!</span>
                         <h1 className="hero-title">
-                            Fresh Groceries &<br />
-                            Kitchen Essentials<br />
-                            <span className="hero-highlight">Delivered to Your Door</span>
+                            Indian Groceries,<br />
+                            Printing & Daily Needs<br />
+                            <span className="hero-highlight">Delivered in Haldwani</span>
                         </h1>
                         <p className="hero-desc">
-                            Your trusted Megha Mall is now online. Shop from 500+ products with same-day delivery in Haldwani.
+                            Your trusted Pandey Grocery Store is now online! Shop groceries, stationery, daily essentials & order document printing with express delivery in Haldwani.
                         </p>
                         <div className="hero-actions">
                             <Link to="/category/groceries" className="btn btn-primary btn-lg">
@@ -191,8 +191,8 @@ export default function HomePage() {
             <section className="app-cta-section">
                 <div className="container app-cta-inner">
                     <div className="app-cta-content">
-                        <h2>📱 Download the Megha Mall App</h2>
-                        <p>Get exclusive app-only offers and faster checkout. Available on Android & iOS.</p>
+                        <h2>📱 Download the Pandey Grocery Store App</h2>
+                        <p>Get exclusive app-only offers and express delivery. Available on Android & iOS.</p>
                         <div className="app-cta-buttons">
                             <button className="btn btn-primary btn-lg">Google Play</button>
                             <button className="btn btn-secondary btn-lg">App Store</button>

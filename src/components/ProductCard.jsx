@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext';
 import './ProductCard.css';
 
 function getWishlist() {
-    try { return JSON.parse(localStorage.getItem('megha_wishlist') || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem('pandey_wishlist') || '[]'); } catch { return []; }
 }
 
 export default function ProductCard({ product }) {
@@ -35,7 +35,7 @@ export default function ProductCard({ product }) {
             next = [...list, product.id];
             setIsWished(true);
         }
-        localStorage.setItem('megha_wishlist', JSON.stringify(next));
+        localStorage.setItem('pandey_wishlist', JSON.stringify(next));
     }, [product.id]);
 
     return (

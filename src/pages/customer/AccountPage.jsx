@@ -12,7 +12,7 @@ const tabs = [
     { id: 'orders', label: 'Orders', icon: Package },
     { id: 'addresses', label: 'Addresses', icon: MapPin },
     { id: 'wishlist', label: 'Wishlist', icon: Heart },
-    { id: 'rewards', label: 'Megha Rewards', icon: Award },
+    { id: 'rewards', label: 'Pandey Rewards', icon: Award },
 ];
 
 export default function AccountPage() {
@@ -139,7 +139,7 @@ export default function AccountPage() {
 
                         {activeTab === 'rewards' && (
                             <div>
-                                <h2 className="account-section-title">Megha Rewards</h2>
+                                <h2 className="account-section-title">Pandey Rewards</h2>
                                 <div className="rewards-hero card">
                                     <div className="rewards-points">
                                         <Award size={40} color="var(--primary)" />
@@ -170,7 +170,7 @@ export default function AccountPage() {
 
                                 <h3 className="rewards-sub-title">Your Referral Code</h3>
                                 <div className="referral-card card">
-                                    <code className="referral-code">MEGHA-RAVI45</code>
+                                    <code className="referral-code">PANDEY-RAVI45</code>
                                     <p>Share this code and earn 100 points for each successful referral!</p>
                                     <button className="btn btn-secondary btn-sm">Copy Code</button>
                                 </div>

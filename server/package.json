@@ -1,7 +1,7 @@
 {
-    "name": "megha-mall-server",
+    "name": "pandey-grocery-store-server",
     "version": "1.0.0",
-    "description": "Megha Mall API server",
+    "description": "Pandey Grocery Store API server",
     "main": "src/index.js",
     "type": "module",
     "scripts": {

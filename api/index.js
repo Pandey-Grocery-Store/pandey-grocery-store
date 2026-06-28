@@ -282,7 +282,7 @@ app.get('/api/dashboard/top-products', authenticate, authorize('MANAGEMENT', 'AD
 app.post('/api/upload', authenticate, authorize('MANAGEMENT', 'ADMIN'), express.raw({ type: 'image/*', limit: '5mb' }), async (req, res) => {
     try {
         const filename = req.query.filename || `product-${Date.now()}.jpg`;
-        const blob = await put(`megha-mall/${filename}`, req.body, { access: 'public', token: process.env.BLOB_READ_WRITE_TOKEN });
+        const blob = await put(`pandey-grocery-store/${filename}`, req.body, { access: 'public', token: process.env.BLOB_READ_WRITE_TOKEN });
         res.json({ url: blob.url });
     } catch (err) {
         console.error('Upload error:', err);
@@ -367,7 +367,7 @@ app.patch('/api/orders/:id/assign', authenticate, authorize('MANAGEMENT', 'ADMIN
         deliveryLocations.set(req.params.id, {
             deliveryPersonId: dp.id,
             deliveryPersonName: dp.name,
-            lat: 30.3165, lng: 78.0322, // Default: Dehradun center
+            lat: 29.2183, lng: 79.5130, // Default: Haldwani center
             updatedAt: new Date().toISOString(),
         });
         res.json({ order, deliveryPerson: { id: dp.id, name: dp.name } });

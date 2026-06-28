@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
 
     // Restore session on mount
     useEffect(() => {
-        const stored = localStorage.getItem('megha_user');
+        const stored = localStorage.getItem('pandey_user');
         const token = localStorage.getItem('auth_token');
 
         if (stored) {
@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
                 tryApi('/auth/me').then(data => {
                     if (data?.user) {
                         setUser(data.user);
-                        localStorage.setItem('megha_user', JSON.stringify(data.user));
+                        localStorage.setItem('pandey_user', JSON.stringify(data.user));
                     }
                 });
             }
@@ -47,7 +47,7 @@ export function AuthProvider({ children }) {
             tryApi('/auth/me').then(data => {
                 if (data?.user) {
                     setUser(data.user);
-                    localStorage.setItem('megha_user', JSON.stringify(data.user));
+                    localStorage.setItem('pandey_user', JSON.stringify(data.user));
                 }
             }).finally(() => setLoading(false));
         } else {
@@ -57,7 +57,7 @@ export function AuthProvider({ children }) {
 
     const persistUser = useCallback((userData, token) => {
         if (token) localStorage.setItem('auth_token', token);
-        localStorage.setItem('megha_user', JSON.stringify(userData));
+        localStorage.setItem('pandey_user', JSON.stringify(userData));
         setUser(userData);
         return userData;
     }, []);
@@ -122,7 +122,7 @@ export function AuthProvider({ children }) {
     // Logout
     const logout = useCallback(() => {
         localStorage.removeItem('auth_token');
-        localStorage.removeItem('megha_user');
+        localStorage.removeItem('pandey_user');
         setUser(null);
     }, []);
 

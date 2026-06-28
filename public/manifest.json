@@ -1,7 +1,7 @@
 {
-    "name": "Megha Mall",
-    "short_name": "MeghaMall",
-    "description": "Fresh Groceries & Kitchen Essentials — Delivered to your door in Dehradun",
+    "name": "Pandey Grocery Store",
+    "short_name": "PandeyStore",
+    "description": "Indian Groceries & Daily Essentials — Delivered to your door in Haldwani",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",

@@ -61,7 +61,7 @@ export default function AdminOverview() {
         <div className="admin-overview">
             <div className="dashboard-page-header">
                 <h1 className="dashboard-page-title">Dashboard Overview</h1>
-                <p className="dashboard-page-subtitle">Welcome back! Here's how Megha Mall is performing today.</p>
+                <p className="dashboard-page-subtitle">Welcome back! Here's how Pandey Grocery Store is performing today.</p>
             </div>
 
             {/* Stats Cards */}

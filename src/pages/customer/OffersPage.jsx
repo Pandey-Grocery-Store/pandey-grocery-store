@@ -97,7 +97,7 @@ export default function OffersPage() {
                     <div className="offers-info-card">
                         <Gift size={28} color="var(--primary)" />
                         <h3>Refer & Earn</h3>
-                        <p>Share Megha Mall with friends and earn reward points.</p>
+                        <p>Share Pandey Grocery Store with friends and earn reward points.</p>
                     </div>
                 </div>
             </section>

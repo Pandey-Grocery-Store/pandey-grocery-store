@@ -72,10 +72,10 @@ export default function RegisterPage() {
             <div className="auth-card">
                 <div className="auth-header">
                     <Link to="/" className="auth-logo">
-                        <img src="/favicon.svg" alt="Megha Mall" width="40" height="40" />
+                        <img src="/favicon.svg" alt="Pandey Grocery Store" width="40" height="40" />
                     </Link>
                     <h1>Create Account</h1>
-                    <p>Join Megha Mall and start shopping</p>
+                    <p>Join Pandey Grocery Store and start shopping</p>
                 </div>
 
                 {error && <div className="auth-error">{error}</div>}

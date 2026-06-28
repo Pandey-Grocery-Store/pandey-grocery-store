@@ -49,10 +49,10 @@ export default function Navbar() {
             <nav className="navbar">
                 <div className="container navbar-inner">
                     <Link to="/" className="navbar-logo">
-                        <img src="/favicon.svg" alt="Megha Mall" className="logo-icon" width="36" height="36" />
+                        <img src="/favicon.svg" alt="Pandey Grocery Store" className="logo-icon" width="36" height="36" />
                         <div>
-                            <span className="logo-text">Megha Mall</span>
-                            <span className="logo-tagline">Groceries & Kitchen Essentials</span>
+                            <span className="logo-text">Pandey Grocery Store</span>
+                            <span className="logo-tagline">Indian Groceries & Daily Essentials</span>
                         </div>
                     </Link>
 
@@ -125,7 +125,7 @@ export default function Navbar() {
                 <div className="mobile-nav-overlay" onClick={() => setMobileOpen(false)}>
                     <div className="mobile-nav" onClick={(e) => e.stopPropagation()}>
                         <div className="mobile-nav-header">
-                            <span className="logo-text"><img src="/favicon.svg" alt="" width="28" height="28" style={{ verticalAlign: 'middle', marginRight: '8px' }} />Megha Mall</span>
+                            <span className="logo-text"><img src="/favicon.svg" alt="" width="28" height="28" style={{ verticalAlign: 'middle', marginRight: '8px' }} />Pandey Grocery Store</span>
                             <button onClick={() => setMobileOpen(false)}><X size={22} /></button>
                         </div>
                         <form className="mobile-search" onSubmit={handleSearch}>

@@ -9,10 +9,10 @@ export default function Footer() {
                 <div className="footer-grid">
                     <div className="footer-brand">
                         <div className="footer-logo">
-                            <img src="/favicon.svg" alt="Megha Mall" className="logo-icon" width="36" height="36" />
-                            <span className="logo-text">Megha Mall</span>
+                            <img src="/favicon.svg" alt="Pandey Grocery Store" className="logo-icon" width="36" height="36" />
+                            <span className="logo-text">Pandey Grocery Store</span>
                         </div>
-                        <p className="footer-desc">Your trusted neighbourhood store for quality groceries and kitchen essentials, now available online!</p>
+                        <p className="footer-desc">Your trusted neighborhood store for quality Indian groceries, daily essentials, and household products in Haldwani!</p>
                         <div className="footer-social">
                             <a href="#" className="social-btn" title="Facebook"><Facebook size={18} /></a>
                             <a href="#" className="social-btn" title="Instagram"><Instagram size={18} /></a>
@@ -42,7 +42,7 @@ export default function Footer() {
                         <h4>Contact Us</h4>
                         <div className="footer-contact">
                             <MapPin size={15} />
-                            <span>Kaladhungi Rd, Bank Colony, Kusumkhera, Haldwani, Haripur Nayak, Uttarakhand 263139</span>
+                            <span>Lal Danth Bypass Rd, Radhe Krishna Puram / Adarsh Nagar, Heera Nagar, Haldwani, Uttarakhand 263139</span>
                         </div>
                         <div className="footer-contact">
                             <Phone size={15} />
@@ -50,11 +50,11 @@ export default function Footer() {
                         </div>
                         <div className="footer-contact">
                             <Mail size={15} />
-                            <span>harshit071sharma@gmail.com</span>
+                            <span>contact@pandeygrocerystore.com</span>
                         </div>
                         <div className="footer-contact">
                             <Clock size={15} />
-                            <span>Mon-Sun: 8 AM - 10 PM</span>
+                            <span>Mon-Sun: 8:00 AM - 9:30 PM</span>
                         </div>
                     </div>
                 </div>
@@ -71,7 +71,7 @@ export default function Footer() {
                 </div>
 
                 <div className="footer-bottom">
-                    <p>© 2026 Megha Mall. All rights reserved. Made with ❤️ in India</p>
+                    <p>© 2026 Pandey Grocery Store. All rights reserved. Made with ❤️ in Haldwani, India</p>
                 </div>
             </div>
         </footer>

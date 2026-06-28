@@ -9,7 +9,7 @@ export default function WishlistPage() {
     // Persist wishlist in localStorage
     const [wishlistIds, setWishlistIds] = useState(() => {
         try {
-            return JSON.parse(localStorage.getItem('megha_wishlist') || '[]');
+            return JSON.parse(localStorage.getItem('pandey_wishlist') || '[]');
         } catch {
             return [];
         }
@@ -22,7 +22,7 @@ export default function WishlistPage() {
     const removeFromWishlist = useCallback((id) => {
         setWishlistIds(prev => {
             const next = prev.filter(wid => wid !== id);
-            localStorage.setItem('megha_wishlist', JSON.stringify(next));
+            localStorage.setItem('pandey_wishlist', JSON.stringify(next));
             return next;
         });
     }, []);

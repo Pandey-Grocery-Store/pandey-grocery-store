@@ -4,25 +4,25 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('🌱 Seeding Megha Mall database...\n');
+    console.log('🌱 Seeding Pandey Grocery Store database...\n');
 
     // ── Users ──
     const passwordHash = await bcrypt.hash('password123', 10);
 
     const customer = await prisma.user.upsert({
-        where: { email: 'customer@meghamall.com' },
+        where: { email: 'customer@pandeygrocery.com' },
         update: {},
-        create: { name: 'Customer', email: 'customer@meghamall.com', password: passwordHash, role: 'CUSTOMER', emailVerified: true },
+        create: { name: 'Customer', email: 'customer@pandeygrocery.com', password: passwordHash, role: 'CUSTOMER', emailVerified: true },
     });
     const staff = await prisma.user.upsert({
-        where: { email: 'staff@meghamall.com' },
+        where: { email: 'staff@pandeygrocery.com' },
         update: {},
-        create: { name: 'Staff Member', email: 'staff@meghamall.com', password: passwordHash, role: 'STAFF', emailVerified: true },
+        create: { name: 'Staff Member', email: 'staff@pandeygrocery.com', password: passwordHash, role: 'STAFF', emailVerified: true },
     });
     const admin = await prisma.user.upsert({
-        where: { email: 'admin@meghamall.com' },
+        where: { email: 'admin@pandeygrocery.com' },
         update: {},
-        create: { name: 'Admin', email: 'admin@meghamall.com', password: passwordHash, role: 'ADMIN', emailVerified: true },
+        create: { name: 'Admin', email: 'admin@pandeygrocery.com', password: passwordHash, role: 'ADMIN', emailVerified: true },
     });
     console.log('✅ Users seeded (customer, staff, admin) — password: password123');
 

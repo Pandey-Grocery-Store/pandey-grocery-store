@@ -91,10 +91,10 @@ export default function LoginPage() {
             <div className="auth-card">
                 <div className="auth-header">
                     <Link to="/" className="auth-logo">
-                        <img src="/favicon.svg" alt="Megha Mall" width="40" height="40" />
+                        <img src="/favicon.svg" alt="Pandey Grocery Store" width="40" height="40" />
                     </Link>
                     <h1>Welcome Back</h1>
-                    <p>Sign in to your Megha Mall account</p>
+                    <p>Sign in to your Pandey Grocery Store account</p>
                 </div>
 
                 <div className="auth-tabs">

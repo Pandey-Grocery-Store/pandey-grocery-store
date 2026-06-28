@@ -81,7 +81,7 @@ export default function OrderTracking() {
                 // Store marker
                 L.marker([STORE_LOCATION.lat, STORE_LOCATION.lng], { icon: storeIcon })
                     .addTo(mapInstanceRef.current)
-                    .bindPopup('🏪 Megha Mall Store');
+                    .bindPopup('🏪 Pandey Grocery Store');
 
                 // Delivery marker
                 markerRef.current = L.marker([location.lat, location.lng], { icon: deliveryIcon })

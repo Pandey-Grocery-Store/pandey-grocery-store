@@ -87,7 +87,7 @@ export default function CheckoutPage() {
                                     <input type="radio" name="delivery" value="pickup" checked={deliveryType === 'pickup'} onChange={(e) => setDeliveryType(e.target.value)} />
                                     <div>
                                         <strong>🏪 Store Pickup</strong>
-                                        <span>Collect from Megha Mall</span>
+                                        <span>Collect from Pandey Grocery Store</span>
                                     </div>
                                 </label>
                             </div>

@@ -39,13 +39,13 @@ export async function sendOtp(email) {
     try {
         const transporter = getTransporter();
         await transporter.sendMail({
-            from: `"Megha Mall" <${process.env.SMTP_USER}>`,
+            from: `"Pandey Grocery Store" <${process.env.SMTP_USER}>`,
             to: email,
-            subject: 'Your Megha Mall Login Code',
+            subject: 'Your Pandey Grocery Store Login Code',
             html: `
         <div style="font-family:Arial,sans-serif;max-width:400px;margin:0 auto;padding:32px;background:#fff;border-radius:12px;border:1px solid #f3f4f6">
           <div style="text-align:center;margin-bottom:24px">
-            <h2 style="color:#e8590c;margin:0">Megha Mall</h2>
+            <h2 style="color:#e8590c;margin:0">Pandey Grocery Store</h2>
             <p style="color:#6b7280;font-size:14px">Login Verification</p>
           </div>
           <div style="text-align:center;padding:24px;background:#fff7ed;border-radius:8px;margin-bottom:24px">

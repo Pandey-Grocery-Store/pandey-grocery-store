@@ -46,9 +46,9 @@ export default function Sidebar({ type = 'staff' }) {
                 <div className="sidebar-header">
                     {!collapsed && (
                         <div className="sidebar-brand">
-                            <img src="/favicon.svg" alt="Megha Mall" className="sidebar-brand-icon" width="32" height="32" />
+                            <img src="/favicon.svg" alt="Pandey Grocery Store" className="sidebar-brand-icon" width="32" height="32" />
                             <div>
-                                <span className="sidebar-brand-name">Megha Mall</span>
+                                <span className="sidebar-brand-name">Pandey Grocery Store</span>
                                 <span className="sidebar-brand-role">{type === 'admin' ? 'Admin' : 'Staff'} Panel</span>
                             </div>
                         </div>
