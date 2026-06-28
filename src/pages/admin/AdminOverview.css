@@ -344,7 +344,7 @@
     font-weight: 600;
 }
 
-.product-actions {
+.top-product-item .product-actions {
     display: flex;
     gap: 4px;
     opacity: 0;
@@ -414,7 +414,7 @@
         grid-template-columns: repeat(3, 1fr);
     }
 
-    .product-actions {
+    .top-product-item .product-actions {
         opacity: 1;
     }
 }
