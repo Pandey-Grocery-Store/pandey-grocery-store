@@ -3,6 +3,7 @@ import { ArrowRight, Truck, Shield, Clock, Tag, Star, MapPin, ExternalLink } fro
 import ProductCard from '../../components/ProductCard';
 import { categories } from '../../data/categories';
 import { getFeaturedProducts, getBestSellers } from '../../data/products';
+import StoreGallery from '../../components/StoreGallery';
 import './HomePage.css';
 
 export default function HomePage() {
@@ -213,6 +214,8 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
+
+            <StoreGallery />
 
             {/* App CTA */}
             <section className="app-cta-section">
