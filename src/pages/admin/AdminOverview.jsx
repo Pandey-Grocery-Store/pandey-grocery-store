@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IndianRupee, ShoppingCart, Users, Package, Loader } from 'lucide-react';
-import { orders as initialOrders, statusLabels, statusColors } from '../../data/orders';
+import { IndianRupee, ShoppingCart, Users, Package, Loader, ChevronRight, Edit3, Save, X, Trash2, RefreshCw } from 'lucide-react';
+import { orders as initialOrders, statusLabels, statusColors, orderStatuses } from '../../data/orders';
 import { products as initialProducts } from '../../data/products';
-import { dashboardApi, ordersApi } from '../../lib/api';
+import { dashboardApi, ordersApi, productsApi } from '../../lib/api';
 import StatsCard from '../../components/StatsCard';
 import './AdminOverview.css';
 
@@ -14,6 +14,9 @@ export default function AdminOverview() {
     const [recentOrders, setRecentOrders] = useState([]);
     const [topProducts, setTopProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [editingProductId, setEditingProductId] = useState(null);
+    const [editData, setEditData] = useState({});
+    const [saving, setSaving] = useState(false);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -27,7 +30,6 @@ export default function AdminOverview() {
             setStats(statsData.stats);
             setStatusCounts(statsData.statusCounts || {});
         } else {
-            // Fallback to initial data
             const totalRevenue = initialOrders.reduce((sum, o) => sum + o.total, 0);
             const todayOrders = initialOrders.filter((o) => o.status === 'new' || o.status === 'packing').length;
             const lowStock = initialProducts.filter((p) => p.stock <= 10).length;
@@ -37,12 +39,73 @@ export default function AdminOverview() {
             setStatusCounts(sc);
         }
 
-        setRecentOrders((ordersData?.orders || initialOrders).slice(0, 5));
+        setRecentOrders((ordersData?.orders || initialOrders).slice(0, 8));
         setTopProducts(topData?.products || [...initialProducts].sort((a, b) => b.reviews - a.reviews).slice(0, 5));
         setLoading(false);
     }, []);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    // ── Order CRUD: Update Status ──
+    const updateOrderStatus = async (order, newStatus) => {
+        setSaving(true);
+        try {
+            await ordersApi.updateStatus(order.dbId || order.id, newStatus);
+            setRecentOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
+            // Refresh stats
+            const statsData = await dashboardApi.getStats();
+            if (statsData) {
+                setStats(statsData.stats);
+                setStatusCounts(statsData.statusCounts || {});
+            }
+        } catch (err) {
+            console.error('Failed to update order status:', err);
+        }
+        setSaving(false);
+    };
+
+    const getNextStatus = (current) => {
+        const idx = orderStatuses.indexOf(current);
+        return idx < orderStatuses.length - 1 ? orderStatuses[idx + 1] : null;
+    };
+
+    // ── Product CRUD: Inline Edit ──
+    const startEditProduct = (product) => {
+        setEditingProductId(product.id);
+        setEditData({ price: product.price, stock: product.stock });
+    };
+
+    const cancelEditProduct = () => {
+        setEditingProductId(null);
+        setEditData({});
+    };
+
+    const saveEditProduct = async (id) => {
+        setSaving(true);
+        try {
+            await productsApi.update(id, { price: Number(editData.price), stock: Number(editData.stock) });
+            setTopProducts(prev => prev.map(p => p.id === id ? { ...p, price: Number(editData.price), stock: Number(editData.stock) } : p));
+        } catch (err) {
+            console.error('Failed to update product:', err);
+        }
+        setEditingProductId(null);
+        setSaving(false);
+    };
+
+    const deleteProduct = async (id) => {
+        if (!confirm('Are you sure you want to deactivate this product?')) return;
+        setSaving(true);
+        try {
+            await productsApi.delete(id);
+            setTopProducts(prev => prev.filter(p => p.id !== id));
+            // Refresh stats
+            const statsData = await dashboardApi.getStats();
+            if (statsData) setStats(statsData.stats);
+        } catch (err) {
+            console.error('Failed to delete product:', err);
+        }
+        setSaving(false);
+    };
 
     if (loading || !stats) {
         return (
@@ -60,29 +123,35 @@ export default function AdminOverview() {
     return (
         <div className="admin-overview">
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">Dashboard Overview</h1>
-                <p className="dashboard-page-subtitle">Welcome back! Here's how Pandey Grocery Store is performing today.</p>
+                <div>
+                    <h1 className="dashboard-page-title">Dashboard Overview</h1>
+                    <p className="dashboard-page-subtitle">Welcome back! Here's how Pandey Grocery Store is performing today.</p>
+                </div>
+                <button className="btn btn-outline" onClick={fetchData} disabled={saving} style={{ gap: '0.4rem' }}>
+                    <RefreshCw size={16} className={saving ? 'spin' : ''} /> Refresh
+                </button>
             </div>
 
             {/* Stats Cards */}
             <div className="stats-row">
-                <StatsCard icon={IndianRupee} label="Total Revenue" value={`₹${stats.totalRevenue.toLocaleString()}`} trend="up" change={12.5} color="primary" />
-                <StatsCard icon={ShoppingCart} label="Active Orders" value={stats.activeOrders} trend="up" change={8.2} color="success" />
-                <StatsCard icon={Users} label="Customers" value={stats.customers.toLocaleString()} trend="up" change={5.1} color="info" />
-                <StatsCard icon={Package} label="Low Stock Items" value={stats.lowStock} trend="down" change={3} color="danger" />
+                <StatsCard icon={IndianRupee} label="Total Revenue" value={`₹${stats.totalRevenue.toLocaleString()}`} color="primary" />
+                <StatsCard icon={ShoppingCart} label="Active Orders" value={stats.activeOrders} color="success" />
+                <StatsCard icon={Users} label="Customers" value={stats.customers.toLocaleString()} color="info" />
+                <StatsCard icon={Package} label="Low Stock Items" value={stats.lowStock} color="danger" />
             </div>
 
             <div className="overview-grid">
                 {/* Revenue Chart */}
                 <div className="card overview-chart-card">
-                    <h3 className="overview-card-title">Revenue Overview</h3>
+                    <h3 className="overview-card-title">Revenue Overview (Last 6 Months)</h3>
                     <div className="chart-placeholder">
                         <div className="mini-bars">
                             {stats.monthlyRevenue ? stats.monthlyRevenue.map((d, i) => {
                                 const maxRev = Math.max(...stats.monthlyRevenue.map(m => m.revenue)) || 1;
                                 const h = Math.max(10, Math.round((d.revenue / maxRev) * 100));
                                 return (
-                                    <div key={i} className="mini-bar" style={{ height: `${h}%`, animationDelay: `${i * 0.05}s` }} title={`₹${d.revenue}`}>
+                                    <div key={i} className="mini-bar" style={{ height: `${h}%`, animationDelay: `${i * 0.05}s` }} title={`₹${d.revenue.toLocaleString()}`}>
+                                        <span className="mini-bar-value">₹{d.revenue >= 1000 ? `${(d.revenue / 1000).toFixed(1)}k` : d.revenue}</span>
                                         <span className="mini-bar-label">{d.month}</span>
                                     </div>
                                 );
@@ -93,7 +162,7 @@ export default function AdminOverview() {
                             ))}
                         </div>
                         <div className="chart-legend">
-                            <span>📈 Based on actual order data</span>
+                            <span>📈 Total: ₹{stats.totalRevenue.toLocaleString()} from {stats.totalOrders} orders</span>
                         </div>
                     </div>
                 </div>
@@ -124,30 +193,53 @@ export default function AdminOverview() {
             </div>
 
             <div className="overview-grid">
-                {/* Recent Orders */}
+                {/* Recent Orders with CRUD */}
                 <div className="card overview-recent-card">
-                    <h3 className="overview-card-title">Recent Orders</h3>
+                    <div className="card-header-row">
+                        <h3 className="overview-card-title">Recent Orders</h3>
+                        <button className="btn btn-sm btn-outline" onClick={() => navigate('/staff/orders')}>
+                            View All <ChevronRight size={14} />
+                        </button>
+                    </div>
                     <div className="recent-orders-list">
-                        {recentOrders.map((order) => (
-                            <div key={order.id} className="recent-order-item">
-                                <div className="recent-order-info">
-                                    <strong>{order.id}</strong>
-                                    <span>{order.customer}</span>
+                        {recentOrders.map((order) => {
+                            const nextStatus = getNextStatus(order.status);
+                            return (
+                                <div key={order.id} className="recent-order-item">
+                                    <div className="recent-order-info">
+                                        <strong>{order.id}</strong>
+                                        <span>{order.customer}</span>
+                                    </div>
+                                    <div className="recent-order-meta">
+                                        <span className="badge" style={{ background: `${statusColors[order.status]}18`, color: statusColors[order.status], fontSize: '0.7rem' }}>
+                                            {statusLabels[order.status]}
+                                        </span>
+                                        <span className="recent-order-total">₹{order.total}</span>
+                                        {nextStatus && (
+                                            <button
+                                                className="btn btn-xs btn-success"
+                                                onClick={() => updateOrderStatus(order, nextStatus)}
+                                                disabled={saving}
+                                                title={`Move to ${statusLabels[nextStatus]}`}
+                                            >
+                                                → {statusLabels[nextStatus]}
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                                <div className="recent-order-meta">
-                                    <span className="badge" style={{ background: `${statusColors[order.status]}18`, color: statusColors[order.status], fontSize: '0.7rem' }}>
-                                        {statusLabels[order.status]}
-                                    </span>
-                                    <span className="recent-order-total">₹{order.total}</span>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 
-                {/* Top Products */}
+                {/* Top Products with CRUD */}
                 <div className="card overview-top-card">
-                    <h3 className="overview-card-title">Top Products</h3>
+                    <div className="card-header-row">
+                        <h3 className="overview-card-title">Top Products</h3>
+                        <button className="btn btn-sm btn-outline" onClick={() => navigate('/staff/products')}>
+                            Manage All <ChevronRight size={14} />
+                        </button>
+                    </div>
                     <div className="top-products-list">
                         {topProducts.map((p, i) => (
                             <div key={p.id} className="top-product-item">
@@ -157,10 +249,31 @@ export default function AdminOverview() {
                                     <span className="top-product-name">{p.name}</span>
                                     <span className="top-product-brand">{p.brand}</span>
                                 </div>
-                                <div className="top-product-meta">
-                                    <span className="top-product-price">₹{p.price}</span>
-                                    <span className="top-product-reviews">⭐ {p.rating}</span>
-                                </div>
+                                {editingProductId === p.id ? (
+                                    <div className="top-product-edit">
+                                        <div className="edit-field">
+                                            <label>₹</label>
+                                            <input type="number" value={editData.price} onChange={e => setEditData(d => ({ ...d, price: e.target.value }))} className="edit-input" />
+                                        </div>
+                                        <div className="edit-field">
+                                            <label>Stock</label>
+                                            <input type="number" value={editData.stock} onChange={e => setEditData(d => ({ ...d, stock: e.target.value }))} className="edit-input" />
+                                        </div>
+                                        <button className="btn btn-xs btn-success" onClick={() => saveEditProduct(p.id)} disabled={saving}><Save size={12} /></button>
+                                        <button className="btn btn-xs btn-outline" onClick={cancelEditProduct}><X size={12} /></button>
+                                    </div>
+                                ) : (
+                                    <div className="top-product-meta">
+                                        <span className="top-product-price">₹{p.price}</span>
+                                        <span className="top-product-stock" style={{ color: p.stock <= 10 ? '#ef4444' : '#16a34a' }}>
+                                            {p.stock <= 10 ? `⚠️ ${p.stock}` : `✅ ${p.stock}`}
+                                        </span>
+                                        <div className="product-actions">
+                                            <button className="btn btn-xs btn-outline" onClick={() => startEditProduct(p)} title="Edit"><Edit3 size={12} /></button>
+                                            <button className="btn btn-xs btn-danger-outline" onClick={() => deleteProduct(p.id)} title="Delete"><Trash2 size={12} /></button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -174,10 +287,10 @@ export default function AdminOverview() {
                     {[
                         { label: 'Add Product', icon: '📦', desc: 'List a new product', path: '/staff/products' },
                         { label: 'View Orders', icon: '📋', desc: 'Manage pending orders', path: '/staff/orders' },
-                        { label: 'Send Notification', icon: '📢', desc: 'Broadcast to customers', path: '/admin/users' },
+                        { label: 'Manage Users', icon: '👥', desc: 'User roles & access', path: '/admin/users' },
                         { label: 'Generate Report', icon: '📊', desc: 'Download sales report', path: '/admin/reports' },
-                        { label: 'Manage Staff', icon: '👥', desc: 'Update staff access', path: '/admin/staff-activity' },
-                        { label: 'Update Offers', icon: '🏷️', desc: 'Create new promotions', path: '/staff/products' },
+                        { label: 'Staff Activity', icon: '📡', desc: 'Monitor staff actions', path: '/admin/staff-activity' },
+                        { label: 'Inventory', icon: '🏷️', desc: 'Stock management', path: '/staff/inventory' },
                     ].map((action, i) => (
                         <button key={i} className="quick-action-btn" onClick={() => navigate(action.path)}>
                             <span className="quick-action-icon">{action.icon}</span>
@@ -190,4 +303,3 @@ export default function AdminOverview() {
         </div>
     );
 }
-
