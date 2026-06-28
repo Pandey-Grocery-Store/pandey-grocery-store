@@ -44,7 +44,7 @@ export default function RegisterPage() {
         setError('');
         try {
             if (!window.google) {
-                setError('Google Sign-In not loaded. Check your Google Client ID.');
+                setError('Google Sign-In not loaded. Please refresh and try again.');
                 return;
             }
             window.google.accounts.id.initialize({
@@ -60,10 +60,31 @@ export default function RegisterPage() {
                         setLoading(false);
                     }
                 },
+                ux_mode: 'popup',
             });
-            window.google.accounts.id.prompt();
+
+            // Use renderButton approach for reliable popup flow
+            const btnDiv = document.createElement('div');
+            btnDiv.style.position = 'fixed';
+            btnDiv.style.top = '-9999px';
+            document.body.appendChild(btnDiv);
+            window.google.accounts.id.renderButton(btnDiv, {
+                type: 'standard',
+                size: 'large',
+                theme: 'outline',
+            });
+            setTimeout(() => {
+                const gBtn = btnDiv.querySelector('div[role="button"]') || btnDiv.querySelector('iframe');
+                if (gBtn) gBtn.click();
+                window.google.accounts.id.prompt((notification) => {
+                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                        setError('Google popup was blocked. Please allow popups or try again.');
+                    }
+                    setTimeout(() => btnDiv.remove(), 1000);
+                });
+            }, 300);
         } catch {
-            setError('Google signup failed');
+            setError('Google signup failed. Please try again.');
         }
     };
 

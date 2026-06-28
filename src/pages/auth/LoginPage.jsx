@@ -63,7 +63,7 @@ export default function LoginPage() {
         setError('');
         try {
             if (!window.google) {
-                setError('Google Sign-In not loaded. Check your Google Client ID.');
+                setError('Google Sign-In not loaded. Please refresh and try again.');
                 return;
             }
             window.google.accounts.id.initialize({
@@ -79,10 +79,34 @@ export default function LoginPage() {
                         setLoading(false);
                     }
                 },
+                ux_mode: 'popup',
             });
-            window.google.accounts.id.prompt();
+
+            // Use renderButton approach for reliable popup flow
+            const btnDiv = document.createElement('div');
+            btnDiv.style.position = 'fixed';
+            btnDiv.style.top = '-9999px';
+            document.body.appendChild(btnDiv);
+            window.google.accounts.id.renderButton(btnDiv, {
+                type: 'standard',
+                size: 'large',
+                theme: 'outline',
+            });
+            // Small delay to let the button render, then click it
+            setTimeout(() => {
+                const gBtn = btnDiv.querySelector('div[role="button"]') || btnDiv.querySelector('iframe');
+                if (gBtn) gBtn.click();
+                // Also try the prompt as a fallback
+                window.google.accounts.id.prompt((notification) => {
+                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                        setError('Google popup was blocked. Please allow popups or try again.');
+                    }
+                    // Clean up
+                    setTimeout(() => btnDiv.remove(), 1000);
+                });
+            }, 300);
         } catch (err) {
-            setError('Google login failed');
+            setError('Google login failed. Please try again.');
         }
     };
 
