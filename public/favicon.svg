@@ -1,11 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#e8590c"/>
-      <stop offset="100%" stop-color="#f97316"/>
+    <linearGradient id="pgs-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#16a34a"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="accent-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
-  <text x="32" y="44" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="36" fill="white">M</text>
-  <path d="M18 18 L32 10 L46 18" stroke="white" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <rect width="64" height="64" rx="16" fill="url(#pgs-grad)"/>
+  <circle cx="50" cy="14" r="5" fill="url(#accent-grad)"/>
+  <path d="M20 14 H36 C42.6 14 47 18.4 47 24.5 C47 30.6 42.6 35 36 35 H28 V50 H20 V14 Z M28 21 V28 H36 C38.5 28 40 26.8 40 24.5 C40 22.2 38.5 21 36 21 H28 Z" fill="white"/>
+  <path d="M40 40 C40 40 48 42 48 48 C42 48 39 42 40 40 Z" fill="#f59e0b"/>
 </svg>
