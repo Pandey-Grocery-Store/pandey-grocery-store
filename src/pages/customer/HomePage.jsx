@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Truck, Shield, Clock, Tag, Star } from 'lucide-react';
+import { ArrowRight, Truck, Shield, Clock, Tag, Star, MapPin, ExternalLink } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import { categories } from '../../data/categories';
 import { getFeaturedProducts, getBestSellers } from '../../data/products';
@@ -183,6 +183,31 @@ export default function HomePage() {
                         {bestSellers.slice(0, 5).map((product) => (
                             <ProductCard key={product.id} product={product} />
                         ))}
+                    </div>
+                </div>
+            {/* Store Location & Google Map Banner */}
+            <section className="section" style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', color: 'white', borderRadius: '16px', margin: '2rem auto', maxWidth: '1200px', padding: '2.5rem 2rem', boxShadow: '0 10px 25px rgba(16,185,129,0.2)' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem' }}>
+                    <div style={{ flex: '1 1 500px' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.2)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.75rem' }}>
+                            <Star size={16} fill="#f59e0b" color="#f59e0b" /> 5.0 Rating on Google Business (8 Reviews)
+                        </div>
+                        <h2 style={{ fontSize: '1.8rem', fontWeight: 700, margin: '0 0 0.5rem', color: '#ffffff' }}>📍 Visit Our Physical Store in Haldwani</h2>
+                        <p style={{ margin: 0, opacity: 0.9, fontSize: '1rem', lineHeight: 1.5 }}>
+                            Lal Danth Bypass Rd, Radhe Krishna Puram / Adarsh Nagar, Heera Nagar, Haldwani, Uttarakhand 263139.<br />
+                            <strong>Open Daily:</strong> 8:00 AM - 9:30 PM
+                        </p>
+                    </div>
+                    <div>
+                        <a
+                            href="https://share.google/3InE5GPOrGZNov2nQ"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-lg"
+                            style={{ background: '#ffffff', color: '#047857', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '0.85rem 1.5rem', borderRadius: '10px', textDecoration: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+                        >
+                            <MapPin size={20} color="#047857" /> Open Store in Google Maps <ExternalLink size={16} />
+                        </a>
                     </div>
                 </div>
             </section>

@@ -42,7 +42,9 @@ export default function Footer() {
                         <h4>Contact Us</h4>
                         <div className="footer-contact">
                             <MapPin size={15} />
-                            <span>Lal Danth Bypass Rd, Radhe Krishna Puram / Adarsh Nagar, Heera Nagar, Haldwani, Uttarakhand 263139</span>
+                            <a href="https://share.google/3InE5GPOrGZNov2nQ" target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>
+                                Lal Danth Bypass Rd, Radhe Krishna Puram / Adarsh Nagar, Heera Nagar, Haldwani, Uttarakhand 263139 ↗
+                            </a>
                         </div>
                         <div className="footer-contact">
                             <Phone size={15} />
