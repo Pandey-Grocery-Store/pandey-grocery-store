@@ -73,6 +73,7 @@ export const ordersApi = {
         const qs = new URLSearchParams(params).toString();
         return tryRequest(`/orders${qs ? '?' + qs : ''}`);
     },
+    getMyOrders: () => tryRequest('/orders/my'),
     getById: (id) => tryRequest(`/orders/${id}`),
     create: (data) => request('/orders', { method: 'POST', body: JSON.stringify(data) }),
     updateStatus: (id, status) => request(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),

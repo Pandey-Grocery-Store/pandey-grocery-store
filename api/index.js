@@ -287,6 +287,15 @@ app.patch('/api/products/:id/stock', authenticate, authorize('MANAGEMENT', 'ADMI
 });
 
 // ════════════════════ ORDERS ════════════════════
+// User's own orders (any logged-in user)
+app.get('/api/orders/my', authenticate, async (req, res) => {
+    try {
+        const orders = await prisma.order.findMany({ where: { userId: req.user.id }, include: { items: true }, orderBy: { createdAt: 'desc' } });
+        res.json({ orders: orders.map(o => ({ id: o.orderNumber, dbId: o.id, customer: o.customer || 'Customer', phone: o.phone || '', items: o.items.map(i => ({ name: i.name, qty: i.quantity, price: i.price })), total: o.total, status: o.status, payment: o.paymentMode, date: o.createdAt.toISOString().split('T')[0], address: o.address || '' })) });
+    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to fetch your orders' }); }
+});
+
+// All orders (admin/management only)
 app.get('/api/orders', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
     try {
         const where = {};
