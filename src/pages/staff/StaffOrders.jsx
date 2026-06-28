@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { orders as initialOrders, statusLabels, statusColors, orderStatuses } from '../../data/orders';
+import { statusLabels, statusColors, orderStatuses } from '../../data/orders';
 import { ordersApi } from '../../lib/api';
 import { Clock, Package, Truck, CheckCircle2, ChevronDown, ChevronUp, Loader } from 'lucide-react';
 import './StaffOrders.css';
@@ -13,7 +13,7 @@ export default function StaffOrders() {
     const fetchOrders = useCallback(async () => {
         setLoading(true);
         const data = await ordersApi.getAll();
-        setOrderList(data?.orders || initialOrders);
+        setOrderList(data?.orders || []);
         setLoading(false);
     }, []);
 

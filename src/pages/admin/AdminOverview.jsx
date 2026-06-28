@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IndianRupee, ShoppingCart, Users, Package, Loader, ChevronRight, Edit3, Save, X, Trash2, RefreshCw } from 'lucide-react';
-import { orders as initialOrders, statusLabels, statusColors, orderStatuses } from '../../data/orders';
-import { products as initialProducts } from '../../data/products';
+import { statusLabels, statusColors, orderStatuses } from '../../data/orders';
 import { dashboardApi, ordersApi, productsApi } from '../../lib/api';
 import StatsCard from '../../components/StatsCard';
 import './AdminOverview.css';
@@ -30,17 +29,12 @@ export default function AdminOverview() {
             setStats(statsData.stats);
             setStatusCounts(statsData.statusCounts || {});
         } else {
-            const totalRevenue = initialOrders.reduce((sum, o) => sum + o.total, 0);
-            const todayOrders = initialOrders.filter((o) => o.status === 'new' || o.status === 'packing').length;
-            const lowStock = initialProducts.filter((p) => p.stock <= 10).length;
-            setStats({ totalRevenue, activeOrders: todayOrders, customers: 0, lowStock, totalProducts: initialProducts.length, totalOrders: initialOrders.length });
-            const sc = {};
-            initialOrders.forEach(o => { sc[o.status] = (sc[o.status] || 0) + 1; });
-            setStatusCounts(sc);
+            setStats({ totalRevenue: 0, activeOrders: 0, customers: 0, lowStock: 0, totalProducts: 0, totalOrders: 0 });
+            setStatusCounts({});
         }
 
-        setRecentOrders((ordersData?.orders || initialOrders).slice(0, 8));
-        setTopProducts(topData?.products || [...initialProducts].sort((a, b) => b.reviews - a.reviews).slice(0, 5));
+        setRecentOrders((ordersData?.orders || []).slice(0, 8));
+        setTopProducts(topData?.products || []);
         setLoading(false);
     }, []);
 

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { products as initialProducts } from '../../data/products';
 import { categories } from '../../data/categories';
 import { productsApi, uploadApi } from '../../lib/api';
 import { Search, Plus, Edit3, Eye, EyeOff, Save, X, Upload, Loader } from 'lucide-react';
@@ -21,7 +20,7 @@ export default function StaffProducts() {
     const fetchProducts = useCallback(async () => {
         setLoading(true);
         const data = await productsApi.getAll();
-        setProductList(data?.products || initialProducts);
+        setProductList(data?.products || []);
         setLoading(false);
     }, []);
 
