@@ -26,6 +26,7 @@ const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
 const StaffOrders = lazy(() => import('./pages/staff/StaffOrders'));
 const StaffProducts = lazy(() => import('./pages/staff/StaffProducts'));
 const StaffInventory = lazy(() => import('./pages/staff/StaffInventory'));
+const StaffPOS = lazy(() => import('./pages/staff/StaffPOS'));
 
 const AdminOverview = lazy(() => import('./pages/admin/AdminOverview'));
 const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
@@ -83,6 +84,7 @@ export default function App() {
                   <Route path="/staff/orders" element={<StaffOrders />} />
                   <Route path="/staff/products" element={<StaffProducts />} />
                   <Route path="/staff/inventory" element={<StaffInventory />} />
+                  <Route path="/staff/pos" element={<StaffPOS />} />
                 </Route>
 
                 {/* Admin Dashboard */}

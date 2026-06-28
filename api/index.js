@@ -311,6 +311,21 @@ app.post('/api/orders', authenticate, async (req, res) => {
         if (!items?.length || !total) return res.status(400).json({ error: 'Missing fields' });
         const count = await prisma.order.count();
         const order = await prisma.order.create({ data: { orderNumber: `ORD-${String(count + 1001).padStart(4, '0')}`, userId: req.user.id, subtotal: parseFloat(subtotal) || total, discount: parseFloat(discount) || 0, deliveryFee: parseFloat(deliveryFee) || 0, total: parseFloat(total), deliveryType: deliveryType || 'delivery', paymentMode: paymentMode || 'cod', addressId: addressId || null, customer: customer || req.user.name, phone: phone || '', address: address || '', timeSlot: timeSlot || '', items: { create: items.map(i => ({ name: i.name, price: parseFloat(i.price), quantity: parseInt(i.quantity) || 1, image: i.image || null })) } }, include: { items: true } });
+        
+        // Deduct stock for each item
+        for (const item of items) {
+            if (item.id) {
+                try {
+                    await prisma.product.update({
+                        where: { id: item.id },
+                        data: { stock: { decrement: parseInt(item.quantity) || 1 } }
+                    });
+                } catch (e) {
+                    console.error('Failed to deduct stock for', item.id, e);
+                }
+            }
+        }
+        
         res.status(201).json({ order });
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to create order' }); }
 });

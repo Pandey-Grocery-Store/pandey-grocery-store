@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { MapPin, Clock, CreditCard, Smartphone, Wallet, Banknote, CheckCircle2 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+import { ordersApi } from '../../lib/api';
 import './CheckoutPage.css';
 
 export default function CheckoutPage() {
@@ -14,6 +15,8 @@ export default function CheckoutPage() {
     const [paymentMethod, setPaymentMethod] = useState('cod');
     const [timeSlot, setTimeSlot] = useState('');
     const [orderPlaced, setOrderPlaced] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState(null);
 
     const [address, setAddress] = useState({
         name: user?.name || '',
@@ -31,10 +34,32 @@ export default function CheckoutPage() {
         '6:00 PM - 8:00 PM',
     ];
 
-    const handlePlaceOrder = (e) => {
+    const handlePlaceOrder = async (e) => {
         e.preventDefault();
-        setOrderPlaced(true);
-        clearCart();
+        setIsSubmitting(true);
+        setError(null);
+        try {
+            const orderData = {
+                items: items.map(i => ({ id: i.productId, name: i.name, price: i.price, quantity: i.quantity, image: i.image })),
+                subtotal,
+                discount,
+                deliveryFee,
+                total,
+                deliveryType,
+                paymentMode: paymentMethod,
+                timeSlot,
+                customer: address.name,
+                phone: address.phone,
+                address: `${address.line1}, ${address.city}, ${address.pin}`
+            };
+            await ordersApi.create(orderData);
+            setOrderPlaced(true);
+            clearCart();
+        } catch (err) {
+            setError(err.message || 'Failed to place order. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (orderPlaced) {
@@ -185,16 +210,18 @@ export default function CheckoutPage() {
                         </div>
 
                         <div className="summary-rows">
-                            <div className="summary-row"><span>Subtotal</span><span>₹{subtotal}</span></div>
-                            {discount > 0 && <div className="summary-row discount"><span>Discount</span><span>-₹{discount}</span></div>}
-                            <div className="summary-row"><span>Delivery</span><span>{deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`}</span></div>
-                            <div className="summary-row total"><span>Total</span><span>₹{total}</span></div>
+                            <div className="summary-row"><span>Subtotal</span><span>₹{subtotal.toFixed(2)}</span></div>
+                            {discount > 0 && <div className="summary-row discount"><span>Discount</span><span>-₹{discount.toFixed(2)}</span></div>}
+                            <div className="summary-row"><span>Delivery Fee</span><span>{deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}</span></div>
+                            <div className="summary-row total"><span>Total</span><span>₹{total.toFixed(2)}</span></div>
                         </div>
 
-                        <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }}>
-                            Place Order — ₹{total}
+                        {error && <div className="error-message" style={{color: 'red', marginTop: '10px', marginBottom: '10px'}}>{error}</div>}
+                        <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={isSubmitting}>
+                            {isSubmitting ? 'Processing...' : `Place Order — ₹${total.toFixed(2)}`}
                         </button>
-                        <p className="checkout-secure">💵 Cash on Delivery — Pay when you receive your order</p>
+                        
+                        <p className="checkout-secure" style={{marginTop: '1rem'}}>💵 Cash on Delivery — Pay when you receive your order</p>
                     </div>
                 </form>
             </div>

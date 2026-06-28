@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
-import { ArrowUp, MessageCircle } from 'lucide-react';
+import { ArrowUp, MessageCircle, PlusCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './FloatingButtons.css';
 
 export default function FloatingButtons() {
+    const { user } = useAuth();
     const [showTop, setShowTop] = useState(false);
 
     useEffect(() => {
@@ -15,16 +18,27 @@ export default function FloatingButtons() {
 
     return (
         <div className="floating-buttons">
-            {/* WhatsApp */}
-            <a
-                href="https://wa.me/919410516899?text=Hi%20Pandey%20Grocery%20Store!%20I%20need%20help%20with%20my%20order."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="floating-btn whatsapp-btn"
-                title="Chat on WhatsApp"
-            >
-                <MessageCircle size={22} />
-            </a>
+            {/* Conditional Floating Action */}
+            {user && ['ADMIN', 'MANAGEMENT'].includes(user.role) ? (
+                <Link
+                    to="/staff/pos"
+                    className="floating-btn whatsapp-btn"
+                    style={{ background: 'var(--primary)' }}
+                    title="Create POS Order"
+                >
+                    <PlusCircle size={22} />
+                </Link>
+            ) : (
+                <a
+                    href="https://wa.me/919410516899?text=Hi%20Pandey%20Grocery%20Store!%20I%20need%20help%20with%20my%20order."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="floating-btn whatsapp-btn"
+                    title="Chat on WhatsApp"
+                >
+                    <MessageCircle size={22} />
+                </a>
+            )}
 
             {/* Back to Top */}
             {showTop && (
