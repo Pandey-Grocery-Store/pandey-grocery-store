@@ -1,6 +1,6 @@
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useState, useMemo, useEffect } from 'react';
-import { SlidersHorizontal, Grid3X3, List, Loader } from 'lucide-react';
+import { SlidersHorizontal, Grid3X3, List, Loader, ExternalLink } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import { productsApi, categoriesApi } from '../../lib/api';
 import './CategoryPage.css';
@@ -70,6 +70,26 @@ export default function CategoryPage() {
 
     if (loading) {
         return <div className="container section" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}><Loader className="spin" size={40} /></div>;
+    }
+
+    if (categoryId === 'printing-binding') {
+        return (
+            <div className="category-page">
+                <div className="container section" style={{ textAlign: 'center', padding: '5rem 2rem', background: 'var(--bg-secondary)', borderRadius: '16px', margin: '3rem auto', maxWidth: '800px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
+                    <div style={{ background: 'var(--bg-primary)', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+                        <ExternalLink size={36} color="var(--primary)" />
+                    </div>
+                    <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>Document Printing & Binding</h1>
+                    <p style={{ fontSize: '1.2rem', marginBottom: '2.5rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                        We provide high-quality document printing, thesis binding, photo prints, and custom stationery through our dedicated platform, <strong>Fun Printing</strong>.
+                    </p>
+                    <a href="https://funprinting.store/" target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-lg" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.2rem', padding: '1.2rem 2.5rem', borderRadius: '12px' }}>
+                        Visit Fun Printing Store <ExternalLink size={20} />
+                    </a>
+                    <p style={{ marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-tertiary)' }}>Opens in a new tab</p>
+                </div>
+            </div>
+        );
     }
 
     if (!category) return <div className="container section"><h2>Category not found</h2></div>;
