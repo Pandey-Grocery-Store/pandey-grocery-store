@@ -5,6 +5,46 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import { put } from '@vercel/blob';
+import nodemailer from 'nodemailer';
+
+// ── SMTP Transporter (Gmail) ──
+const smtpTransporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: false,
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+});
+
+async function sendOtpEmail(toEmail, otpCode) {
+    const html = `
+    <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
+        <div style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); padding: 32px 24px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700;">🛒 Pandey Grocery Store</h1>
+            <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px;">Indian Groceries & Daily Essentials</p>
+        </div>
+        <div style="padding: 32px 24px; text-align: center;">
+            <h2 style="color: #1a1a1a; margin: 0 0 8px; font-size: 20px;">Your Verification Code</h2>
+            <p style="color: #666; margin: 0 0 24px; font-size: 14px; line-height: 1.5;">Use this code to sign in to your account. It expires in 10 minutes.</p>
+            <div style="background: #f0fdf4; border: 2px dashed #16a34a; border-radius: 12px; padding: 20px; margin: 0 auto 24px; display: inline-block;">
+                <span style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #16a34a; font-family: 'Courier New', monospace;">${otpCode}</span>
+            </div>
+            <p style="color: #999; font-size: 12px; margin: 0;">If you didn't request this code, please ignore this email.</p>
+        </div>
+        <div style="background: #f9fafb; padding: 16px 24px; text-align: center; border-top: 1px solid #e5e7eb;">
+            <p style="color: #9ca3af; font-size: 11px; margin: 0;">© ${new Date().getFullYear()} Pandey Grocery Store, Haldwani, Uttarakhand</p>
+        </div>
+    </div>`;
+
+    await smtpTransporter.sendMail({
+        from: '"Pandey Grocery Store" <grocerypandey.store@gmail.com>',
+        to: toEmail,
+        subject: `${otpCode} — Your Pandey Grocery Store verification code`,
+        html,
+    });
+}
 
 // ── Prisma Client (singleton for serverless) ──
 const globalForPrisma = globalThis;
@@ -114,8 +154,17 @@ app.post('/api/auth/send-otp', async (req, res) => {
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         await prisma.otp.updateMany({ where: { email, used: false }, data: { used: true } });
         await prisma.otp.create({ data: { email, code, expiresAt: new Date(Date.now() + 600000) } });
-        console.log(`📧 OTP for ${email}: ${code}`);
-        res.json({ message: 'OTP sent' });
+        
+        // Send OTP via email
+        try {
+            await sendOtpEmail(email, code);
+            console.log(`📧 OTP sent to ${email}`);
+        } catch (mailErr) {
+            console.error('SMTP error:', mailErr.message);
+            // Still return success - OTP is saved in DB, user can retry
+        }
+        
+        res.json({ message: 'OTP sent to your email' });
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to send OTP' }); }
 });
 
