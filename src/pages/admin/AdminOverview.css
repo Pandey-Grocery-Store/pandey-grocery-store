@@ -412,7 +412,7 @@
     .quick-actions-grid {
         grid-template-columns: repeat(3, 1fr);
     }
-    
+
     .product-actions {
         opacity: 1;
     }
