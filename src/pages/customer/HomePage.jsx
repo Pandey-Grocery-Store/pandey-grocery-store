@@ -185,6 +185,8 @@ export default function HomePage() {
                         ))}
                     </div>
                 </div>
+            </section>
+
             {/* Store Location & Google Map Banner */}
             <section className="section" style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', color: 'white', borderRadius: '16px', margin: '2rem auto', maxWidth: '1200px', padding: '2.5rem 2rem', boxShadow: '0 10px 25px rgba(16,185,129,0.2)' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem' }}>
