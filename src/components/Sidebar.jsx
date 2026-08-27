@@ -1,5 +1,5 @@
-import { NavLink, useLocation } from 'react-router-dom';
-import { Package, ClipboardList, AlertTriangle, BarChart3, ShoppingBag, FileText, Users, UserCog, LogOut, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
+import { NavLink, useLocation, Link } from 'react-router-dom';
+import { Package, ClipboardList, AlertTriangle, BarChart3, ShoppingBag, FileText, Users, UserCog, LogOut, ChevronLeft, ChevronRight, Menu, X, ArrowLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
@@ -32,31 +32,58 @@ export default function Sidebar({ type = 'staff' }) {
 
     return (
         <>
-            {/* Mobile hamburger button */}
-            <button className="sidebar-mobile-toggle" onClick={() => setMobileOpen(true)}>
-                <Menu size={22} />
-            </button>
+            {/* Mobile Top Navigation Bar for Dashboard */}
+            <div className="dashboard-mobile-bar">
+                <button 
+                    className="sidebar-mobile-toggle-btn" 
+                    onClick={() => setMobileOpen(true)}
+                    aria-label="Open sidebar menu"
+                >
+                    <Menu size={22} />
+                </button>
+
+                <div className="dashboard-mobile-brand">
+                    <img src="/favicon.svg" alt="" width="26" height="26" />
+                    <span className="dashboard-mobile-title">
+                        {type === 'admin' ? 'Admin Panel' : 'Staff Panel'}
+                    </span>
+                </div>
+
+                <Link to="/" className="dashboard-mobile-exit" title="Back to Store">
+                    <ArrowLeft size={16} />
+                    <span>Store</span>
+                </Link>
+            </div>
 
             {/* Mobile backdrop */}
             {mobileOpen && (
                 <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} />
             )}
 
+            {/* Sidebar drawer / desktop sidebar */}
             <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'open' : ''}`}>
                 <div className="sidebar-header">
                     {!collapsed && (
                         <div className="sidebar-brand">
                             <img src="/favicon.svg" alt="Pandey Grocery Store" className="sidebar-brand-icon" width="32" height="32" />
                             <div>
-                                <span className="sidebar-brand-name">Pandey Grocery Store</span>
+                                <span className="sidebar-brand-name">Pandey Grocery</span>
                                 <span className="sidebar-brand-role">{type === 'admin' ? 'Admin' : 'Staff'} Panel</span>
                             </div>
                         </div>
                     )}
-                    <button className="sidebar-toggle sidebar-collapse-btn" onClick={() => setCollapsed(!collapsed)}>
+                    <button 
+                        className="sidebar-toggle sidebar-collapse-btn" 
+                        onClick={() => setCollapsed(!collapsed)}
+                        aria-label="Toggle sidebar collapse"
+                    >
                         {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
                     </button>
-                    <button className="sidebar-toggle sidebar-close-btn" onClick={() => setMobileOpen(false)}>
+                    <button 
+                        className="sidebar-toggle sidebar-close-btn" 
+                        onClick={() => setMobileOpen(false)}
+                        aria-label="Close menu"
+                    >
                         <X size={18} />
                     </button>
                 </div>
@@ -95,4 +122,3 @@ export default function Sidebar({ type = 'staff' }) {
         </>
     );
 }
-

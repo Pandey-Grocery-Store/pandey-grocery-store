@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Search, User, Menu, X, Heart, MapPin, Printer, Sparkles, Phone } from 'lucide-react';
+import { ShoppingBag, Search, User, Menu, X, Heart, MapPin, Printer, Sparkles, Phone, LayoutDashboard } from 'lucide-react';
 import { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -56,20 +56,20 @@ export default function Navbar() {
                     {/* Logo */}
                     <Link to="/" className="navbar-logo">
                         <div className="logo-icon-wrap">
-                            <img src="/favicon.svg" alt="Pandey Grocery Store" className="logo-icon" width="34" height="34" />
+                            <img src="/favicon.svg" alt="Pandey Grocery Store" className="logo-icon" width="32" height="32" />
                         </div>
                         <div className="logo-text-group">
                             <span className="logo-text">Pandey Grocery</span>
-                            <span className="logo-tagline">Store &amp; Print Hub • Haldwani</span>
+                            <span className="logo-tagline">Store &amp; Print Hub</span>
                         </div>
                     </Link>
 
                     {/* Search Bar */}
                     <form className="navbar-search" onSubmit={handleSearch}>
-                        <Search size={18} className="search-icon" />
+                        <Search size={17} className="search-icon" />
                         <input
                             type="text"
-                            placeholder="Search fresh groceries, stationery, essentials..."
+                            placeholder="Search groceries, stationery..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="search-input"
@@ -87,32 +87,37 @@ export default function Navbar() {
                     <div className="navbar-actions">
                         {/* Quick Print Hub Badge Link */}
                         <Link to="/category/printing-binding" className="nav-print-badge" title="Document & ID Print Hub">
-                            <Printer size={16} />
-                            <span>Print Hub</span>
+                            <Printer size={15} />
+                            <span className="print-badge-label">Print Hub</span>
                         </Link>
 
                         {isLoggedIn && ['ADMIN', 'MANAGEMENT'].includes(user.role) && (
-                            <Link to={user.role === 'ADMIN' ? '/admin' : '/staff'} className="btn btn-sm btn-accent nav-dash-btn">
-                                Dashboard
+                            <Link 
+                                to={user.role === 'ADMIN' ? '/admin' : '/staff'} 
+                                className="btn btn-sm btn-accent nav-dash-btn"
+                                title="Open Dashboard"
+                            >
+                                <LayoutDashboard size={15} />
+                                <span className="dash-btn-label">Dashboard</span>
                             </Link>
                         )}
                         {isLoggedIn && user.role === 'DELIVERY' && (
-                            <Link to="/delivery" className="btn btn-sm btn-secondary">
-                                🛵 Deliveries
+                            <Link to="/delivery" className="btn btn-sm btn-secondary" title="My Deliveries">
+                                🛵 <span className="dash-btn-label">Deliveries</span>
                             </Link>
                         )}
 
                         <Link to="/wishlist" className="nav-action-btn desktop-only" title="Wishlist">
-                            <Heart size={20} />
+                            <Heart size={19} />
                         </Link>
 
                         <Link to="/account" className="nav-action-btn" title="Account">
-                            <User size={20} />
+                            <User size={19} />
                             {isLoggedIn && <span className="nav-dot" />}
                         </Link>
 
                         <Link to="/cart" className="nav-action-btn cart-btn" title="Shopping Cart">
-                            <ShoppingBag size={20} />
+                            <ShoppingBag size={19} />
                             {itemCount > 0 && <span className="cart-badge">{itemCount}</span>}
                         </Link>
 
@@ -189,7 +194,7 @@ export default function Navbar() {
                     <div className="mobile-nav" onClick={(e) => e.stopPropagation()}>
                         <div className="mobile-nav-header">
                             <div className="mobile-nav-brand">
-                                <img src="/favicon.svg" alt="" width="30" height="30" />
+                                <img src="/favicon.svg" alt="" width="28" height="28" />
                                 <span className="logo-text">Pandey Grocery</span>
                             </div>
                             <button className="btn-icon btn-ghost" onClick={() => setMobileOpen(false)}>

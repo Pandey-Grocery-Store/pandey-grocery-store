@@ -102,7 +102,7 @@
 
 /* ── Main Sticky Header ── */
 .navbar {
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(255, 255, 255, 0.94);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border);
@@ -117,8 +117,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-6);
+    gap: 12px;
     height: var(--navbar-height);
+    flex-wrap: nowrap;
 }
 
 /* Logo */
@@ -131,8 +132,8 @@
 }
 
 .logo-icon-wrap {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border-radius: var(--radius-md);
     background: var(--primary-gradient-subtle);
     border: 1px solid rgba(22, 163, 74, 0.2);
@@ -154,7 +155,7 @@
 
 .logo-text {
     font-family: var(--font-sans);
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     font-weight: 800;
     color: var(--text-primary);
     line-height: 1.15;
@@ -171,8 +172,9 @@
 
 /* Search */
 .navbar-search {
-    flex: 1;
-    max-width: 480px;
+    flex: 1 1 200px;
+    max-width: 440px;
+    min-width: 140px;
     position: relative;
     display: flex;
     align-items: center;
@@ -187,7 +189,7 @@
 
 .search-input {
     width: 100%;
-    padding: 11px 80px 11px 42px;
+    padding: 10px 76px 10px 40px;
     border: 1.5px solid var(--border);
     border-radius: var(--radius-full);
     font-size: 0.875rem;
@@ -207,12 +209,12 @@
 .search-submit-btn {
     position: absolute;
     right: 5px;
-    padding: 6px 14px;
+    padding: 5px 12px;
     background: var(--primary-gradient);
     color: white;
     border: none;
     border-radius: var(--radius-full);
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
     cursor: pointer;
     transition: all var(--transition-fast);
@@ -225,11 +227,11 @@
 .search-shortcut {
     position: absolute;
     right: 14px;
-    font-size: 0.7rem;
+    font-size: 0.6875rem;
     font-weight: 700;
     color: var(--gray-400);
     background: var(--gray-200);
-    padding: 2px 6px;
+    padding: 2px 5px;
     border-radius: 4px;
     pointer-events: none;
 }
@@ -238,23 +240,25 @@
 .navbar-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex-shrink: 0;
+    flex-wrap: nowrap;
 }
 
 .nav-print-badge {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     background: var(--primary-gradient-subtle);
     color: var(--primary-dark);
     border: 1px solid rgba(22, 163, 74, 0.25);
-    padding: 7px 12px;
+    padding: 6px 11px;
     border-radius: var(--radius-full);
     font-size: 0.8125rem;
     font-weight: 700;
     transition: all var(--transition-fast);
     text-decoration: none;
+    white-space: nowrap;
 }
 
 .nav-print-badge:hover {
@@ -265,9 +269,20 @@
     transform: translateY(-1px);
 }
 
+.nav-dash-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
 .nav-action-btn {
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -279,6 +294,7 @@
     border: none;
     cursor: pointer;
     text-decoration: none;
+    flex-shrink: 0;
 }
 
 .nav-action-btn:hover {
@@ -288,25 +304,25 @@
 
 .nav-dot {
     position: absolute;
-    top: 9px;
-    right: 9px;
-    width: 8px;
-    height: 8px;
+    top: 8px;
+    right: 8px;
+    width: 7px;
+    height: 7px;
     background: var(--success);
     border-radius: 50%;
-    border: 2px solid white;
+    border: 1.5px solid white;
 }
 
 .cart-badge {
     position: absolute;
-    top: 3px;
-    right: 3px;
+    top: 2px;
+    right: 2px;
     background: var(--accent-gradient);
     color: white;
     font-size: 0.625rem;
     font-weight: 800;
-    min-width: 19px;
-    height: 19px;
+    min-width: 18px;
+    height: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -343,8 +359,8 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 14px;
-    font-size: 0.875rem;
+    padding: 7px 12px;
+    font-size: 0.8125rem;
     font-weight: 600;
     color: var(--gray-600);
     white-space: nowrap;
@@ -530,9 +546,35 @@
     margin-top: 2px;
 }
 
-/* ── Responsive ── */
+/* ── Responsive Screen Width Adaptations ── */
+@media (max-width: 1180px) {
+    .print-badge-label {
+        display: none;
+    }
+    
+    .nav-print-badge {
+        padding: 6px 8px;
+    }
+
+    .dash-btn-label {
+        display: none;
+    }
+
+    .nav-dash-btn {
+        padding: 6px 10px;
+    }
+}
+
 @media (max-width: 992px) {
     .nav-print-badge {
+        display: none;
+    }
+
+    .logo-tagline {
+        display: none;
+    }
+
+    .desktop-only {
         display: none;
     }
 }
@@ -546,6 +588,10 @@
         display: none;
     }
 
+    .nav-dash-btn {
+        display: none;
+    }
+
     .mobile-search-strip {
         display: block;
     }
@@ -554,19 +600,11 @@
         display: flex;
     }
 
-    .desktop-only {
-        display: none;
-    }
-
     .navbar-inner {
-        height: 60px;
+        height: 56px;
     }
 
     .logo-text {
-        font-size: 1.1rem;
-    }
-
-    .logo-tagline {
-        display: none;
+        font-size: 1.05rem;
     }
 }
