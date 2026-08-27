@@ -14,6 +14,7 @@ import {
     sendWelcomeEmail,
     sendBroadcastNotificationEmail,
     sendPasswordChangedAlert,
+    sendPasswordResetOtpEmail,
     sendPrintJobStatusUpdateEmail,
     sendDeliveryAssignmentCustomerEmail,
     sendDeliveryAssignmentRiderEmail,
@@ -167,6 +168,74 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         }
         res.json({ token: generateToken(user), user: { id: user.id, name: user.name, email: user.email, role: user.role, avatar: user.avatar } });
     } catch (err) { console.error(err); res.status(500).json({ error: 'OTP verification failed' }); }
+});
+
+// ── Forgot Password: Send 6-Digit Password Reset OTP Email ──
+app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ error: 'Email address required' });
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            // For security, do not disclose whether user exists, return friendly success
+            return res.json({ message: 'If an account exists with this email, a reset code was sent.' });
+        }
+
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+        await prisma.otp.updateMany({ where: { email, used: false }, data: { used: true } });
+        await prisma.otp.create({ data: { email, code: resetCode, expiresAt: new Date(Date.now() + 600000) } });
+
+        try {
+            await sendPasswordResetOtpEmail(user.email, resetCode, user.name);
+            console.log(`📧 Password reset code sent to ${user.email}`);
+        } catch (mailErr) {
+            console.error('Password reset email error:', mailErr.message);
+        }
+
+        res.json({ message: 'Password recovery code sent to your email' });
+    } catch (err) {
+        console.error('Forgot password error:', err);
+        res.status(500).json({ error: 'Failed to process password reset request' });
+    }
+});
+
+// ── Reset Password with Verified OTP Code ──
+app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+        const { email, code, newPassword } = req.body;
+        if (!email || !code || !newPassword) return res.status(400).json({ error: 'Email, recovery code, and new password are required' });
+        if (newPassword.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+
+        const otp = await prisma.otp.findFirst({
+            where: { email, code, used: false, expiresAt: { gt: new Date() } },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (!otp) return res.status(401).json({ error: 'Invalid or expired recovery code' });
+        await prisma.otp.update({ where: { id: otp.id }, data: { used: true } });
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) return res.status(404).json({ error: 'User account not found' });
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const updatedUser = await prisma.user.update({
+            where: { id: user.id },
+            data: { password: hashedPassword, emailVerified: true }
+        });
+
+        // Send security alert confirmation
+        sendPasswordChangedAlert(updatedUser.email, updatedUser.name).catch(e => console.error('Password reset alert error:', e.message));
+
+        res.json({
+            message: 'Password reset successfully. You are now logged in.',
+            token: generateToken(updatedUser),
+            user: { id: updatedUser.id, name: updatedUser.name, email: updatedUser.email, role: updatedUser.role, avatar: updatedUser.avatar }
+        });
+    } catch (err) {
+        console.error('Reset password error:', err);
+        res.status(500).json({ error: 'Failed to reset password' });
+    }
 });
 
 app.get('/api/auth/me', authenticate, async (req, res) => {

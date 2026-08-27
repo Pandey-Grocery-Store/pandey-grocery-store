@@ -49,6 +49,8 @@ export const authApi = {
     google: (idToken) => request('/auth/google', { method: 'POST', body: JSON.stringify({ idToken }) }),
     sendOtp: (email) => request('/auth/send-otp', { method: 'POST', body: JSON.stringify({ email }) }),
     verifyOtp: (email, code) => request('/auth/verify-otp', { method: 'POST', body: JSON.stringify({ email, code }) }),
+    forgotPassword: (email) => request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+    resetPassword: (email, code, newPassword) => request('/auth/reset-password', { method: 'POST', body: JSON.stringify({ email, code, newPassword }) }),
     me: () => request('/auth/me'),
 };
 

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { authApi } from '../../lib/api';
 import { 
     Mail, 
     Lock, 
@@ -16,7 +17,8 @@ import {
     CheckCircle2, 
     Store,
     ArrowLeft,
-    KeyRound
+    KeyRound,
+    RotateCcw
 } from 'lucide-react';
 import './AuthPages.css';
 
@@ -24,12 +26,19 @@ export default function LoginPage() {
     const { login, sendOtp, verifyOtp, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
 
-    const [tab, setTab] = useState('password'); // 'password' | 'otp'
+    const [tab, setTab] = useState('password'); // 'password' | 'otp' | 'reset'
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [otpCode, setOtpCode] = useState('');
     const [otpSent, setOtpSent] = useState(false);
+    
+    // Reset password state
+    const [resetCode, setResetCode] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [resetOtpSent, setResetOtpSent] = useState(false);
+    const [successMsg, setSuccessMsg] = useState('');
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -70,6 +79,44 @@ export default function LoginPage() {
             navigate('/');
         } catch (err) {
             setError(err.message || 'Invalid OTP code.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleForgotPasswordSend = async (e) => {
+        e.preventDefault();
+        if (!email) { setError('Please enter your account email'); return; }
+        setError('');
+        setLoading(true);
+        try {
+            await authApi.forgotPassword(email);
+            setResetOtpSent(true);
+            setSuccessMsg(`Recovery code sent to ${email}`);
+        } catch (err) {
+            setError(err.message || 'Failed to send recovery code.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResetPasswordSubmit = async (e) => {
+        e.preventDefault();
+        if (!resetCode || !newPassword) { setError('Please fill all fields'); return; }
+        if (newPassword.length < 6) { setError('Password must be at least 6 characters'); return; }
+        setError('');
+        setLoading(true);
+        try {
+            const res = await authApi.resetPassword(email, resetCode, newPassword);
+            if (res.token) {
+                localStorage.setItem('auth_token', res.token);
+                window.location.href = '/';
+            } else {
+                setTab('password');
+                setSuccessMsg('Password updated successfully! Please sign in.');
+            }
+        } catch (err) {
+            setError(err.message || 'Failed to reset password. Check your code.');
         } finally {
             setLoading(false);
         }
@@ -206,23 +253,37 @@ export default function LoginPage() {
                         <div className="auth-segmented-tabs">
                             <button 
                                 className={`auth-seg-tab ${tab === 'password' ? 'active' : ''}`} 
-                                onClick={() => { setTab('password'); setError(''); }}
+                                onClick={() => { setTab('password'); setError(''); setSuccessMsg(''); }}
                                 type="button"
                             >
                                 <Lock size={14} /> Password
                             </button>
                             <button 
                                 className={`auth-seg-tab ${tab === 'otp' ? 'active' : ''}`} 
-                                onClick={() => { setTab('otp'); setError(''); setOtpSent(false); }}
+                                onClick={() => { setTab('otp'); setError(''); setOtpSent(false); setSuccessMsg(''); }}
                                 type="button"
                             >
                                 <KeyRound size={14} /> Email OTP
+                            </button>
+                            <button 
+                                className={`auth-seg-tab ${tab === 'reset' ? 'active' : ''}`} 
+                                onClick={() => { setTab('reset'); setError(''); setResetOtpSent(false); setSuccessMsg(''); }}
+                                type="button"
+                            >
+                                <RotateCcw size={14} /> Reset
                             </button>
                         </div>
 
                         {error && (
                             <div className="auth-alert-error animate-fade-in">
                                 <span>{error}</span>
+                            </div>
+                        )}
+
+                        {successMsg && (
+                            <div className="auth-alert-success animate-fade-in" style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: '10px 14px', borderRadius: '10px', fontSize: '0.85rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <CheckCircle2 size={16} />
+                                <span>{successMsg}</span>
                             </div>
                         )}
 
@@ -248,9 +309,9 @@ export default function LoginPage() {
                                         <button 
                                             type="button" 
                                             className="link-btn-text"
-                                            onClick={() => { setTab('otp'); setError(''); }}
+                                            onClick={() => { setTab('reset'); setError(''); setSuccessMsg(''); }}
                                         >
-                                            Forgot / Use OTP
+                                            Forgot Password?
                                         </button>
                                     </div>
                                     <div className="auth-input-field">
@@ -281,7 +342,7 @@ export default function LoginPage() {
                                     )}
                                 </button>
                             </form>
-                        ) : (
+                        ) : tab === 'otp' ? (
                             <form onSubmit={handleVerifyOtp} className="auth-main-form">
                                 <div className="auth-input-group">
                                     <label>Email Address</label>
@@ -343,6 +404,101 @@ export default function LoginPage() {
                                     </>
                                 )}
                             </form>
+                        ) : (
+                            /* ─── Forgot / Reset Password Flow ─── */
+                            !resetOtpSent ? (
+                                <form onSubmit={handleForgotPasswordSend} className="auth-main-form">
+                                    <div className="auth-input-group">
+                                        <label>Account Email for Password Reset</label>
+                                        <div className="auth-input-field">
+                                            <Mail size={18} className="input-icon" />
+                                            <input 
+                                                type="email" 
+                                                placeholder="Enter registered email" 
+                                                value={email} 
+                                                onChange={e => setEmail(e.target.value)} 
+                                                required 
+                                            />
+                                        </div>
+                                        <p style={{ fontSize: '0.775rem', color: 'var(--text-tertiary)', marginTop: '4px' }}>
+                                            We'll email you a secure 6-digit recovery code.
+                                        </p>
+                                    </div>
+
+                                    <button 
+                                        type="submit" 
+                                        className="btn btn-primary auth-submit-btn" 
+                                        disabled={loading || !email}
+                                    >
+                                        {loading ? <><Loader2 size={18} className="spin" /> Sending Code...</> : 'Send Password Reset Code'}
+                                    </button>
+
+                                    <button 
+                                        type="button" 
+                                        className="auth-resend-link" 
+                                        onClick={() => { setTab('password'); setError(''); }}
+                                    >
+                                        ← Back to Sign In
+                                    </button>
+                                </form>
+                            ) : (
+                                <form onSubmit={handleResetPasswordSubmit} className="auth-main-form">
+                                    <div className="auth-input-group">
+                                        <label>Enter 6-Digit Recovery Code</label>
+                                        <div className="auth-input-field otp-field">
+                                            <input 
+                                                type="text" 
+                                                placeholder="• • • • • •" 
+                                                value={resetCode} 
+                                                onChange={e => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))} 
+                                                maxLength={6} 
+                                                required 
+                                                autoFocus
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="auth-input-group">
+                                        <label>New Password (min 6 characters)</label>
+                                        <div className="auth-input-field">
+                                            <Lock size={18} className="input-icon" />
+                                            <input 
+                                                type={showPassword ? 'text' : 'password'} 
+                                                placeholder="Enter new password" 
+                                                value={newPassword} 
+                                                onChange={e => setNewPassword(e.target.value)} 
+                                                required 
+                                                minLength={6}
+                                            />
+                                            <button 
+                                                type="button" 
+                                                className="pw-toggle-btn" 
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                aria-label="Toggle password visibility"
+                                            >
+                                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        type="submit" 
+                                        className="btn btn-primary auth-submit-btn" 
+                                        disabled={loading || resetCode.length !== 6 || newPassword.length < 6}
+                                    >
+                                        {loading ? <><Loader2 size={18} className="spin" /> Updating Password...</> : 'Reset Password & Sign In'}
+                                    </button>
+
+                                    <button 
+                                        type="button" 
+                                        className="auth-resend-link" 
+                                        onClick={handleForgotPasswordSend} 
+                                        disabled={loading}
+                                    >
+                                        Resend Recovery Code
+                                    </button>
+                                </form>
+                            )
                         )}
 
                         <div className="auth-divider-line">

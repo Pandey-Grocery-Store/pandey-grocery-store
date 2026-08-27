@@ -139,6 +139,49 @@ export async function sendOtpEmail(toEmail, otpCode) {
     });
 }
 
+// ════════════════════ Password Reset Code Email ════════════════════
+export async function sendPasswordResetOtpEmail(toEmail, resetCode, userName) {
+    if (!toEmail) return { success: false, reason: 'No recipient email' };
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="margin: 0; padding: 20px; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(0,0,0,0.05);">
+            <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 28px 24px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">🔒 Password Reset Request</h1>
+                <p style="color: rgba(255,255,255,0.85); margin: 6px 0 0; font-size: 13px;">Pandey Grocery Store Account Security</p>
+            </div>
+            <div style="padding: 28px 24px; text-align: center;">
+                <h2 style="color: #0f172a; margin: 0 0 8px; font-size: 18px; font-weight: 700;">Hello ${userName || 'Customer'},</h2>
+                <p style="color: #64748b; margin: 0 0 20px; font-size: 14px; line-height: 1.5;">
+                    We received a request to reset the password for your Pandey Grocery account (<strong>${toEmail}</strong>). Enter this 6-digit recovery code:
+                </p>
+                <div style="background: #f8fafc; border: 2px dashed #64748b; border-radius: 12px; padding: 16px 24px; margin: 0 auto 20px; display: inline-block;">
+                    <span style="font-size: 34px; font-weight: 900; letter-spacing: 8px; color: #0f172a; font-family: 'Courier New', monospace;">${resetCode}</span>
+                </div>
+                <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; text-align: left;">
+                    <p style="color: #92400e; font-size: 12px; margin: 0; line-height: 1.4;">
+                        ⚠️ <strong>Security Notice:</strong> This reset code expires in 10 minutes. If you did not request this password reset, please ignore this email or contact support.
+                    </p>
+                </div>
+            </div>
+            <div style="background: #f8fafc; padding: 14px 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+                <p style="color: #94a3b8; font-size: 11px; margin: 0;">© ${new Date().getFullYear()} Pandey Grocery Store • Haldwani, Uttarakhand</p>
+            </div>
+        </div>
+    </body>
+    </html>`;
+
+    return sendEmail({
+        to: toEmail,
+        subject: `${resetCode} is your Password Reset Code — Pandey Grocery Store`,
+        html,
+        text: `Your password reset code for Pandey Grocery Store is: ${resetCode}. It expires in 10 minutes.`,
+    });
+}
+
 // ════════════════════ 2. Order Confirmation Email ════════════════════
 export async function sendOrderConfirmationEmail(toEmail, order) {
     if (!toEmail) return { success: false, reason: 'No recipient email' };
