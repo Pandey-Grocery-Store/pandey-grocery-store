@@ -134,3 +134,11 @@ export const adminApi = {
     updateUserRole: (id, role) => request(`/admin/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
 };
 
+// ── Email & Notifications API ──
+export const notificationsApi = {
+    getStatus: () => tryRequest('/notifications/status'),
+    sendTestEmail: (data) => request('/notifications/test-email', { method: 'POST', body: JSON.stringify(data) }),
+    sendBroadcast: (data) => request('/notifications/broadcast-email', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+

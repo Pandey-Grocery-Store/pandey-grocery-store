@@ -5,46 +5,17 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import { put } from '@vercel/blob';
-import nodemailer from 'nodemailer';
-
-// ── SMTP Transporter (Gmail) ──
-const smtpTransporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
-
-async function sendOtpEmail(toEmail, otpCode) {
-    const html = `
-    <div style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
-        <div style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); padding: 32px 24px; text-align: center;">
-            <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700;">🛒 Pandey Grocery Store</h1>
-            <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0; font-size: 14px;">Indian Groceries & Daily Essentials</p>
-        </div>
-        <div style="padding: 32px 24px; text-align: center;">
-            <h2 style="color: #1a1a1a; margin: 0 0 8px; font-size: 20px;">Your Verification Code</h2>
-            <p style="color: #666; margin: 0 0 24px; font-size: 14px; line-height: 1.5;">Use this code to sign in to your account. It expires in 10 minutes.</p>
-            <div style="background: #f0fdf4; border: 2px dashed #16a34a; border-radius: 12px; padding: 20px; margin: 0 auto 24px; display: inline-block;">
-                <span style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #16a34a; font-family: 'Courier New', monospace;">${otpCode}</span>
-            </div>
-            <p style="color: #999; font-size: 12px; margin: 0;">If you didn't request this code, please ignore this email.</p>
-        </div>
-        <div style="background: #f9fafb; padding: 16px 24px; text-align: center; border-top: 1px solid #e5e7eb;">
-            <p style="color: #9ca3af; font-size: 11px; margin: 0;">© ${new Date().getFullYear()} Pandey Grocery Store, Haldwani, Uttarakhand</p>
-        </div>
-    </div>`;
-
-    await smtpTransporter.sendMail({
-        from: '"Pandey Grocery Store" <grocerypandey.store@gmail.com>',
-        to: toEmail,
-        subject: `${otpCode} — Your Pandey Grocery Store verification code`,
-        html,
-    });
-}
+import {
+    sendOtpEmail,
+    sendOrderConfirmationEmail,
+    sendOrderStatusUpdateEmail,
+    sendPrintJobEmail,
+    sendAdminNewOrderAlert,
+    sendWelcomeEmail,
+    sendBroadcastNotificationEmail,
+    verifySmtpConnection,
+    sendEmail
+} from './emailService.js';
 
 // ── Prisma Client (singleton for serverless) ──
 const globalForPrisma = globalThis;
@@ -119,6 +90,7 @@ app.post('/api/auth/register', async (req, res) => {
         const existing = await prisma.user.findUnique({ where: { email } });
         if (existing) return res.status(409).json({ error: 'Email already registered' });
         const user = await prisma.user.create({ data: { name, email, password: await bcrypt.hash(password, 10), provider: 'local' } });
+        sendWelcomeEmail(user.email, user.name).catch(e => console.error('Welcome email error:', e.message));
         res.status(201).json({ token: generateToken(user), user: { id: user.id, name: user.name, email: user.email, role: user.role, avatar: user.avatar } });
     } catch (err) { console.error(err); res.status(500).json({ error: 'Registration failed' }); }
 });
@@ -326,6 +298,13 @@ app.post('/api/orders', authenticate, async (req, res) => {
             }
         }
         
+        // Send Email notifications asynchronously
+        const customerEmail = req.user?.email || (addressId ? (await prisma.user.findUnique({ where: { id: req.user.id } }))?.email : null);
+        if (customerEmail) {
+            sendOrderConfirmationEmail(customerEmail, order).catch(e => console.error('Order confirmation email error:', e.message));
+        }
+        sendAdminNewOrderAlert(order).catch(e => console.error('Admin order alert email error:', e.message));
+
         res.status(201).json({ order });
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to create order' }); }
 });
@@ -334,7 +313,17 @@ app.patch('/api/orders/:id/status', authenticate, authorize('MANAGEMENT', 'ADMIN
     try {
         const { status } = req.body;
         if (!['new', 'packing', 'packed', 'dispatched', 'delivered'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
-        res.json({ order: await prisma.order.update({ where: { id: req.params.id }, data: { status }, include: { items: true } }) });
+        const order = await prisma.order.update({ 
+            where: { id: req.params.id }, 
+            data: { status }, 
+            include: { items: true, user: true } 
+        });
+
+        if (order.user?.email) {
+            sendOrderStatusUpdateEmail(order.user.email, order, status).catch(e => console.error('Status update email error:', e.message));
+        }
+
+        res.json({ order });
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to update status' }); }
 });
 
@@ -424,6 +413,11 @@ app.post('/api/print-jobs', authenticate, async (req, res) => {
                 userId: req.user.id,
             }
         });
+
+        if (req.user?.email) {
+            sendPrintJobEmail(req.user.email, job).catch(e => console.error('Print job email error:', e.message));
+        }
+
         res.status(201).json({ job });
     } catch (err) {
         console.error('Create print job error:', err);
@@ -591,15 +585,124 @@ app.get('/api/delivery/my-orders', authenticate, authorize('DELIVERY'), async (r
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to fetch orders' }); }
 });
 
-// Get all delivery persons (for assignment dropdown)
-app.get('/api/delivery/persons', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
+// ════════════════════ NOTIFICATIONS & EMAIL SERVICE ════════════════════
+app.get('/api/notifications/status', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
     try {
-        const persons = await prisma.user.findMany({
-            where: { role: 'DELIVERY' },
-            select: { id: true, name: true, email: true, phone: true },
+        const smtpStatus = await verifySmtpConnection();
+        res.json({
+            smtp: smtpStatus,
+            triggers: [
+                { id: 'otp', name: 'OTP Login Verification', target: 'Customer on Sign In / Register', active: true, channel: 'Email (SMTP)' },
+                { id: 'order_confirm', name: 'Order Confirmation Receipt', target: 'Customer on Checkout', active: true, channel: 'Email (SMTP)' },
+                { id: 'admin_order_alert', name: 'New Order Admin Alert', target: 'Store Management', active: true, channel: 'Email (SMTP)' },
+                { id: 'order_status', name: 'Order Status & Live Tracking', target: 'Customer on Packing/Dispatch', active: true, channel: 'Email (SMTP)' },
+                { id: 'print_job', name: 'Print Hub Job Confirmation', target: 'Customer on File Upload', active: true, channel: 'Email (SMTP)' },
+                { id: 'welcome', name: 'Welcome & Onboarding', target: 'New Customer Account', active: true, channel: 'Email (SMTP)' },
+            ]
         });
-        res.json({ persons });
-    } catch (err) { res.status(500).json({ error: 'Failed to get delivery persons' }); }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to check notification status' });
+    }
+});
+
+app.post('/api/notifications/test-email', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
+    try {
+        const { to, template } = req.body;
+        const targetEmail = to || req.user.email;
+        if (!targetEmail) return res.status(400).json({ error: 'Recipient email required' });
+
+        let result;
+        if (template === 'order_confirm') {
+            result = await sendOrderConfirmationEmail(targetEmail, {
+                orderNumber: 'ORD-TEST-1001',
+                total: 389,
+                subtotal: 389,
+                deliveryType: 'delivery',
+                customer: req.user.name || 'Store Test Customer',
+                address: 'Near Durga Mandir, Kusumkhera, Haldwani, Uttarakhand',
+                items: [
+                    { name: 'Fresh Aashirvaad Shudh Chakki Atta (5kg)', quantity: 1, price: 210 },
+                    { name: 'Tata Salt Vaccum Evaporated (1kg)', quantity: 1, price: 28 },
+                    { name: 'Classmate Spiral Ruled Notebook (160p)', quantity: 2, price: 65 }
+                ]
+            });
+        } else if (template === 'order_status') {
+            result = await sendOrderStatusUpdateEmail(targetEmail, {
+                orderNumber: 'ORD-TEST-1001',
+                customer: req.user.name || 'Store Test Customer',
+                total: 389
+            }, 'dispatched');
+        } else if (template === 'welcome') {
+            result = await sendWelcomeEmail(targetEmail, req.user.name || 'Valued Customer');
+        } else if (template === 'print_job') {
+            result = await sendPrintJobEmail(targetEmail, {
+                jobNumber: 'PRT-TEST-501',
+                type: 'id-card',
+                quantity: 2,
+                status: 'Processing 300 DPI'
+            });
+        } else {
+            result = await sendBroadcastNotificationEmail({
+                to: targetEmail,
+                subject: '🔔 Pandey Grocery Store — Email Service Live Test',
+                headline: 'Email Notification Service Active! 🛒',
+                message: 'Hello! This is a live test notification from your Pandey Grocery Store automated email system. All order confirmations, real-time delivery status alerts, and print confirmations are configured and operating smoothly across Haldwani.',
+                buttonText: 'Visit Store Online',
+                buttonUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://pandeygrocery-store.vercel.app'
+            });
+        }
+
+        res.json({ success: result.success, messageId: result.messageId, reason: result.reason || result.error, targetEmail });
+    } catch (err) {
+        console.error('Test email error:', err);
+        res.status(500).json({ error: err.message || 'Failed to send test email' });
+    }
+});
+
+app.post('/api/notifications/broadcast-email', authenticate, authorize('ADMIN'), async (req, res) => {
+    try {
+        const { audience, targetEmail, subject, headline, message, buttonText, buttonUrl } = req.body;
+        if (!subject || !message) return res.status(400).json({ error: 'Subject and message are required' });
+
+        let recipientEmails = [];
+        if (audience === 'single' && targetEmail) {
+            recipientEmails = [targetEmail];
+        } else {
+            const users = await prisma.user.findMany({
+                where: { email: { not: null } },
+                select: { email: true }
+            });
+            recipientEmails = users.map(u => u.email).filter(Boolean);
+        }
+
+        if (!recipientEmails.length) return res.status(400).json({ error: 'No recipient emails found' });
+
+        let sentCount = 0;
+        let failCount = 0;
+
+        for (const email of recipientEmails) {
+            try {
+                const mailRes = await sendBroadcastNotificationEmail({
+                    to: email,
+                    subject,
+                    headline,
+                    message,
+                    buttonText,
+                    buttonUrl: buttonUrl || 'https://pandeygrocery-store.vercel.app'
+                });
+                if (mailRes.success) sentCount++;
+                else failCount++;
+            } catch {
+                failCount++;
+            }
+        }
+
+        res.json({ success: true, sentCount, failCount, totalRecipients: recipientEmails.length });
+    } catch (err) {
+        console.error('Broadcast email error:', err);
+        res.status(500).json({ error: 'Failed to send broadcast email' });
+    }
 });
 
 // ── Export for Vercel ──

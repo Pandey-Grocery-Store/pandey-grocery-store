@@ -34,6 +34,7 @@ const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
 const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
 const AdminStaffActivity = lazy(() => import('./pages/admin/AdminStaffActivity'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminNotifications = lazy(() => import('./pages/admin/AdminNotifications'));
 
 const DeliveryDashboard = lazy(() => import('./pages/delivery/DeliveryDashboard'));
 const OrderTracking = lazy(() => import('./pages/customer/OrderTracking'));
@@ -101,6 +102,7 @@ export default function App() {
                   <Route path="/admin/reports" element={<AdminReports />} />
                   <Route path="/admin/staff-activity" element={<AdminStaffActivity />} />
                   <Route path="/admin/users" element={<AdminUsers />} />
+                  <Route path="/admin/notifications" element={<AdminNotifications />} />
                 </Route>
 
                 {/* 404 Catch-all */}
