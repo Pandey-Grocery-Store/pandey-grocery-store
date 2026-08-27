@@ -19,10 +19,26 @@ import {
     X,
     UserPlus,
     Check,
-    Wallet
+    Wallet,
+    Scale,
+    Box,
+    Calculator
 } from 'lucide-react';
 import { productsApi, ordersApi, customersApi } from '../../lib/api';
 import './StaffPOS.css';
+
+const POS_WEIGHT_PRESETS = [
+    { label: '250 g', multiplier: 0.25, grams: 250 },
+    { label: '500 g', multiplier: 0.5, grams: 500 },
+    { label: '1 kg', multiplier: 1, grams: 1000 },
+    { label: '1.5 kg', multiplier: 1.5, grams: 1500 },
+    { label: '2 kg', multiplier: 2, grams: 2000 },
+    { label: '5 kg', multiplier: 5, grams: 5000 },
+    { label: '10 kg', multiplier: 10, grams: 10000 },
+    { label: '25 kg', multiplier: 25, grams: 25000 },
+];
+
+const POS_RUPEE_SHORTCUTS = [20, 50, 100, 200, 500, 1000];
 
 export default function StaffPOS() {
     const [products, setProducts] = useState([]);
@@ -37,6 +53,13 @@ export default function StaffPOS() {
     const [showCustDropdown, setShowCustDropdown] = useState(false);
     const [isCustomWalkIn, setIsCustomWalkIn] = useState(false);
     const [customerInfo, setCustomerInfo] = useState({ name: 'Walk-in Customer', phone: '', address: 'In-store Counter Sale' });
+
+    // Weight Product Selection Modal State
+    const [weightModalProduct, setWeightModalProduct] = useState(null);
+    const [selectedWeightPreset, setSelectedWeightPreset] = useState(POS_WEIGHT_PRESETS[2]); // 1 kg
+    const [weightCalcMode, setWeightCalcMode] = useState('preset'); // 'preset' | 'custom-rs' | 'custom-weight'
+    const [customRsVal, setCustomRsVal] = useState('50');
+    const [customWeightKgVal, setCustomWeightKgVal] = useState('1.5');
 
     const [paymentMode, setPaymentMode] = useState('paid_cash'); // 'paid_cash' | 'paid_upi' | 'khata_due'
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -113,14 +136,72 @@ export default function StaffPOS() {
         setIsCustomWalkIn(false);
     };
 
-    const addToCart = (product) => {
+    // Helper: Check if product is sold by weight
+    const isWeightTypeProduct = (prod) => {
+        return prod.unit?.toLowerCase().includes('kg') || 
+               prod.description?.includes('[TYPE:weight]') ||
+               ['rice-grains', 'spices-masala', 'fresh-produce'].includes(prod.subcategory);
+    };
+
+    // Triggered when product card is clicked in POS
+    const handleProductCardClick = (product) => {
         if (product.stock === 0) return;
-        const existing = cart.find(item => item.id === product.id);
-        if (existing) {
-            setCart(cart.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
+        if (isWeightTypeProduct(product)) {
+            // Open interactive weight/price calculator modal
+            setWeightModalProduct(product);
+            setSelectedWeightPreset(POS_WEIGHT_PRESETS[2]); // Default 1 kg
+            setWeightCalcMode('preset');
+            setCustomRsVal('50');
+            setCustomWeightKgVal('1.5');
         } else {
-            setCart([...cart, { ...product, quantity: 1 }]);
+            // Regular fixed pack product: increment or add
+            const existing = cart.find(item => item.id === product.id);
+            if (existing) {
+                setCart(cart.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
+            } else {
+                setCart([...cart, { ...product, quantity: 1 }]);
+            }
         }
+    };
+
+    // Add Loose / By-Weight item with chosen weight/₹ to Cart
+    const handleAddWeightItemToCart = () => {
+        if (!weightModalProduct) return;
+        const baseRate = Number(weightModalProduct.price) || 0;
+        let finalWeightLabel = '1 kg';
+        let calculatedPrice = baseRate;
+
+        if (weightCalcMode === 'preset') {
+            finalWeightLabel = selectedWeightPreset.label;
+            calculatedPrice = Math.round(baseRate * selectedWeightPreset.multiplier);
+        } else if (weightCalcMode === 'custom-rs') {
+            const enteredRs = Number(customRsVal) || 0;
+            calculatedPrice = enteredRs;
+            const grams = baseRate > 0 ? Math.round((enteredRs / baseRate) * 1000) : 0;
+            finalWeightLabel = grams >= 1000 ? `${(grams / 1000).toFixed(2)} kg` : `${grams} g`;
+        } else if (weightCalcMode === 'custom-weight') {
+            const enteredKg = Number(customWeightKgVal) || 0;
+            calculatedPrice = Math.round(enteredKg * baseRate);
+            finalWeightLabel = `${enteredKg} kg`;
+        }
+
+        const customItemId = `${weightModalProduct.id}-${finalWeightLabel.replace(/[^a-zA-Z0-9]/g, '')}`;
+        const existing = cart.find(item => item.id === customItemId);
+
+        if (existing) {
+            setCart(cart.map(item => item.id === customItemId ? { ...item, quantity: item.quantity + 1 } : item));
+        } else {
+            setCart([...cart, {
+                id: customItemId,
+                baseId: weightModalProduct.id,
+                name: `${weightModalProduct.name} (${finalWeightLabel})`,
+                price: calculatedPrice,
+                quantity: 1,
+                image: weightModalProduct.image
+            }]);
+        }
+
+        setWeightModalProduct(null);
     };
 
     const updateQuantity = (id, delta) => {
@@ -226,7 +307,7 @@ export default function StaffPOS() {
                         <h2 className="pos-main-title">
                             <Store size={22} color="var(--primary)" /> Store POS Counter
                         </h2>
-                        <p className="pos-subtitle">Tap products to quickly add items to current bill</p>
+                        <p className="pos-subtitle">Tap products to add units or custom weight to current bill</p>
                     </div>
 
                     <div className="pos-search-wrapper">
@@ -264,12 +345,14 @@ export default function StaffPOS() {
                     ) : (
                         filteredProducts.map(product => {
                             const isOutOfStock = product.stock === 0;
-                            const inCartItem = cart.find(c => c.id === product.id);
+                            const isWeight = isWeightTypeProduct(product);
+                            const inCartCount = cart.filter(c => c.id === product.id || c.baseId === product.id).reduce((s, i) => s + i.quantity, 0);
+
                             return (
                                 <div 
                                     key={product.id} 
-                                    className={`pos-item-card ${isOutOfStock ? 'disabled-stock' : ''} ${inCartItem ? 'in-cart' : ''}`}
-                                    onClick={() => !isOutOfStock && addToCart(product)}
+                                    className={`pos-item-card ${isOutOfStock ? 'disabled-stock' : ''} ${inCartCount > 0 ? 'in-cart' : ''}`}
+                                    onClick={() => !isOutOfStock && handleProductCardClick(product)}
                                 >
                                     <div className="pos-item-thumb-wrap">
                                         <img 
@@ -277,14 +360,20 @@ export default function StaffPOS() {
                                             alt={product.name} 
                                             className="pos-item-img"
                                         />
-                                        {inCartItem && (
-                                            <span className="cart-qty-badge">{inCartItem.quantity}</span>
+                                        
+                                        {/* Product Type Tag (Weight vs Pack) */}
+                                        <span className={`pos-card-type-pill ${isWeight ? 'weight' : 'pack'}`}>
+                                            {isWeight ? <><Scale size={10} /> By Weight</> : <><Box size={10} /> Pack</>}
+                                        </span>
+
+                                        {inCartCount > 0 && (
+                                            <span className="cart-qty-badge">{inCartCount}</span>
                                         )}
                                     </div>
                                     <div className="pos-item-meta">
                                         <h4>{product.name}</h4>
                                         <div className="pos-price-row">
-                                            <span className="pos-item-price">₹{product.price}</span>
+                                            <span className="pos-item-price">₹{product.price}{isWeight ? '/kg' : ''}</span>
                                             <span className={`pos-stock-tag ${product.stock <= 5 ? 'low-stock' : 'good-stock'}`}>
                                                 {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
                                             </span>
@@ -545,6 +634,147 @@ export default function StaffPOS() {
                     </button>
                 </div>
             </div>
+
+            {/* ══════════════════════════════════════════════════════════
+                ⚖️ POS BY-WEIGHT & CUSTOM ₹ SELECTION MODAL
+                ══════════════════════════════════════════════════════════ */}
+            {weightModalProduct && (
+                <div className="modal-overlay animate-fade-in" onClick={() => setWeightModalProduct(null)}>
+                    <div className="pos-weight-dialog card" onClick={e => e.stopPropagation()}>
+                        <div className="pos-weight-header">
+                            <div className="pos-wt-title-row">
+                                <Scale size={20} color="#2563eb" />
+                                <div>
+                                    <h3>{weightModalProduct.name}</h3>
+                                    <p>Rate: <strong>₹{weightModalProduct.price} / kg</strong> • Loose Item</p>
+                                </div>
+                            </div>
+                            <button className="btn-icon btn-ghost" onClick={() => setWeightModalProduct(null)}>
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <div className="pos-weight-body">
+                            {/* Mode Tabs */}
+                            <div className="pos-weight-tabs">
+                                <button 
+                                    type="button" 
+                                    className={`pos-wt-tab ${weightCalcMode === 'preset' ? 'active' : ''}`}
+                                    onClick={() => setWeightCalcMode('preset')}
+                                >
+                                    Standard Packs
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className={`pos-wt-tab ${weightCalcMode === 'custom-rs' ? 'active' : ''}`}
+                                    onClick={() => setWeightCalcMode('custom-rs')}
+                                >
+                                    Enter ₹ Amount
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className={`pos-wt-tab ${weightCalcMode === 'custom-weight' ? 'active' : ''}`}
+                                    onClick={() => setWeightCalcMode('custom-weight')}
+                                >
+                                    Enter Weight (kg)
+                                </button>
+                            </div>
+
+                            {/* Mode 1: Quick Weight Preset Chips */}
+                            {weightCalcMode === 'preset' && (
+                                <div className="pos-wt-chips-grid">
+                                    {POS_WEIGHT_PRESETS.map((preset) => {
+                                        const isSelected = selectedWeightPreset.label === preset.label;
+                                        const cost = Math.round(Number(weightModalProduct.price) * preset.multiplier);
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={preset.label}
+                                                className={`pos-wt-chip ${isSelected ? 'active' : ''}`}
+                                                onClick={() => setSelectedWeightPreset(preset)}
+                                            >
+                                                <span className="wt-chip-label">{preset.label}</span>
+                                                <span className="wt-chip-price">₹{cost}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {/* Mode 2: Custom ₹ Input */}
+                            {weightCalcMode === 'custom-rs' && (
+                                <div className="pos-custom-calc-pane">
+                                    <label className="pos-calc-lbl">How much ₹ worth did customer ask for?</label>
+                                    <div className="pos-input-with-rs">
+                                        <span>₹</span>
+                                        <input 
+                                            type="number"
+                                            className="input pos-rs-input"
+                                            value={customRsVal}
+                                            onChange={e => setCustomRsVal(e.target.value)}
+                                            placeholder="e.g. 50, 100"
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    <div className="pos-calculated-badge">
+                                        <span>Weighed Quantity:</span>
+                                        <strong>
+                                            {Number(weightModalProduct.price) > 0 
+                                                ? `${Math.round((Number(customRsVal) / Number(weightModalProduct.price)) * 1000)} grams`
+                                                : '0 g'}
+                                        </strong>
+                                    </div>
+
+                                    <div className="pos-quick-rs-pills">
+                                        <span>Quick ₹:</span>
+                                        {POS_RUPEE_SHORTCUTS.map(r => (
+                                            <button 
+                                                key={r}
+                                                type="button" 
+                                                className={`quick-rs-btn ${customRsVal === String(r) ? 'active' : ''}`}
+                                                onClick={() => setCustomRsVal(String(r))}
+                                            >
+                                                ₹{r}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Mode 3: Custom Weight in Kilograms */}
+                            {weightCalcMode === 'custom-weight' && (
+                                <div className="pos-custom-calc-pane">
+                                    <label className="pos-calc-lbl">Enter exact weighed quantity in Kilograms (kg):</label>
+                                    <input 
+                                        type="number"
+                                        step="0.1"
+                                        className="input"
+                                        value={customWeightKgVal}
+                                        onChange={e => setCustomWeightKgVal(e.target.value)}
+                                        placeholder="e.g. 1.25, 3.5"
+                                        autoFocus
+                                    />
+
+                                    <div className="pos-calculated-badge">
+                                        <span>Calculated Amount:</span>
+                                        <strong>₹{Math.round(Number(customWeightKgVal) * Number(weightModalProduct.price))}</strong>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="pos-weight-footer">
+                            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setWeightModalProduct(null)}>
+                                Cancel
+                            </button>
+                            <button type="button" className="btn btn-primary btn-sm" onClick={handleAddWeightItemToCart}>
+                                <Check size={15} /> Add to Current Bill
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
