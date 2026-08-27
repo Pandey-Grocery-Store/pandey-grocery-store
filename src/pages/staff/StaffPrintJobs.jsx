@@ -167,6 +167,53 @@ export default function StaffPrintJobs() {
         win.document.close();
     };
 
+    // Force Native File Download for Cross-Origin / Blob / Data URLs
+    const handleDownloadFile = async (url, filename = 'print-document') => {
+        if (!url) return;
+        try {
+            if (url.startsWith('data:') || url.startsWith('blob:')) {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                return;
+            }
+
+            // Fetch cross-origin URL as Blob to bypass browser download attribute restrictions
+            const response = await fetch(url, { mode: 'cors' });
+            if (!response.ok) throw new Error('Network response failed');
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+
+            let ext = '.jpg';
+            if (url.toLowerCase().includes('.pdf') || blob.type === 'application/pdf') ext = '.pdf';
+            else if (url.toLowerCase().includes('.png') || blob.type === 'image/png') ext = '.png';
+            else if (url.toLowerCase().includes('.jpeg') || url.toLowerCase().includes('.jpg')) ext = '.jpg';
+
+            const cleanName = filename.endsWith(ext) ? filename : `${filename}${ext}`;
+            a.download = cleanName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            console.warn('Direct blob download fallback:', err);
+            // Fallback: Open URL directly or trigger download anchor
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.rel = 'noreferrer';
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    };
+
     // Handle Walk-in Counter Print Job Submit
     const handleCreateCounterJob = async (e) => {
         e.preventDefault();
@@ -535,16 +582,13 @@ export default function StaffPrintJobs() {
                                             >
                                                 <Printer size={15} /> Print Now
                                             </button>
-                                            <a
-                                                href={primaryFile}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                download
+                                            <button
                                                 className="btn btn-secondary btn-sm"
-                                                title="Open in new tab / download"
+                                                onClick={() => handleDownloadFile(primaryFile, `Order-${job.jobNumber}-Document`)}
+                                                title="Download file to computer / phone"
                                             >
                                                 <Download size={14} /> Download File
-                                            </a>
+                                            </button>
                                         </>
                                     )}
                                 </div>
@@ -619,15 +663,13 @@ export default function StaffPrintJobs() {
                                 >
                                     <Printer size={15} /> Print Document
                                 </button>
-                                <a
-                                    href={previewItem.url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    download
+                                <button
                                     className="btn btn-secondary btn-sm"
+                                    onClick={() => handleDownloadFile(previewItem.url, previewItem.name)}
+                                    title="Download file to computer / phone"
                                 >
                                     <Download size={14} /> Download
-                                </a>
+                                </button>
                                 <button className="btn-close" onClick={() => setPreviewItem(null)}>
                                     <X size={18} />
                                 </button>
