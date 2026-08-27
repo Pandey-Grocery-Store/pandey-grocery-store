@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Truck, Shield, Clock, Tag, Star, MapPin, ExternalLink } from 'lucide-react';
+import { ArrowRight, Shield, Tag, Star, MapPin, ExternalLink } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import StoreGallery from '../../components/StoreGallery';
 import { productsApi, categoriesApi } from '../../lib/api';
@@ -83,20 +83,7 @@ export default function HomePage() {
             {/* Trust Bar */}
             <section className="trust-bar">
                 <div className="container trust-bar-inner">
-                    <div className="trust-item">
-                        <Truck size={22} />
-                        <div>
-                            <strong>Free Delivery</strong>
-                            <span>On orders above ₹500</span>
-                        </div>
-                    </div>
-                    <div className="trust-item">
-                        <Clock size={22} />
-                        <div>
-                            <strong>2-Hour Express</strong>
-                            <span>Same-day delivery</span>
-                        </div>
-                    </div>
+
                     <div className="trust-item">
                         <Shield size={22} />
                         <div>

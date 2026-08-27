@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Heart, Star, Minus, Plus, Truck, Shield, RotateCcw, Share2, Loader } from 'lucide-react';
+import { ShoppingCart, Heart, Star, Minus, Plus, Shield, RotateCcw, Share2, Loader } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import { productsApi } from '../../lib/api';
 import { useCart } from '../../context/CartContext';
@@ -128,13 +128,7 @@ export default function ProductPage() {
                         )}
 
                         <div className="product-guarantees">
-                            <div className="guarantee-item">
-                                <Truck size={18} />
-                                <div>
-                                    <strong>Free Delivery</strong>
-                                    <span>On orders above ₹500</span>
-                                </div>
-                            </div>
+
                             <div className="guarantee-item">
                                 <Shield size={18} />
                                 <div>

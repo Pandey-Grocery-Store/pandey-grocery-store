@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Tag, Clock, ArrowRight, Star, Zap, Gift, Percent } from 'lucide-react';
+import { Tag, Clock, ArrowRight, Star, Gift, Percent } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import { products } from '../../data/products';
 import './OffersPage.css';
@@ -7,7 +7,7 @@ import './OffersPage.css';
 const offers = [
     { code: 'WELCOME100', discount: '₹100 Off', desc: 'Flat ₹100 off on your first order above ₹300', minOrder: 300, icon: Gift, color: '#e8590c', gradient: 'linear-gradient(135deg, #e8590c, #f97316)' },
     { code: 'SAVE10', discount: '10% Off', desc: '10% off up to ₹200 on orders above ₹500', minOrder: 500, icon: Percent, color: '#8b5cf6', gradient: 'linear-gradient(135deg, #8b5cf6, #a78bfa)' },
-    { code: 'FREEDELIVERY', discount: 'Free Delivery', desc: 'Free delivery on orders above ₹500', minOrder: 500, icon: Zap, color: '#10b981', gradient: 'linear-gradient(135deg, #10b981, #34d399)' },
+
     { code: 'UTENSIL15', discount: '15% Off', desc: '15% off on kitchen utensils up to ₹300. Min order ₹800', minOrder: 800, icon: Star, color: '#3b82f6', gradient: 'linear-gradient(135deg, #3b82f6, #60a5fa)' },
 ];
 
