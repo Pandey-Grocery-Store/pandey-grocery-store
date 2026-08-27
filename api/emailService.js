@@ -1,31 +1,42 @@
 import nodemailer from 'nodemailer';
 
-// ── SMTP Transporter Configuration ──
-const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-const smtpPort = parseInt(process.env.SMTP_PORT || '587');
-const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER || 'grocerypandey.store@gmail.com';
-const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
-const emailFrom = process.env.EMAIL_FROM || `"Pandey Grocery Store" <${smtpUser}>`;
-const adminAlertEmail = process.env.ADMIN_ALERT_EMAIL || smtpUser;
-const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://pandeygrocery-store.vercel.app';
+// ── Dynamic SMTP Transporter Helper ──
+export function getTransporter() {
+    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+    const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER || 'grocerypandey.store@gmail.com';
+    const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
 
-const transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: smtpPort === 465,
-    auth: {
-        user: smtpUser,
-        pass: smtpPass,
-    },
-});
+    return {
+        transporter: nodemailer.createTransport({
+            host: smtpHost,
+            port: smtpPort,
+            secure: smtpPort === 465,
+            auth: {
+                user: smtpUser,
+                pass: smtpPass,
+            },
+        }),
+        smtpHost,
+        smtpPort,
+        smtpUser,
+        smtpPass,
+        emailFrom: process.env.EMAIL_FROM || `"Pandey Grocery Store" <${smtpUser}>`,
+        adminAlertEmail: process.env.ADMIN_ALERT_EMAIL || smtpUser,
+        appBaseUrl: process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://pandeygrocery-store.vercel.app',
+    };
+}
 
 /**
  * Verify SMTP Connection
  */
 export async function verifySmtpConnection() {
+    const { transporter, smtpHost, smtpPort, smtpUser, smtpPass, emailFrom } = getTransporter();
+
     if (!smtpPass) {
         return {
             configured: false,
+            healthy: false,
             host: smtpHost,
             port: smtpPort,
             user: smtpUser,
@@ -34,7 +45,11 @@ export async function verifySmtpConnection() {
     }
 
     try {
-        await transporter.verify();
+        const verifyPromise = transporter.verify();
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('SMTP connection timed out')), 4000)
+        );
+        await Promise.race([verifyPromise, timeoutPromise]);
         return {
             configured: true,
             healthy: true,
@@ -59,6 +74,8 @@ export async function verifySmtpConnection() {
  * Base generic email sender with error handling
  */
 export async function sendEmail({ to, subject, html, text }) {
+    const { transporter, smtpPass, emailFrom } = getTransporter();
+
     if (!smtpPass) {
         console.warn(`[EmailService] SMTP_PASS not set. Skipping email to ${to} (Subject: ${subject})`);
         return { success: false, reason: 'SMTP credentials not configured in environment' };

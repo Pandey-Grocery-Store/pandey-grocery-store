@@ -15,7 +15,20 @@ async function request(endpoint, options = {}) {
         },
         ...options,
     });
-    const data = await res.json();
+
+    let data;
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+        try {
+            data = await res.json();
+        } catch {
+            data = { error: 'Invalid JSON response from server' };
+        }
+    } else {
+        const text = await res.text().catch(() => '');
+        data = { error: text || `Server error (${res.status})` };
+    }
+
     if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
     return data;
 }
