@@ -541,7 +541,53 @@ app.patch('/api/products/:id/stock', authenticate, authorize('MANAGEMENT', 'ADMI
     catch (err) { res.status(500).json({ error: 'Failed to update stock' }); }
 });
 
-// ════════════════════ ORDERS ════════════════════
+// ════════════════════ ORDERS & STORE KHATA ════════════════════
+// Helper to parse payment status & amounts
+function parseOrderPayment(paymentMode, total) {
+    const raw = String(paymentMode || 'cod').toLowerCase();
+    let status = 'PAID';
+    let mode = 'cash';
+    let paidAmount = total;
+    let dueAmount = 0;
+
+    if (raw.includes('khata_due') || raw === 'due' || raw === 'pending' || raw === 'udhar') {
+        status = 'PENDING';
+        mode = 'khata_due';
+        paidAmount = 0;
+        dueAmount = total;
+    } else if (raw.includes('khata_partial') || raw.includes('partial')) {
+        status = 'PARTIAL';
+        mode = 'khata_partial';
+        // Extract paid amount if stored as "khata_partial:paid=300:due=200"
+        const paidMatch = raw.match(/paid=([0-9.]+)/);
+        const dueMatch = raw.match(/due=([0-9.]+)/);
+        paidAmount = paidMatch ? parseFloat(paidMatch[1]) : Math.round(total / 2);
+        dueAmount = dueMatch ? parseFloat(dueMatch[1]) : total - paidAmount;
+    } else if (raw === 'cod') {
+        status = 'PENDING';
+        mode = 'cod';
+        paidAmount = 0;
+        dueAmount = total;
+    } else if (raw.includes('upi')) {
+        status = 'PAID';
+        mode = 'upi';
+        paidAmount = total;
+        dueAmount = 0;
+    } else if (raw.includes('cash') || raw.includes('hand')) {
+        status = 'PAID';
+        mode = 'cash';
+        paidAmount = total;
+        dueAmount = 0;
+    } else {
+        status = 'PAID';
+        mode = raw;
+        paidAmount = total;
+        dueAmount = 0;
+    }
+
+    return { status, mode, paidAmount, dueAmount };
+}
+
 // User's own orders (any logged-in user)
 app.get('/api/orders/my', authenticate, async (req, res) => {
     try {
@@ -551,30 +597,36 @@ app.get('/api/orders/my', authenticate, async (req, res) => {
             orderBy: { createdAt: 'desc' } 
         });
         res.json({ 
-            orders: orders.map(o => ({ 
-                id: o.orderNumber, 
-                dbId: o.id, 
-                orderNumber: o.orderNumber,
-                customer: o.customer || req.user.name || 'Customer', 
-                phone: o.phone || '', 
-                items: o.items.map(i => ({ name: i.name, qty: i.quantity, quantity: i.quantity, price: i.price, image: i.image })), 
-                subtotal: o.subtotal,
-                discount: o.discount,
-                deliveryFee: o.deliveryFee,
-                total: o.total, 
-                status: o.status, 
-                payment: o.paymentMode, 
-                date: o.createdAt.toISOString().split('T')[0], 
-                createdAt: o.createdAt,
-                address: o.address || (o.addressRef ? `${o.addressRef.line1}, ${o.addressRef.city} - ${o.addressRef.pincode}` : ''), 
-                deliveryType: o.deliveryType === 'delivery' ? 'home' : 'pickup',
-                timeSlot: o.timeSlot || 'Standard Delivery'
-            })) 
+            orders: orders.map(o => {
+                const pay = parseOrderPayment(o.paymentMode, o.total);
+                return { 
+                    id: o.orderNumber, 
+                    dbId: o.id, 
+                    orderNumber: o.orderNumber,
+                    customer: o.customer || req.user.name || 'Customer', 
+                    phone: o.phone || '', 
+                    items: o.items.map(i => ({ name: i.name, qty: i.quantity, quantity: i.quantity, price: i.price, image: i.image })), 
+                    subtotal: o.subtotal,
+                    discount: o.discount,
+                    deliveryFee: o.deliveryFee,
+                    total: o.total, 
+                    status: o.status, 
+                    payment: pay.mode,
+                    paymentStatus: pay.status,
+                    paidAmount: pay.paidAmount,
+                    dueAmount: pay.dueAmount,
+                    date: o.createdAt.toISOString().split('T')[0], 
+                    createdAt: o.createdAt,
+                    address: o.address || (o.addressRef ? `${o.addressRef.line1}, ${o.addressRef.city} - ${o.addressRef.pincode}` : ''), 
+                    deliveryType: o.deliveryType === 'delivery' ? 'home' : 'pickup',
+                    timeSlot: o.timeSlot || 'Standard Delivery'
+                };
+            }) 
         });
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to fetch your orders' }); }
 });
 
-// All orders (admin/management only)
+// All orders & Kirana Khata tracking (admin/management only)
 app.get('/api/orders', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
     try {
         const where = {};
@@ -585,26 +637,32 @@ app.get('/api/orders', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (re
             orderBy: { createdAt: 'desc' } 
         });
         res.json({ 
-            orders: orders.map(o => ({ 
-                id: o.orderNumber, 
-                dbId: o.id, 
-                orderNumber: o.orderNumber,
-                customer: o.customer || o.user?.name || 'Customer', 
-                phone: o.phone || o.user?.phone || '', 
-                email: o.user?.email || '',
-                items: o.items.map(i => ({ name: i.name, qty: i.quantity, quantity: i.quantity, price: i.price, image: i.image })), 
-                subtotal: o.subtotal,
-                discount: o.discount,
-                deliveryFee: o.deliveryFee,
-                total: o.total, 
-                status: o.status, 
-                payment: o.paymentMode, 
-                date: o.createdAt.toISOString().split('T')[0], 
-                createdAt: o.createdAt,
-                address: o.address || (o.addressRef ? `${o.addressRef.line1}, ${o.addressRef.city} - ${o.addressRef.pincode}` : ''), 
-                deliveryType: o.deliveryType === 'delivery' ? 'home' : 'pickup', 
-                timeSlot: o.timeSlot || 'Standard Delivery' 
-            })) 
+            orders: orders.map(o => {
+                const pay = parseOrderPayment(o.paymentMode, o.total);
+                return { 
+                    id: o.orderNumber, 
+                    dbId: o.id, 
+                    orderNumber: o.orderNumber,
+                    customer: o.customer || o.user?.name || 'Customer', 
+                    phone: o.phone || o.user?.phone || '', 
+                    email: o.user?.email || '',
+                    items: o.items.map(i => ({ name: i.name, qty: i.quantity, quantity: i.quantity, price: i.price, image: i.image })), 
+                    subtotal: o.subtotal,
+                    discount: o.discount,
+                    deliveryFee: o.deliveryFee,
+                    total: o.total, 
+                    status: o.status, 
+                    payment: pay.mode, 
+                    paymentStatus: pay.status,
+                    paidAmount: pay.paidAmount,
+                    dueAmount: pay.dueAmount,
+                    date: o.createdAt.toISOString().split('T')[0], 
+                    createdAt: o.createdAt,
+                    address: o.address || (o.addressRef ? `${o.addressRef.line1}, ${o.addressRef.city} - ${o.addressRef.pincode}` : ''), 
+                    deliveryType: o.deliveryType === 'delivery' ? 'home' : 'pickup', 
+                    timeSlot: o.timeSlot || 'Standard Delivery' 
+                };
+            }) 
         });
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to fetch orders' }); }
 });
@@ -621,6 +679,7 @@ app.get('/api/orders/:id', authenticate, async (req, res) => {
             include: { items: true, user: true, addressRef: true }
         });
         if (!order) return res.status(404).json({ error: 'Order not found' });
+        const pay = parseOrderPayment(order.paymentMode, order.total);
         res.json({
             order: {
                 id: order.orderNumber,
@@ -635,7 +694,10 @@ app.get('/api/orders/:id', authenticate, async (req, res) => {
                 deliveryFee: order.deliveryFee,
                 total: order.total,
                 status: order.status,
-                payment: order.paymentMode,
+                payment: pay.mode,
+                paymentStatus: pay.status,
+                paidAmount: pay.paidAmount,
+                dueAmount: pay.dueAmount,
                 date: order.createdAt.toISOString().split('T')[0],
                 createdAt: order.createdAt,
                 address: order.address || (order.addressRef ? `${order.addressRef.line1}, ${order.addressRef.city} - ${order.addressRef.pincode}` : ''),
@@ -646,6 +708,96 @@ app.get('/api/orders/:id', authenticate, async (req, res) => {
     } catch (err) {
         console.error('Fetch single order error:', err);
         res.status(500).json({ error: 'Failed to fetch order' });
+    }
+});
+
+// Manager updates payment status (Mark as Paid Hand-to-Hand, Settle Khata, Record Partial)
+app.patch('/api/orders/:id/payment', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
+    try {
+        const { paymentStatus, paidAmount, dueAmount, paymentMode } = req.body;
+        let finalPaymentMode = 'paid_cash';
+
+        if (paymentStatus === 'PAID') {
+            finalPaymentMode = paymentMode || 'paid_cash';
+        } else if (paymentStatus === 'PENDING') {
+            finalPaymentMode = 'khata_due';
+        } else if (paymentStatus === 'PARTIAL') {
+            finalPaymentMode = `khata_partial:paid=${paidAmount || 0}:due=${dueAmount || 0}`;
+        }
+
+        const order = await prisma.order.update({
+            where: { id: req.params.id },
+            data: { paymentMode: finalPaymentMode },
+            include: { items: true, user: true }
+        });
+
+        const pay = parseOrderPayment(order.paymentMode, order.total);
+        res.json({ success: true, order: { ...order, ...pay } });
+    } catch (err) {
+        console.error('Update payment error:', err);
+        res.status(500).json({ error: 'Failed to update payment status' });
+    }
+});
+
+// Manager creates an order on behalf of customer (In-store counter or Phone/Khata order)
+app.post('/api/orders/staff-create', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
+    try {
+        const { customerName, customerPhone, customerAddress, items, subtotal, discount, total, paymentType, paidAmount, dueAmount, deliveryType, notes } = req.body;
+        if (!items || !items.length || !total) return res.status(400).json({ error: 'Order items and total amount are required' });
+
+        let finalPaymentMode = 'paid_cash';
+        if (paymentType === 'PAID_CASH') finalPaymentMode = 'paid_cash';
+        else if (paymentType === 'PAID_UPI') finalPaymentMode = 'paid_upi';
+        else if (paymentType === 'KHATA_DUE') finalPaymentMode = 'khata_due';
+        else if (paymentType === 'KHATA_PARTIAL') finalPaymentMode = `khata_partial:paid=${paidAmount || 0}:due=${dueAmount || 0}`;
+
+        const count = await prisma.order.count();
+        const order = await prisma.order.create({
+            data: {
+                orderNumber: `ORD-${String(count + 1001).padStart(4, '0')}`,
+                userId: req.user.id,
+                subtotal: parseFloat(subtotal) || total,
+                discount: parseFloat(discount) || 0,
+                deliveryFee: 0,
+                total: parseFloat(total),
+                deliveryType: deliveryType || 'pickup',
+                paymentMode: finalPaymentMode,
+                customer: customerName?.trim() || 'Walk-in Customer',
+                phone: customerPhone?.trim() || '',
+                address: customerAddress?.trim() || 'In-store Counter Sale',
+                timeSlot: notes?.trim() || 'Store Direct Sale',
+                status: 'delivered',
+                items: {
+                    create: items.map(i => ({
+                        name: i.name,
+                        price: parseFloat(i.price),
+                        quantity: parseInt(i.quantity) || parseInt(i.qty) || 1,
+                        image: i.image || null
+                    }))
+                }
+            },
+            include: { items: true }
+        });
+
+        // Deduct product stock
+        for (const item of items) {
+            if (item.id && !String(item.id).includes('custom')) {
+                try {
+                    const cleanId = String(item.id).split('-')[0];
+                    await prisma.product.update({
+                        where: { id: cleanId },
+                        data: { stock: { decrement: parseInt(item.quantity) || parseInt(item.qty) || 1 } }
+                    });
+                } catch (e) {
+                    console.error('Failed to deduct stock for', item.id, e);
+                }
+            }
+        }
+
+        res.status(201).json({ success: true, order });
+    } catch (err) {
+        console.error('Staff create order error:', err);
+        res.status(500).json({ error: 'Failed to create order on behalf of customer' });
     }
 });
 

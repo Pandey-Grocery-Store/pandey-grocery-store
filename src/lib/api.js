@@ -77,7 +77,7 @@ export const productsApi = {
     updateStock: (id, stock) => request(`/products/${id}/stock`, { method: 'PATCH', body: JSON.stringify({ stock }) }),
 };
 
-// ── Orders API ──
+// ── Orders & Khata API ──
 export const ordersApi = {
     getAll: (params = {}) => {
         const qs = new URLSearchParams(params).toString();
@@ -86,7 +86,9 @@ export const ordersApi = {
     getMyOrders: () => tryRequest('/orders/my'),
     getById: (id) => tryRequest(`/orders/${id}`),
     create: (data) => request('/orders', { method: 'POST', body: JSON.stringify(data) }),
+    staffCreate: (data) => request('/orders/staff-create', { method: 'POST', body: JSON.stringify(data) }),
     updateStatus: (id, status) => request(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    updatePayment: (id, data) => request(`/orders/${id}/payment`, { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
 // ── Dashboard API ──

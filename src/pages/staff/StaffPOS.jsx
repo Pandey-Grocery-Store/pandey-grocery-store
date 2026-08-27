@@ -312,17 +312,24 @@ export default function StaffPOS() {
                     <div className="pay-options">
                         <button
                             type="button"
-                            className={`pay-btn ${paymentMode === 'cash' ? 'active' : ''}`}
-                            onClick={() => setPaymentMode('cash')}
+                            className={`pay-btn ${paymentMode === 'paid_cash' || paymentMode === 'cash' ? 'active' : ''}`}
+                            onClick={() => setPaymentMode('paid_cash')}
                         >
-                            💵 Cash
+                            💵 Hand-to-Hand Cash
                         </button>
                         <button
                             type="button"
-                            className={`pay-btn ${paymentMode === 'upi' ? 'active' : ''}`}
-                            onClick={() => setPaymentMode('upi')}
+                            className={`pay-btn ${paymentMode === 'paid_upi' || paymentMode === 'upi' ? 'active' : ''}`}
+                            onClick={() => setPaymentMode('paid_upi')}
                         >
                             📱 UPI / QR
+                        </button>
+                        <button
+                            type="button"
+                            className={`pay-btn due-btn ${paymentMode === 'khata_due' ? 'active' : ''}`}
+                            onClick={() => setPaymentMode('khata_due')}
+                        >
+                            🔴 Payment Left (Khata)
                         </button>
                     </div>
                 </div>
