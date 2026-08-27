@@ -389,6 +389,97 @@ app.post('/api/upload', authenticate, authorize('MANAGEMENT', 'ADMIN'), express.
     }
 });
 
+// Upload for print services (any authenticated customer)
+app.post('/api/upload/print', authenticate, express.raw({ type: ['image/*', 'application/pdf'], limit: '10mb' }), async (req, res) => {
+    try {
+        const filename = req.query.filename || `print-${Date.now()}.jpg`;
+        const blob = await put(`pandey-grocery-store/print-jobs/${filename}`, req.body, { access: 'public', token: process.env.BLOB_READ_WRITE_TOKEN });
+        res.json({ url: blob.url });
+    } catch (err) {
+        console.error('Print upload error:', err);
+        res.status(500).json({ error: 'Upload failed' });
+    }
+});
+
+// ════════════════════ PRINT JOBS ════════════════════
+// Customer creates a print job
+app.post('/api/print-jobs', authenticate, async (req, res) => {
+    try {
+        const { type, fileUrls, outputUrl, quantity, notes } = req.body;
+        if (!type || !['document', 'id-card', 'passport-photo'].includes(type)) {
+            return res.status(400).json({ error: 'Invalid type. Must be document, id-card, or passport-photo' });
+        }
+        if (!fileUrls || !fileUrls.length) {
+            return res.status(400).json({ error: 'At least one file is required' });
+        }
+        const count = await prisma.printJob.count();
+        const job = await prisma.printJob.create({
+            data: {
+                jobNumber: `PRT-${String(count + 1001).padStart(4, '0')}`,
+                type,
+                fileUrls: JSON.stringify(fileUrls),
+                outputUrl: outputUrl || null,
+                quantity: parseInt(quantity) || 1,
+                notes: notes || null,
+                userId: req.user.id,
+            }
+        });
+        res.status(201).json({ job });
+    } catch (err) {
+        console.error('Create print job error:', err);
+        res.status(500).json({ error: 'Failed to create print job' });
+    }
+});
+
+// Customer gets their own print jobs
+app.get('/api/print-jobs/my', authenticate, async (req, res) => {
+    try {
+        const jobs = await prisma.printJob.findMany({
+            where: { userId: req.user.id },
+            orderBy: { createdAt: 'desc' },
+        });
+        res.json({ jobs: jobs.map(j => ({ ...j, fileUrls: JSON.parse(j.fileUrls || '[]') })) });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch print jobs' });
+    }
+});
+
+// Management/Admin gets all print jobs
+app.get('/api/print-jobs', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
+    try {
+        const where = {};
+        if (req.query.status && req.query.status !== 'all') where.status = req.query.status;
+        const jobs = await prisma.printJob.findMany({
+            where,
+            include: { user: { select: { name: true, email: true, phone: true } } },
+            orderBy: { createdAt: 'desc' },
+        });
+        res.json({ jobs: jobs.map(j => ({ ...j, fileUrls: JSON.parse(j.fileUrls || '[]') })) });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch print jobs' });
+    }
+});
+
+// Management updates print job status (accept payment, mark done, etc.)
+app.patch('/api/print-jobs/:id/status', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
+    try {
+        const { status, price } = req.body;
+        if (!['pending', 'paid', 'printing', 'done', 'cancelled'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid status' });
+        }
+        const data = { status };
+        if (price !== undefined) data.price = parseFloat(price);
+        const job = await prisma.printJob.update({ where: { id: req.params.id }, data });
+        res.json({ job: { ...job, fileUrls: JSON.parse(job.fileUrls || '[]') } });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to update print job' });
+    }
+});
+
+
 // ════════════════════ ADMIN: USER MANAGEMENT ════════════════════
 app.get('/api/admin/users', authenticate, authorize('ADMIN'), async (req, res) => {
     try {

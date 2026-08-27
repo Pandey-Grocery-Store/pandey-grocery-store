@@ -101,6 +101,31 @@ export const uploadApi = {
         if (!res.ok) throw new Error(data.error || 'Upload failed');
         return data;
     },
+    uploadPrintFile: async (file) => {
+        const token = getToken();
+        const res = await fetch(`${API_BASE}/upload/print?filename=${encodeURIComponent(file.name)}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': file.type,
+                ...(token && { Authorization: `Bearer ${token}` }),
+            },
+            body: file,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Upload failed');
+        return data;
+    },
+};
+
+// ── Print Jobs API ──
+export const printJobsApi = {
+    create: (data) => request('/print-jobs', { method: 'POST', body: JSON.stringify(data) }),
+    getMyJobs: () => tryRequest('/print-jobs/my'),
+    getAll: (params = {}) => {
+        const qs = new URLSearchParams(params).toString();
+        return tryRequest(`/print-jobs${qs ? '?' + qs : ''}`);
+    },
+    updateStatus: (id, status, price) => request(`/print-jobs/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, price }) }),
 };
 
 // ── Admin API ──
@@ -108,3 +133,4 @@ export const adminApi = {
     getUsers: () => request('/admin/users'),
     updateUserRole: (id, role) => request(`/admin/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
 };
+
