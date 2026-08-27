@@ -634,7 +634,7 @@ app.get('/api/orders/my', authenticate, async (req, res) => {
 
         const orders = await prisma.order.findMany({ 
             where: { OR: userOrConditions }, 
-            include: { items: true, addressRef: true }, 
+            include: { items: true, deliveryAddr: true }, 
             orderBy: { createdAt: 'desc' } 
         });
 
@@ -666,13 +666,13 @@ app.get('/api/orders/my', authenticate, async (req, res) => {
                     dueAmount: pay.dueAmount,
                     date: o.createdAt.toISOString().split('T')[0], 
                     createdAt: o.createdAt,
-                    address: o.address || (o.addressRef ? `${o.addressRef.line1}, ${o.addressRef.city} - ${o.addressRef.pincode}` : ''), 
+                    address: o.address || (o.deliveryAddr ? `${o.deliveryAddr.line1}, ${o.deliveryAddr.city} - ${o.deliveryAddr.pincode}` : ''), 
                     deliveryType: o.deliveryType === 'delivery' ? 'home' : 'pickup',
                     timeSlot: o.timeSlot || 'Standard Delivery'
                 };
             }) 
         });
-    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to fetch your orders' }); }
+    } catch (err) { console.error('GET /api/orders/my error:', err); res.status(500).json({ error: 'Failed to fetch your orders' }); }
 });
 
 // All orders & Kirana Khata tracking (admin/management only)
@@ -682,7 +682,7 @@ app.get('/api/orders', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (re
         if (req.query.status && req.query.status !== 'all') where.status = req.query.status;
         const orders = await prisma.order.findMany({ 
             where, 
-            include: { items: true, user: true, addressRef: true }, 
+            include: { items: true, user: true, deliveryAddr: true }, 
             orderBy: { createdAt: 'desc' } 
         });
         res.json({ 
@@ -707,13 +707,13 @@ app.get('/api/orders', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (re
                     dueAmount: pay.dueAmount,
                     date: o.createdAt.toISOString().split('T')[0], 
                     createdAt: o.createdAt,
-                    address: o.address || (o.addressRef ? `${o.addressRef.line1}, ${o.addressRef.city} - ${o.addressRef.pincode}` : ''), 
+                    address: o.address || (o.deliveryAddr ? `${o.deliveryAddr.line1}, ${o.deliveryAddr.city} - ${o.deliveryAddr.pincode}` : ''), 
                     deliveryType: o.deliveryType === 'delivery' ? 'home' : 'pickup', 
                     timeSlot: o.timeSlot || 'Standard Delivery' 
                 };
             }) 
         });
-    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to fetch orders' }); }
+    } catch (err) { console.error('GET /api/orders error:', err); res.status(500).json({ error: 'Failed to fetch orders' }); }
 });
 
 // Single order details (for tracking / invoice)
@@ -725,7 +725,7 @@ app.get('/api/orders/:id', authenticate, async (req, res) => {
                 OR: [{ id }, { orderNumber: id }],
                 ...(req.user.role === 'CUSTOMER' ? { userId: req.user.id } : {})
             },
-            include: { items: true, user: true, addressRef: true }
+            include: { items: true, user: true, deliveryAddr: true }
         });
         if (!order) return res.status(404).json({ error: 'Order not found' });
         const pay = parseOrderPayment(order.paymentMode, order.total);
@@ -749,7 +749,7 @@ app.get('/api/orders/:id', authenticate, async (req, res) => {
                 dueAmount: pay.dueAmount,
                 date: order.createdAt.toISOString().split('T')[0],
                 createdAt: order.createdAt,
-                address: order.address || (order.addressRef ? `${order.addressRef.line1}, ${order.addressRef.city} - ${order.addressRef.pincode}` : ''),
+                address: order.address || (order.deliveryAddr ? `${order.deliveryAddr.line1}, ${order.deliveryAddr.city} - ${order.deliveryAddr.pincode}` : ''),
                 deliveryType: order.deliveryType === 'delivery' ? 'home' : 'pickup',
                 timeSlot: order.timeSlot || 'Standard Delivery'
             }
