@@ -1,19 +1,38 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Tag, Clock, ArrowRight, Star, Gift, Percent } from 'lucide-react';
+import { Tag, Clock, ArrowRight, Star, Zap, Gift, Percent } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
-import { products } from '../../data/products';
+import { productsApi } from '../../lib/api';
 import './OffersPage.css';
 
 const offers = [
     { code: 'WELCOME100', discount: '₹100 Off', desc: 'Flat ₹100 off on your first order above ₹300', minOrder: 300, icon: Gift, color: '#e8590c', gradient: 'linear-gradient(135deg, #e8590c, #f97316)' },
     { code: 'SAVE10', discount: '10% Off', desc: '10% off up to ₹200 on orders above ₹500', minOrder: 500, icon: Percent, color: '#8b5cf6', gradient: 'linear-gradient(135deg, #8b5cf6, #a78bfa)' },
-
     { code: 'UTENSIL15', discount: '15% Off', desc: '15% off on kitchen utensils up to ₹300. Min order ₹800', minOrder: 800, icon: Star, color: '#3b82f6', gradient: 'linear-gradient(135deg, #3b82f6, #60a5fa)' },
 ];
 
-const dealProducts = products.filter(p => p.mrp > p.price).sort((a, b) => (1 - a.price / a.mrp) - (1 - b.price / b.mrp)).reverse().slice(0, 8);
-
 export default function OffersPage() {
+    const [dealProducts, setDealProducts] = useState([]);
+
+    useEffect(() => {
+        const fetchDeals = async () => {
+            try {
+                const data = await productsApi.getAll({ limit: 200 });
+                const products = data?.products || [];
+                // Get top discounted products (highest % off first)
+                const deals = products
+                    .filter(p => p.mrp > p.price)
+                    .sort((a, b) => (1 - a.price / a.mrp) - (1 - b.price / b.mrp))
+                    .reverse()
+                    .slice(0, 8);
+                setDealProducts(deals);
+            } catch {
+                setDealProducts([]);
+            }
+        };
+        fetchDeals();
+    }, []);
+
     return (
         <div className="offers-page">
             {/* Hero Banner */}
@@ -22,7 +41,7 @@ export default function OffersPage() {
                     <div className="offers-hero-content animate-fade-in">
                         <span className="offers-hero-badge"><Zap size={16} /> Limited Time</span>
                         <h1>Today's Best <span className="highlight">Offers</span></h1>
-                        <p>Save big on groceries & kitchen essentials. Use our exclusive coupon codes at checkout!</p>
+                        <p>Save big on groceries &amp; kitchen essentials. Use our exclusive coupon codes at checkout!</p>
                     </div>
                 </div>
             </section>
@@ -62,24 +81,26 @@ export default function OffersPage() {
             </section>
 
             {/* Deal Products */}
-            <section className="section" style={{ background: 'var(--bg-tertiary)' }}>
-                <div className="container">
-                    <div className="section-header-row">
-                        <div>
-                            <h2 className="section-title">🔥 Best Deals</h2>
-                            <p className="section-subtitle">Products with the biggest discounts right now</p>
+            {dealProducts.length > 0 && (
+                <section className="section" style={{ background: 'var(--bg-tertiary)' }}>
+                    <div className="container">
+                        <div className="section-header-row">
+                            <div>
+                                <h2 className="section-title">🔥 Best Deals</h2>
+                                <p className="section-subtitle">Products with the biggest discounts right now</p>
+                            </div>
+                            <Link to="/category/groceries" className="btn btn-secondary">
+                                View All <ArrowRight size={16} />
+                            </Link>
                         </div>
-                        <Link to="/category/groceries" className="btn btn-secondary">
-                            View All <ArrowRight size={16} />
-                        </Link>
+                        <div className="grid grid-4">
+                            {dealProducts.map(product => (
+                                <ProductCard key={product.id} product={product} />
+                            ))}
+                        </div>
                     </div>
-                    <div className="grid grid-4">
-                        {dealProducts.map(product => (
-                            <ProductCard key={product.id} product={product} />
-                        ))}
-                    </div>
-                </div>
-            </section>
+                </section>
+            )}
 
             {/* Info Banner */}
             <section className="offers-info-section">
@@ -96,7 +117,7 @@ export default function OffersPage() {
                     </div>
                     <div className="offers-info-card">
                         <Gift size={28} color="var(--primary)" />
-                        <h3>Refer & Earn</h3>
+                        <h3>Refer &amp; Earn</h3>
                         <p>Share Pandey Grocery Store with friends and earn reward points.</p>
                     </div>
                 </div>

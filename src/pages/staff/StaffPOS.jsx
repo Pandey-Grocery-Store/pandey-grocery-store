@@ -101,7 +101,7 @@ export default function StaffPOS() {
                 <div className="pos-product-grid">
                     {filteredProducts.map(product => (
                         <div key={product.id} className={`pos-product-card ${product.stock === 0 ? 'out-of-stock' : ''}`} onClick={() => product.stock > 0 && addToCart(product)}>
-                            <img src={product.image || 'https://via.placeholder.com/100'} alt={product.name} />
+                            <img src={product.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='%239ca3af' font-size='28'%3E🛒%3C/text%3E%3C/svg%3E"} alt={product.name} />
                             <div className="pos-product-info">
                                 <h4>{product.name}</h4>
                                 <span>₹{product.price}</span>

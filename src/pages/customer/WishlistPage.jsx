@@ -1,12 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingCart, Trash2, ArrowRight } from 'lucide-react';
+import { Heart, ShoppingCart, Trash2, ArrowRight, Loader } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
-import { products } from '../../data/products';
+import { productsApi } from '../../lib/api';
 import './WishlistPage.css';
 
 export default function WishlistPage() {
-    // Persist wishlist in localStorage
+    // Persist wishlist IDs in localStorage
     const [wishlistIds, setWishlistIds] = useState(() => {
         try {
             return JSON.parse(localStorage.getItem('pandey_wishlist') || '[]');
@@ -14,10 +14,31 @@ export default function WishlistPage() {
             return [];
         }
     });
+    const [wishItems, setWishItems] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     const { addItem } = useCart();
 
-    const wishItems = products.filter(p => wishlistIds.includes(p.id));
+    // Fetch real product data from API for each wishlisted ID
+    useEffect(() => {
+        const fetchWishlistProducts = async () => {
+            if (wishlistIds.length === 0) {
+                setWishItems([]);
+                setLoading(false);
+                return;
+            }
+            setLoading(true);
+            try {
+                const data = await productsApi.getAll({ limit: 200 });
+                const allProducts = data?.products || [];
+                setWishItems(allProducts.filter(p => wishlistIds.includes(p.id)));
+            } catch {
+                setWishItems([]);
+            }
+            setLoading(false);
+        };
+        fetchWishlistProducts();
+    }, [wishlistIds]);
 
     const removeFromWishlist = useCallback((id) => {
         setWishlistIds(prev => {
@@ -31,6 +52,16 @@ export default function WishlistPage() {
         addItem(product);
         removeFromWishlist(product.id);
     }, [addItem, removeFromWishlist]);
+
+    if (loading) {
+        return (
+            <div className="container section empty-wishlist">
+                <div className="empty-wishlist-content animate-fade-in">
+                    <Loader size={36} style={{ animation: 'spin 1s linear infinite' }} />
+                </div>
+            </div>
+        );
+    }
 
     if (wishItems.length === 0) {
         return (
