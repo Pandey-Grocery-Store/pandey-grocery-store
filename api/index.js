@@ -1428,6 +1428,17 @@ app.patch('/api/print-jobs/:id/status', authenticate, authorize('MANAGEMENT', 'A
     }
 });
 
+// Management/Admin deletes a print job
+app.delete('/api/print-jobs/:id', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
+    try {
+        await prisma.printJob.delete({ where: { id: req.params.id } });
+        res.json({ success: true, message: 'Print job deleted' });
+    } catch (err) {
+        console.error('Delete print job error:', err);
+        res.status(500).json({ error: 'Failed to delete print job' });
+    }
+});
+
 
 // ════════════════════ ADMIN: USER MANAGEMENT ════════════════════
 app.get('/api/admin/users', authenticate, authorize('ADMIN'), async (req, res) => {

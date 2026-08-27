@@ -1,17 +1,22 @@
 import { NavLink, useLocation, Link } from 'react-router-dom';
-import { Package, ClipboardList, AlertTriangle, BarChart3, ShoppingBag, FileText, Users, UserCog, LogOut, ChevronLeft, ChevronRight, Menu, X, ArrowLeft, Mail } from 'lucide-react';
+import { Package, ClipboardList, AlertTriangle, BarChart3, ShoppingBag, FileText, Users, UserCog, LogOut, ChevronLeft, ChevronRight, Menu, X, ArrowLeft, Mail, Printer, Store } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
 
 const staffLinks = [
-    { to: '/staff', icon: ClipboardList, label: 'Orders', end: true },
+    { to: '/staff', icon: ClipboardList, label: 'Store Orders & Khata', end: true },
+    { to: '/staff/pos', icon: Store, label: 'Store POS Counter' },
+    { to: '/staff/print-jobs', icon: Printer, label: 'Print Hub Orders' },
     { to: '/staff/products', icon: Package, label: 'Products' },
     { to: '/staff/inventory', icon: AlertTriangle, label: 'Inventory Alerts' },
 ];
 
 const adminLinks = [
     { to: '/admin', icon: BarChart3, label: 'Overview', end: true },
+    { to: '/staff/orders', icon: ClipboardList, label: 'Store Orders & Khata' },
+    { to: '/staff/pos', icon: Store, label: 'Store POS Counter' },
+    { to: '/staff/print-jobs', icon: Printer, label: 'Print Hub Orders' },
     { to: '/admin/analytics', icon: ShoppingBag, label: 'Product Analytics' },
     { to: '/admin/reports', icon: FileText, label: 'Reports' },
     { to: '/admin/staff-activity', icon: Users, label: 'Staff Activity' },

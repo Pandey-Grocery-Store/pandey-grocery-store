@@ -1,0 +1,827 @@
+/* ═══════════════════════════════════════════════════════════
+   Staff Print Hub & Document Queue Stylesheet
+   Modern, Creative, High-Contrast UI for PC & Mobile
+   ═══════════════════════════════════════════════════════════ */
+
+.staff-print-page {
+    padding: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* ── 1. Header Card ── */
+.print-header-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-radius: 16px;
+    padding: 24px 28px;
+    color: #ffffff;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.15);
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.print-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.print-header-icon-box {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
+    flex-shrink: 0;
+}
+
+.print-header-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+}
+
+.print-header-sub {
+    margin: 4px 0 0;
+    font-size: 0.88rem;
+    color: #94a3b8;
+}
+
+.print-header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* ── 2. KPI Analytics Grid ── */
+.print-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.print-kpi-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.print-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.kpi-icon-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.kpi-icon-wrap.all { background: #f1f5f9; color: #475569; }
+.kpi-icon-wrap.pending { background: #fef9c3; color: #ca8a04; }
+.kpi-icon-wrap.printing { background: #f3e8ff; color: #7c3aed; }
+.kpi-icon-wrap.done { background: #dcfce7; color: #16a34a; }
+.kpi-icon-wrap.revenue { background: #ecfdf5; color: #059669; }
+
+.kpi-label {
+    display: block;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.kpi-value {
+    margin: 2px 0 0;
+    font-size: 1.45rem;
+    font-weight: 900;
+    color: #0f172a;
+}
+
+/* ── 3. Controls & Filter Card ── */
+.print-controls-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.print-search-box {
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 8px 14px;
+    gap: 10px;
+    transition: border-color 0.2s ease;
+}
+
+.print-search-box:focus-within {
+    border-color: #059669;
+    background: #ffffff;
+}
+
+.print-search-icon {
+    color: #94a3b8;
+}
+
+.print-search-box input {
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    font-size: 0.9rem;
+    color: #0f172a;
+}
+
+.search-clear-btn {
+    background: #e2e8f0;
+    border: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #64748b;
+}
+
+.service-filter-row,
+.status-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.filter-chip,
+.status-chip {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-chip.active {
+    background: #0f172a;
+    color: #ffffff;
+    border-color: #0f172a;
+}
+
+.status-chip.active {
+    background: #059669;
+    color: #ffffff;
+    border-color: #059669;
+}
+
+.status-chip.pending.active { background: #ca8a04; border-color: #ca8a04; color: #fff; }
+.status-chip.printing.active { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+.status-chip.done.active { background: #16a34a; border-color: #16a34a; color: #fff; }
+.status-chip.cancelled.active { background: #dc2626; border-color: #dc2626; color: #fff; }
+
+/* ── 4. Print Jobs Grid Feed ── */
+.print-jobs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
+}
+
+.print-job-card {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.print-job-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.print-job-card.pending { border-left: 5px solid #eab308; }
+.print-job-card.paid { border-left: 5px solid #0284c7; }
+.print-job-card.printing { border-left: 5px solid #8b5cf6; }
+.print-job-card.done { border-left: 5px solid #16a34a; }
+.print-job-card.cancelled { border-left: 5px solid #dc2626; opacity: 0.75; }
+
+/* Top Row */
+.pjc-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.pjc-job-num-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.pjc-job-num {
+    font-size: 1.05rem;
+    font-weight: 900;
+    color: #0f172a;
+    letter-spacing: -0.3px;
+}
+
+.pjc-time {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.pjc-service-badge {
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    text-transform: uppercase;
+}
+
+/* Customer Row */
+.pjc-customer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+}
+
+.pjc-cust-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pjc-avatar {
+    width: 32px;
+    height: 32px;
+    background: #e2e8f0;
+    color: #475569;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+}
+
+.pjc-cust-name {
+    display: block;
+    font-size: 0.88rem;
+    color: #0f172a;
+}
+
+.pjc-cust-phone,
+.pjc-cust-email {
+    display: block;
+    font-size: 0.76rem;
+    color: #64748b;
+}
+
+.pjc-cust-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-icon-link {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.15s ease;
+}
+
+.btn-icon-link:hover { transform: scale(1.1); }
+.btn-icon-link.whatsapp { background: #dcfce7; color: #16a34a; }
+.btn-icon-link.call { background: #e0f2fe; color: #0284c7; }
+.btn-icon-link.delete { background: #fee2e2; color: #dc2626; }
+
+/* Notes Box */
+.pjc-notes-box {
+    background: #fffbeb;
+    border: 1px dashed #fcd34d;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: #92400e;
+    margin-bottom: 14px;
+    line-height: 1.4;
+}
+
+/* Files Preview Section */
+.pjc-files-section {
+    margin-bottom: 14px;
+}
+
+.pjc-files-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: #64748b;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.copies-tag {
+    background: #e2e8f0;
+    color: #0f172a;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 800;
+}
+
+.pjc-files-grid {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+}
+
+.file-preview-card {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    border-radius: 10px;
+    border: 1.5px solid #e2e8f0;
+    overflow: hidden;
+    cursor: pointer;
+    flex-shrink: 0;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-preview-card.output {
+    border-color: #86efac;
+    width: 100px;
+}
+
+.preview-tag {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    background: rgba(22, 163, 74, 0.9);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 800;
+    padding: 1px 4px;
+    border-radius: 4px;
+    z-index: 2;
+}
+
+.thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pdf-thumb-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #64748b;
+    text-align: center;
+}
+
+.file-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.file-preview-card:hover .file-overlay {
+    opacity: 1;
+}
+
+/* Toolstrip Direct Print */
+.pjc-print-toolstrip {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.direct-print-btn {
+    flex: 1;
+    background: #059669;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-weight: 800;
+}
+
+.direct-print-btn:hover {
+    background: #047857;
+}
+
+/* Bottom Row */
+.pjc-bottom-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 14px;
+    margin-top: auto;
+    gap: 12px;
+}
+
+.pjc-price-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.price-label {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.price-display-wrap {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pjc-price-val {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #059669;
+}
+
+.edit-hint {
+    font-size: 0.7rem;
+    color: #64748b;
+    opacity: 0.7;
+}
+
+.inline-price-edit {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.price-input {
+    width: 70px;
+    padding: 3px 6px;
+    border: 1px solid #059669;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+.btn-icon-check,
+.btn-icon-cancel {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+}
+
+.btn-icon-check { color: #16a34a; }
+.btn-icon-cancel { color: #dc2626; }
+
+.pjc-status-action-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 700;
+}
+
+.pjc-status-select {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    border: 1.5px solid currentColor;
+    cursor: pointer;
+    outline: none;
+}
+
+/* ── 5. Preview Modal ── */
+.print-preview-modal {
+    background: #ffffff;
+    border-radius: 16px;
+    width: 90vw;
+    max-width: 850px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.preview-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.preview-modal-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.preview-modal-title h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.preview-modal-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.preview-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #0f172a;
+    min-height: 400px;
+}
+
+.full-preview-img {
+    max-width: 100%;
+    max-height: 70vh;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    object-fit: contain;
+}
+
+.pdf-frame {
+    width: 100%;
+    height: 70vh;
+    border: none;
+    border-radius: 8px;
+    background: #fff;
+}
+
+/* ── 6. Create Counter Print Modal ── */
+.create-print-modal {
+    background: #ffffff;
+    border-radius: 16px;
+    width: 92vw;
+    max-width: 550px;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.create-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 22px;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: #ffffff;
+}
+
+.cm-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cm-title-wrap h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+.create-modal-header .btn-close {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+}
+
+.create-modal-form {
+    padding: 20px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.create-error-banner {
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.service-type-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.st-choice-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 8px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 0.76rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+}
+
+.st-choice-btn.active {
+    border-color: #059669;
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #334155;
+}
+
+.file-input {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.file-count-tag {
+    font-size: 0.75rem;
+    color: #059669;
+    font-weight: 700;
+}
+
+.create-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #f1f5f9;
+}
+
+/* ── 7. States ── */
+.print-loading-state,
+.print-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+}
+
+.print-empty-state .empty-icon {
+    color: #94a3b8;
+    margin-bottom: 12px;
+}
+
+.print-empty-state h3 {
+    margin: 0 0 6px;
+    color: #0f172a;
+}
+
+.print-empty-state p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.9rem;
+}
+
+/* ── 8. Responsive Adjustments ── */
+@media (max-width: 768px) {
+    .staff-print-page {
+        padding: 14px;
+    }
+
+    .print-header-card {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 18px;
+    }
+
+    .print-header-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .print-jobs-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .service-type-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row-2 {
+        grid-template-columns: 1fr;
+    }
+}

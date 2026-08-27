@@ -166,6 +166,7 @@ export const printJobsApi = {
         return tryRequest(`/print-jobs${qs ? '?' + qs : ''}`);
     },
     updateStatus: (id, status, price) => request(`/print-jobs/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, price }) }),
+    delete: (id) => request(`/print-jobs/${id}`, { method: 'DELETE' }),
 };
 
 // ── Admin API ──
