@@ -1175,3 +1175,40 @@
         grid-column: span 1;
     }
 }
+
+/* ─── Bottom Persistent Quick Log Out ─── */
+.account-bottom-logout-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 0.25rem;
+}
+
+.mobile-logout-btn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 1.5px solid #fecaca;
+    color: #dc2626;
+    font-size: 0.88rem;
+    font-weight: 700;
+    padding: 13px 20px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.05);
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.mobile-logout-btn:hover,
+.mobile-logout-btn:active {
+    background: #fef2f2;
+    border-color: #dc2626;
+    color: #b91c1c;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
+}

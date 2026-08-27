@@ -722,6 +722,13 @@ export default function AccountPage() {
                         </div>
                     )}
                 </div>
+
+                {/* ─── 4. Mobile & Desktop Bottom Quick Log Out ─── */}
+                <div className="account-bottom-logout-wrap">
+                    <button className="mobile-logout-btn" onClick={logout} title="Sign out of your account">
+                        <LogOut size={16} /> Log Out Account ({user.email})
+                    </button>
+                </div>
             </div>
 
             {/* ─── Password Change & Email Reset Modal ─── */}
