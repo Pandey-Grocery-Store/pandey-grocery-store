@@ -254,10 +254,10 @@ export default function HomePage() {
                             <Star size={20} color="var(--primary)" /> <span>Exclusive app-only deals</span>
                         </div>
                         <div className="app-feature">
-                            <Truck size={20} color="var(--primary)" /> <span>Real-time delivery tracking</span>
+                            <Shield size={20} color="var(--primary)" /> <span>Secure & easy payments</span>
                         </div>
                         <div className="app-feature">
-                            <Clock size={20} color="var(--primary)" /> <span>Quick reorder in 1 tap</span>
+                            <Tag size={20} color="var(--primary)" /> <span>Quick reorder in 1 tap</span>
                         </div>
                     </div>
                 </div>
