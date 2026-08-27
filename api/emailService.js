@@ -44,12 +44,14 @@ export async function verifySmtpConnection() {
         };
     }
 
+    let timeoutId;
     try {
         const verifyPromise = transporter.verify();
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('SMTP connection timed out')), 4000)
-        );
+        const timeoutPromise = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('SMTP connection timed out')), 4000);
+        });
         await Promise.race([verifyPromise, timeoutPromise]);
+        clearTimeout(timeoutId);
         return {
             configured: true,
             healthy: true,
@@ -59,6 +61,7 @@ export async function verifySmtpConnection() {
             from: emailFrom,
         };
     } catch (err) {
+        if (timeoutId) clearTimeout(timeoutId);
         return {
             configured: true,
             healthy: false,
