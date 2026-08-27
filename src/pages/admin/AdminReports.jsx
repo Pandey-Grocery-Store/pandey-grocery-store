@@ -1,5 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Download, FileText, Calendar, Loader, IndianRupee, Package, Users, Tag, Flame, Star, AlertTriangle } from 'lucide-react';
+import { 
+    Download, 
+    FileText, 
+    Calendar, 
+    Loader, 
+    IndianRupee, 
+    Package, 
+    Users, 
+    Tag, 
+    Flame, 
+    Star, 
+    AlertTriangle,
+    CheckCircle2,
+    RefreshCw,
+    TrendingUp,
+    BarChart3
+} from 'lucide-react';
 import { statusLabels } from '../../data/orders';
 import { ordersApi, productsApi, adminApi, dashboardApi } from '../../lib/api';
 import './AdminReports.css';
@@ -15,17 +31,22 @@ export default function AdminReports() {
 
     const fetchData = useCallback(async () => {
         setLoading(true);
-        const [ordData, prodData, userData, statsData] = await Promise.all([
-            ordersApi.getAll(),
-            productsApi.getAll(),
-            adminApi.getUsers().catch(() => null),
-            dashboardApi.getStats().catch(() => null),
-        ]);
-        setOrders(ordData?.orders || []);
-        setProducts(prodData?.products || []);
-        setUsers(userData?.users || []);
-        if (statsData) setStats(statsData.stats);
-        setLoading(false);
+        try {
+            const [ordData, prodData, userData, statsData] = await Promise.all([
+                ordersApi.getAll(),
+                productsApi.getAll(),
+                adminApi.getUsers().catch(() => null),
+                dashboardApi.getStats().catch(() => null),
+            ]);
+            setOrders(ordData?.orders || []);
+            setProducts(prodData?.products || []);
+            setUsers(userData?.users || []);
+            if (statsData) setStats(statsData.stats);
+        } catch (err) {
+            console.error('Failed to fetch reports data', err);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     useEffect(() => {
@@ -37,43 +58,43 @@ export default function AdminReports() {
     const totalItems = orders.reduce((sum, o) => sum + (o.items || []).reduce((s, i) => s + (i.qty || i.quantity || 1), 0), 0);
 
     const reports = [
-        { id: 'sales', label: 'Sales Report', icon: IndianRupee, color: '#16a34a', desc: 'Revenue, orders, and transaction details' },
-        { id: 'inventory', label: 'Inventory Report', icon: Package, color: '#0284c7', desc: 'Stock levels, reorder alerts, and movement' },
-        { id: 'customer', label: 'Customer Report', icon: Users, color: '#8b5cf6', desc: 'Customer activity and roles' },
-        { id: 'product', label: 'Product Report', icon: Tag, color: '#f59e0b', desc: 'Top sellers, low stock, and pricing' },
+        { id: 'sales', label: 'Sales & Transactions', icon: IndianRupee, color: '#10b981', desc: 'Revenue, orders & billing audit' },
+        { id: 'inventory', label: 'Inventory Stock Audit', icon: Package, color: '#0284c7', desc: 'SKU levels, movement & shortages' },
+        { id: 'customer', label: 'Customer Directory', icon: Users, color: '#8b5cf6', desc: 'Customer roles & order frequency' },
+        { id: 'product', label: 'Product Performance', icon: Tag, color: '#f59e0b', desc: 'Catalog pricing & MRP margins' },
     ];
 
-    // Export CSV helper
     const exportCSV = () => {
         let csv = '';
         let filename = '';
         
         if (reportType === 'sales') {
-            csv = 'Order ID,Customer,Items,Amount,Payment,Status\n';
+            csv = 'Order ID,Customer,Items,Amount (INR),Payment Mode,Status,Date\n';
             orders.forEach(o => {
-                csv += `${o.id},"${o.customer}",${(o.items || []).length},${o.total},${o.payment || 'N/A'},${statusLabels[o.status] || o.status}\n`;
+                csv += `${o.id},"${o.customer}",${(o.items || []).length},${o.total},${o.payment || 'N/A'},${statusLabels[o.status] || o.status},"${o.date || ''}"\n`;
             });
-            filename = 'sales_report.csv';
+            filename = `pandey_grocery_sales_report_${dateRange}.csv`;
         } else if (reportType === 'inventory') {
-            csv = 'Product Name,Category,Price,Stock,Status\n';
+            csv = 'Product Name,Brand,Category,Price,Stock,Status\n';
             products.forEach(p => {
                 const status = p.stock === 0 ? 'Out of Stock' : p.stock <= 5 ? 'Low Stock' : 'In Stock';
-                csv += `"${p.name}",${p.category},${p.price},${p.stock},${status}\n`;
+                csv += `"${p.name}","${p.brand || ''}",${p.category},${p.price},${p.stock},${status}\n`;
             });
-            filename = 'inventory_report.csv';
+            filename = `pandey_grocery_inventory_report.csv`;
         } else if (reportType === 'customer') {
-            csv = 'Name,Email,Phone,Role,Orders\n';
+            csv = 'Name,Email,Phone,Role,Orders Count\n';
             users.forEach(u => {
                 const userOrders = orders.filter(o => o.userId === u.id).length;
                 csv += `"${u.name}","${u.email}","${u.phone || 'N/A'}",${u.role},${userOrders}\n`;
             });
-            filename = 'customer_report.csv';
+            filename = `pandey_grocery_customers_report.csv`;
         } else if (reportType === 'product') {
-            csv = 'Product Name,Brand,Category,Price,MRP,Rating,Reviews\n';
+            csv = 'Product Name,Brand,Category,Price,MRP,Discount,Rating,Reviews\n';
             products.forEach(p => {
-                csv += `"${p.name}","${p.brand || 'N/A'}",${p.category},${p.price},${p.mrp || p.price},${p.rating || 0},${p.reviews || 0}\n`;
+                const disc = p.mrp && p.price < p.mrp ? Math.round(((p.mrp - p.price) / p.mrp) * 100) : 0;
+                csv += `"${p.name}","${p.brand || 'N/A'}",${p.category},${p.price},${p.mrp || p.price},${disc}%,${p.rating || 0},${p.reviews || 0}\n`;
             });
-            filename = 'product_performance_report.csv';
+            filename = `pandey_grocery_product_performance.csv`;
         }
 
         const blob = new Blob([csv], { type: 'text/csv' });
@@ -87,12 +108,13 @@ export default function AdminReports() {
 
     if (loading) {
         return (
-            <div className="admin-reports">
+            <div className="admin-reports-page">
                 <div className="dashboard-page-header">
-                    <h1 className="dashboard-page-title">Reports & Exports</h1>
+                    <h1 className="dashboard-page-title">Executive Reports &amp; Exports</h1>
                 </div>
-                <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
-                    <Loader size={24} className="spin" /> Loading report data...
+                <div className="reports-loading-card card">
+                    <Loader size={36} className="spin" color="var(--primary)" />
+                    <p>Generating business audit reports...</p>
                 </div>
             </div>
         );
@@ -103,208 +125,201 @@ export default function AdminReports() {
     const customerCount = users.filter(u => u.role === 'CUSTOMER').length;
 
     return (
-        <div className="admin-reports">
+        <div className="admin-reports-page animate-fade-in">
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">Reports & Exports</h1>
-                <p className="dashboard-page-subtitle">Generate and download real business reports from database</p>
+                <div>
+                    <h1 className="dashboard-page-title">Executive Reports &amp; Exports</h1>
+                    <p className="dashboard-page-subtitle">Export real-time transactional &amp; inventory audits to CSV</p>
+                </div>
+                <button className="btn btn-primary" onClick={exportCSV}>
+                    <Download size={16} /> Export to CSV
+                </button>
             </div>
 
-            {/* Report Type Selector */}
-            <div className="report-selector">
+            {/* Report Type Selector Cards */}
+            <div className="report-type-cards-grid">
                 {reports.map((r) => {
                     const Icon = r.icon;
                     return (
-                        <button
+                        <div
                             key={r.id}
-                            className={`report-type-btn card ${reportType === r.id ? 'active' : ''}`}
+                            className={`report-tab-card card ${reportType === r.id ? 'active' : ''}`}
                             onClick={() => setReportType(r.id)}
                         >
-                            <span className="report-type-icon" style={{ color: r.color }}><Icon size={22} /></span>
-                            <span className="report-type-label">{r.label}</span>
-                            <span className="report-type-desc">{r.desc}</span>
-                        </button>
+                            <div className="tab-card-icon" style={{ color: r.color }}>
+                                <Icon size={22} />
+                            </div>
+                            <div className="tab-card-meta">
+                                <strong>{r.label}</strong>
+                                <p>{r.desc}</p>
+                            </div>
+                        </div>
                     );
                 })}
             </div>
 
-            {/* Filters */}
-            <div className="report-filters card">
-                <div className="filter-row">
-                    <div className="filter-item">
-                        <Calendar size={16} />
-                        <select className="input" value={dateRange} onChange={(e) => setDateRange(e.target.value)}>
-                            <option value="today">Today</option>
-                            <option value="this-week">This Week</option>
-                            <option value="this-month">This Month</option>
-                            <option value="last-month">Last Month</option>
-                            <option value="this-quarter">This Quarter</option>
-                            <option value="all-time">All Time</option>
-                        </select>
+            {/* Date Filters & Summary Toolbar */}
+            <div className="report-toolbar card">
+                <div className="filter-group">
+                    <Calendar size={16} className="cal-icon" />
+                    <select className="date-select" value={dateRange} onChange={(e) => setDateRange(e.target.value)}>
+                        <option value="today">Today's Transactions</option>
+                        <option value="this-week">This Week</option>
+                        <option value="this-month">This Month (Current Billing)</option>
+                        <option value="last-month">Last Month</option>
+                        <option value="all-time">All-Time Historical</option>
+                    </select>
+                </div>
+
+                <div className="report-kpi-summary-strip">
+                    <div className="strip-item">
+                        <span className="strip-label">Revenue</span>
+                        <strong className="strip-val">₹{totalRevenue.toLocaleString()}</strong>
                     </div>
-                    <div className="filter-actions">
-                        <button className="btn btn-primary" onClick={fetchData}><FileText size={16} /> Refresh Data</button>
-                        <button className="btn btn-secondary" onClick={exportCSV}><Download size={16} /> Export CSV</button>
+                    <div className="strip-item">
+                        <span className="strip-label">Orders</span>
+                        <strong className="strip-val">{orders.length}</strong>
+                    </div>
+                    <div className="strip-item">
+                        <span className="strip-label">Avg. Value</span>
+                        <strong className="strip-val">₹{avgOrderValue}</strong>
+                    </div>
+                    <div className="strip-item">
+                        <span className="strip-label">Items</span>
+                        <strong className="strip-val">{totalItems}</strong>
                     </div>
                 </div>
             </div>
 
-            {/* Report Preview */}
-            <div className="report-preview card">
-                <h3 className="report-preview-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <CurrentIcon size={20} color={currentReport.color} /> {currentReport.label}
-                </h3>
-
-                {reportType === 'sales' && (
-                    <>
-                        <div className="report-summary-row">
-                            <div className="report-metric">
-                                <span className="metric-label">Total Revenue</span>
-                                <span className="metric-value">₹{totalRevenue.toLocaleString()}</span>
-                            </div>
-                            <div className="report-metric">
-                                <span className="metric-label">Total Orders</span>
-                                <span className="metric-value">{orders.length}</span>
-                            </div>
-                            <div className="report-metric">
-                                <span className="metric-label">Avg Order Value</span>
-                                <span className="metric-value">₹{avgOrderValue}</span>
-                            </div>
-                            <div className="report-metric">
-                                <span className="metric-label">Items Sold</span>
-                                <span className="metric-value">{totalItems}</span>
-                            </div>
-                        </div>
-
-                        <table className="report-table">
-                            <thead>
-                                <tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Amount</th><th>Payment</th><th>Status</th></tr>
-                            </thead>
-                            <tbody>
-                                {orders.length === 0 ? (
-                                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-tertiary)' }}>No orders found</td></tr>
-                                ) : orders.map((order) => (
-                                    <tr key={order.id}>
-                                        <td><strong>{order.id}</strong></td>
-                                        <td>{order.customer}</td>
-                                        <td>{(order.items || []).length}</td>
-                                        <td>₹{order.total}</td>
-                                        <td>{order.payment || 'N/A'}</td>
-                                        <td>{statusLabels[order.status] || order.status}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </>
-                )}
-
-                {reportType === 'inventory' && (
-                    <table className="report-table">
-                        <thead>
-                            <tr><th>Product</th><th>Brand</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th></tr>
-                        </thead>
-                        <tbody>
-                            {products.length === 0 ? (
-                                <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-tertiary)' }}>No products found</td></tr>
-                            ) : [...products].sort((a, b) => a.stock - b.stock).map((p) => (
-                                <tr key={p.id}>
-                                    <td><strong>{p.name}</strong></td>
-                                    <td>{p.brand}</td>
-                                    <td>{p.category}</td>
-                                    <td>₹{p.price}</td>
-                                    <td>{p.stock}</td>
-                                    <td>
-                                        <span className={`badge ${p.stock === 0 ? 'badge-danger' : p.stock <= 10 ? 'badge-warning' : 'badge-success'}`}>
-                                            {p.stock === 0 ? 'Out' : p.stock <= 10 ? 'Low' : 'OK'}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
-
-                {reportType === 'customer' && (
-                    <>
-                        <div className="report-summary-row">
-                            <div className="report-metric">
-                                <span className="metric-label">Total Users</span>
-                                <span className="metric-value">{users.length}</span>
-                            </div>
-                            <div className="report-metric">
-                                <span className="metric-label">Customers</span>
-                                <span className="metric-value">{customerCount}</span>
-                            </div>
-                            <div className="report-metric">
-                                <span className="metric-label">Staff/Admins</span>
-                                <span className="metric-value">{users.length - customerCount}</span>
-                            </div>
-                        </div>
-                        <div className="customer-segments">
-                            {Object.entries(
-                                users.reduce((acc, u) => { acc[u.role] = (acc[u.role] || 0) + 1; return acc; }, {})
-                            ).map(([role, count]) => (
-                                <div key={role} className="segment-item">
-                                    <span className="segment-dot" style={{ background: role === 'ADMIN' ? '#dc2626' : role === 'MANAGEMENT' ? '#7c3aed' : role === 'DELIVERY' ? '#2563eb' : '#6b7280' }} />
-                                    <span>{role}</span>
-                                    <strong>{count}</strong>
-                                </div>
-                            ))}
-                        </div>
-                        <table className="report-table">
-                            <thead>
-                                <tr><th>Name</th><th>Email</th><th>Role</th><th>Provider</th></tr>
-                            </thead>
-                            <tbody>
-                                {users.map(u => (
-                                    <tr key={u.id}>
-                                        <td><strong>{u.name || 'N/A'}</strong></td>
-                                        <td>{u.email}</td>
-                                        <td>{u.role}</td>
-                                        <td>{u.provider || 'Local'}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </>
-                )}
-
-                {reportType === 'product' && (
-                    <div className="placeholder-report">
-                        <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
-                            {products.length} total products • {products.filter(p => p.stock === 0).length} out of stock • Avg rating: {products.length > 0 ? (products.reduce((s, p) => s + (p.rating || 0), 0) / products.length).toFixed(1) : '0'}
-                        </p>
-                        <div className="product-report-grid">
-                            <div className="product-report-section">
-                                <h4 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <Flame size={16} color="#ef4444" /> Top Rated Products
-                                </h4>
-                                {[...products].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 5).map((p, i) => (
-                                    <div key={p.id} className="product-report-item">
-                                        <span className="pr-rank">#{i + 1}</span>
-                                        <span>{p.name}</span>
-                                        <span className="pr-reviews" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                            <Star size={12} color="#f59e0b" /> {p.rating || 0} ({p.reviews || 0} reviews)
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="product-report-section">
-                                <h4 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <AlertTriangle size={16} color="#f59e0b" /> Low Stock Alert
-                                </h4>
-                                {[...products].sort((a, b) => a.stock - b.stock).slice(0, 5).map((p, i) => (
-                                    <div key={p.id} className="product-report-item">
-                                        <span className={`pr-rank ${p.stock <= 5 ? 'low' : ''}`}>#{i + 1}</span>
-                                        <span>{p.name}</span>
-                                        <span className="pr-reviews" style={{ color: p.stock === 0 ? '#ef4444' : p.stock <= 10 ? '#f59e0b' : '#16a34a' }}>
-                                            {p.stock} in stock
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
+            {/* Data Table Preview */}
+            <div className="report-table-card card">
+                <div className="report-table-header">
+                    <div className="table-title-group">
+                        <CurrentIcon size={20} color={currentReport.color} />
+                        <div>
+                            <h3>{currentReport.label} Preview</h3>
+                            <p>Displaying live entries from store database</p>
                         </div>
                     </div>
-                )}
+                    <button className="btn btn-secondary btn-sm" onClick={exportCSV}>
+                        <Download size={14} /> Download CSV
+                    </button>
+                </div>
+
+                <div className="report-table-wrap">
+                    {reportType === 'sales' && (
+                        <table className="report-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Items</th>
+                                    <th>Amount</th>
+                                    <th>Payment</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {orders.slice(0, 10).map((o) => (
+                                    <tr key={o.id}>
+                                        <td><strong>#{o.id}</strong></td>
+                                        <td>{o.customer}</td>
+                                        <td>{(o.items || []).length} items</td>
+                                        <td><strong className="rev-num">₹{o.total}</strong></td>
+                                        <td><span className="pill-badge">{o.payment || 'N/A'}</span></td>
+                                        <td>
+                                            <span className="pill-badge-status">{statusLabels[o.status] || o.status}</span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+
+                    {reportType === 'inventory' && (
+                        <table className="report-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Product Name</th>
+                                    <th>Category</th>
+                                    <th>Selling Price</th>
+                                    <th>Stock Level</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {products.slice(0, 10).map((p) => (
+                                    <tr key={p.id}>
+                                        <td><strong>{p.name}</strong></td>
+                                        <td><span className="pill-badge">{p.category}</span></td>
+                                        <td>₹{p.price}</td>
+                                        <td>{p.stock} units</td>
+                                        <td>
+                                            <span className={`pill-badge-status ${p.stock === 0 ? 'out' : p.stock <= 5 ? 'warn' : 'good'}`}>
+                                                {p.stock === 0 ? 'Out of stock' : p.stock <= 5 ? 'Low stock' : 'In stock'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+
+                    {reportType === 'customer' && (
+                        <table className="report-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Role</th>
+                                    <th>Orders Placed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {users.slice(0, 10).map((u) => {
+                                    const userOrders = orders.filter(o => o.userId === u.id).length;
+                                    return (
+                                        <tr key={u.id}>
+                                            <td><strong>{u.name}</strong></td>
+                                            <td>{u.email}</td>
+                                            <td>{u.phone || '—'}</td>
+                                            <td><span className="pill-badge">{u.role}</span></td>
+                                            <td><strong>{userOrders} orders</strong></td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    )}
+
+                    {reportType === 'product' && (
+                        <table className="report-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Brand</th>
+                                    <th>Selling Price</th>
+                                    <th>MRP</th>
+                                    <th>Rating</th>
+                                    <th>Reviews</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {products.slice(0, 10).map((p) => (
+                                    <tr key={p.id}>
+                                        <td><strong>{p.name}</strong></td>
+                                        <td>{p.brand}</td>
+                                        <td><strong className="rev-num">₹{p.price}</strong></td>
+                                        <td>₹{p.mrp || p.price}</td>
+                                        <td>⭐ {p.rating || 4.0}</td>
+                                        <td>{p.reviews || 0} reviews</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
             </div>
         </div>
     );

@@ -1,260 +1,308 @@
-.admin-analytics {
-    animation: fadeIn 0.3s ease;
-}
+/* ══════════════════════════════════════════════════════════════════════════
+   ADMIN PRODUCT & REVENUE ANALYTICS — MODERN STYLES
+   ══════════════════════════════════════════════════════════════════════════ */
 
-.analytics-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-6);
-    margin-bottom: var(--space-6);
-}
-
-.analytics-card {
-    padding: var(--space-6);
-}
-
-.analytics-card-title {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: 1rem;
-    font-weight: 700;
-    margin-bottom: var(--space-5);
-}
-
-.analytics-card-title svg {
-    color: var(--primary);
-}
-
-/* Category Bars */
-.category-bars {
+.admin-analytics-page {
     display: flex;
     flex-direction: column;
-    gap: var(--space-5);
+    gap: 1.75rem;
 }
 
-.cat-bar-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    margin-bottom: var(--space-2);
-}
-
-.cat-icon {
-    font-size: 1.25rem;
-}
-
-.cat-name {
-    font-weight: 600;
-    font-size: 0.875rem;
-    flex: 1;
-}
-
-.cat-revenue {
-    font-weight: 700;
-    font-size: 0.875rem;
-}
-
-.cat-bar-track {
-    height: 10px;
-    background: var(--gray-100);
-    border-radius: var(--radius-full);
-    overflow: hidden;
-}
-
-.cat-bar-fill {
-    height: 100%;
-    border-radius: var(--radius-full);
-    transition: width 0.8s ease;
-}
-
-.cat-product-count {
-    font-size: 0.7rem;
-    color: var(--text-tertiary);
-}
-
-/* Brand Table */
-.brand-table {
+.analytics-loading-card {
+    padding: 4rem 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 2px;
-}
-
-.brand-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr;
-    gap: var(--space-3);
-    padding: var(--space-3);
-    font-size: 0.8125rem;
-    border-radius: var(--radius-sm);
-}
-
-.brand-row:hover {
-    background: var(--gray-50);
-}
-
-.brand-header {
-    font-weight: 600;
-    color: var(--text-tertiary);
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-}
-
-.brand-name {
-    font-weight: 600;
-}
-
-/* Subcategory Table */
-.sub-table-wrapper {
-    overflow-x: auto;
-    margin-bottom: var(--space-6);
-}
-
-.sub-table {
-    width: 100%;
-    min-width: 800px;
-    border-collapse: collapse;
-}
-
-.sub-table th {
-    padding: var(--space-3) var(--space-4);
-    text-align: left;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-tertiary);
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-}
-
-.sub-table td {
-    padding: var(--space-3) var(--space-4);
-    font-size: 0.8125rem;
-    border-bottom: 1px solid var(--border-light);
-    white-space: nowrap;
-}
-
-.sub-hi {
-    font-size: 0.7rem;
-    color: var(--text-tertiary);
-}
-
-.rank-badge {
-    display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius-md);
-    background: var(--gray-100);
-    font-size: 0.75rem;
-    font-weight: 700;
+    color: var(--text-secondary);
 }
 
-.rank-badge.top {
-    background: linear-gradient(135deg, var(--primary), var(--primary-light));
-    color: white;
-}
-
-.rev-cell {
-    font-weight: 700;
-}
-
-.perf-bar-track {
-    height: 8px;
-    background: var(--gray-100);
-    border-radius: var(--radius-full);
-    overflow: hidden;
-    min-width: 100px;
-}
-
-.perf-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--primary), var(--primary-light));
-    border-radius: var(--radius-full);
-    transition: width 0.8s ease;
-}
-
-/* Price Distribution */
-.price-distribution {
+/* ─── Automated Business Insights ─── */
+.analytics-insights-section {
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: 1.25rem;
 }
 
-.price-range-item {
+.insights-header {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: 10px;
 }
 
-.price-range-label {
-    width: 100px;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    flex-shrink: 0;
+.insights-header h3 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
 }
 
-.price-range-bar-track {
-    flex: 1;
-    height: 10px;
-    background: var(--gray-100);
-    border-radius: var(--radius-full);
-    overflow: hidden;
+.insights-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
 }
 
-.price-range-bar {
-    height: 100%;
-    background: var(--info);
-    border-radius: var(--radius-full);
-    transition: width 0.6s ease;
+@media (min-width: 768px) {
+    .insights-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
-.price-range-count {
-    font-size: 0.8125rem;
-    font-weight: 700;
-    width: 30px;
-    text-align: right;
+@media (min-width: 1200px) {
+    .insights-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
-/* Insights */
-.insights-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-}
-
-.insight-item {
+.insight-card {
     display: flex;
     align-items: flex-start;
-    gap: var(--space-3);
-    padding: var(--space-3);
-    border-radius: var(--radius-md);
-    font-size: 0.8125rem;
-    line-height: 1.5;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: #ffffff;
 }
 
-.insight-item.positive {
+.insight-card.positive {
     background: #f0fdf4;
+    border-color: #dcfce7;
 }
 
-.insight-item.warning {
+.insight-card.warning {
     background: #fffbeb;
+    border-color: #fef3c7;
 }
 
-.insight-item.info {
-    background: #eff6ff;
+.insight-card.info {
+    background: #f8fafc;
+    border-color: #e2e8f0;
 }
 
 .insight-icon {
-    font-size: 1rem;
+    margin-top: 2px;
     flex-shrink: 0;
 }
 
-@media (max-width: 768px) {
-    .analytics-grid {
-        grid-template-columns: 1fr;
+.insight-text {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.45;
+}
+
+/* ─── Layout Grid (Revenue Share + Brands) ─── */
+.analytics-layout-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+    .analytics-layout-grid {
+        grid-template-columns: 1.35fr 1fr;
     }
+}
+
+.analytics-card {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.analytics-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.analytics-card-header h3 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.analytics-card-header p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 2px 0 0;
+}
+
+/* Category Revenue Bars */
+.category-revenue-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.cat-bar-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: #f8fafc;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+}
+
+.cat-bar-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cat-icon-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.875rem;
+}
+
+.cat-revenue-val {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--primary-dark);
+}
+
+.cat-progress-track {
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.cat-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cat-items-count {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+
+/* Brand Performance */
+.brand-performance-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.brand-rank-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid var(--border-light);
+}
+
+.brand-rank-num {
+    font-size: 0.85rem;
+    font-weight: 900;
+    color: #94a3b8;
+    min-width: 24px;
+}
+
+.brand-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.brand-info strong {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+.brand-info span {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.brand-rating-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    background: #fffbeb;
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: #b45309;
+}
+
+/* ─── Subcategory Table ─── */
+.subcategory-table-card {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.subcategory-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.subcategory-header h3 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.subcategory-header p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 2px 0 0;
+}
+
+.subcat-table-wrap {
+    overflow-x: auto;
+}
+
+.subcat-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    text-align: left;
+}
+
+.subcat-table th {
+    background: #f8fafc;
+    padding: 10px 14px;
+    font-size: 0.775rem;
+    font-weight: 800;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+}
+
+.subcat-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+}
+
+.sub-dept-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: var(--bg-secondary);
+    padding: 2px 8px;
+    border-radius: 6px;
+    color: var(--text-secondary);
+}
+
+.sub-rev-val {
+    color: var(--primary-dark);
 }

@@ -1,240 +1,231 @@
-.admin-reports {
-    animation: fadeIn 0.3s ease;
-}
+/* ══════════════════════════════════════════════════════════════════════════
+   ADMIN REPORTS & EXPORTS — MODERN STYLESHEET
+   ══════════════════════════════════════════════════════════════════════════ */
 
-.report-selector {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--space-4);
-    margin-bottom: var(--space-6);
-}
-
-.report-type-btn {
-    padding: var(--space-5);
-    text-align: left;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    border: 2px solid transparent;
-}
-
-.report-type-btn:hover {
-    border-color: var(--primary-200);
-}
-
-.report-type-btn.active {
-    border-color: var(--primary);
-    background: var(--primary-50);
-}
-
-.report-type-icon {
-    font-size: 1.5rem;
-    display: block;
-    margin-bottom: var(--space-2);
-}
-
-.report-type-label {
-    display: block;
-    font-weight: 700;
-    font-size: 0.875rem;
-    margin-bottom: 2px;
-}
-
-.report-type-desc {
-    display: block;
-    font-size: 0.7rem;
-    color: var(--text-tertiary);
-}
-
-.report-filters {
-    padding: var(--space-4);
-    margin-bottom: var(--space-6);
-}
-
-.filter-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--space-4);
-}
-
-.filter-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    color: var(--text-secondary);
-}
-
-.filter-actions {
-    display: flex;
-    gap: var(--space-3);
-}
-
-.report-preview {
-    padding: var(--space-6);
-}
-
-.report-preview-title {
-    font-size: 1.125rem;
-    font-weight: 700;
-    margin-bottom: var(--space-6);
-    text-transform: capitalize;
-}
-
-.report-summary-row {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--space-4);
-    margin-bottom: var(--space-6);
-    padding-bottom: var(--space-6);
-    border-bottom: 1px solid var(--border-light);
-}
-
-.report-metric {
-    text-align: center;
-}
-
-.metric-label {
-    display: block;
-    font-size: 0.75rem;
-    color: var(--text-tertiary);
-    margin-bottom: var(--space-1);
-}
-
-.metric-value {
-    display: block;
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--text-primary);
-}
-
-.report-table {
-    width: 100%;
-    min-width: 800px;
-    border-collapse: collapse;
-}
-
-.report-table th {
-    padding: var(--space-3) var(--space-4);
-    text-align: left;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-tertiary);
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-}
-
-.report-table td {
-    padding: var(--space-3) var(--space-4);
-    font-size: 0.8125rem;
-    border-bottom: 1px solid var(--border-light);
-    white-space: nowrap;
-}
-
-.placeholder-report {
-    text-align: center;
-    padding: var(--space-6);
-}
-
-.placeholder-icon {
-    font-size: 3rem;
-    display: block;
-    margin-bottom: var(--space-3);
-}
-
-.placeholder-report h3 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-bottom: var(--space-2);
-}
-
-.placeholder-report>p {
-    color: var(--text-secondary);
-    margin-bottom: var(--space-6);
-}
-
-.customer-segments {
+.admin-reports-page {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
-    max-width: 400px;
-    margin: 0 auto;
-    text-align: left;
+    gap: 1.75rem;
 }
 
-.segment-item {
+.reports-loading-card {
+    padding: 4rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+}
+
+/* ─── 4 Report Type Cards Grid ─── */
+.report-type-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.report-tab-card {
+    padding: 1.25rem;
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    font-size: 0.8125rem;
-    padding: var(--space-3);
-    background: var(--gray-50);
-    border-radius: var(--radius-md);
+    gap: 14px;
+    border-radius: var(--radius-xl);
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
 }
 
-.segment-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
+.report-tab-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+}
+
+.report-tab-card.active {
+    border-color: var(--primary);
+    background: rgba(16, 185, 129, 0.04);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.12);
+}
+
+.tab-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
 }
 
-.segment-item strong {
-    margin-left: auto;
+.tab-card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.product-report-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-6);
-    text-align: left;
-    margin-top: var(--space-6);
+.tab-card-meta strong {
+    font-size: 0.9rem;
+    color: var(--text-primary);
 }
 
-.product-report-section h4 {
-    font-size: 0.875rem;
-    margin-bottom: var(--space-3);
+.tab-card-meta p {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 0;
 }
 
-.product-report-item {
+/* ─── Report Toolbar ─── */
+.report-toolbar {
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.filter-group {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    padding: 6px 12px;
+    gap: 8px;
+}
+
+.cal-icon {
+    color: #64748b;
+}
+
+.date-select {
+    border: none;
+    outline: none;
+    background: transparent;
     font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    cursor: pointer;
 }
 
-.pr-rank {
+.report-kpi-summary-strip {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.strip-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.strip-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.strip-val {
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+/* ─── Report Table Card ─── */
+.report-table-card {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.report-table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.table-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.table-title-group h3 {
+    font-size: 1.1rem;
     font-weight: 800;
-    color: var(--primary);
-    width: 28px;
+    color: var(--text-primary);
+    margin: 0;
 }
 
-.pr-rank.low {
-    color: var(--warning);
+.table-title-group p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 2px 0 0;
 }
 
-.pr-reviews {
-    margin-left: auto;
+.report-table-wrap {
+    overflow-x: auto;
+}
+
+.report-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    text-align: left;
+}
+
+.report-data-table th {
+    background: #f8fafc;
+    padding: 10px 14px;
+    font-size: 0.775rem;
+    font-weight: 800;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+}
+
+.report-data-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+}
+
+.rev-num {
+    color: var(--primary-dark);
+}
+
+.pill-badge {
     font-size: 0.75rem;
-    color: var(--text-tertiary);
+    font-weight: 700;
+    background: var(--bg-secondary);
+    padding: 3px 8px;
+    border-radius: 6px;
+    color: var(--text-secondary);
 }
 
-@media (max-width: 768px) {
-    .report-selector {
-        grid-template-columns: 1fr 1fr;
-    }
+.pill-badge-status {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    background: #ecfdf5;
+    color: #059669;
+}
 
-    .filter-row {
-        flex-direction: column;
-    }
+.pill-badge-status.out {
+    background: #fef2f2;
+    color: #dc2626;
+}
 
-    .report-summary-row {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .product-report-grid {
-        grid-template-columns: 1fr;
-    }
+.pill-badge-status.warn {
+    background: #fffbeb;
+    color: #b45309;
 }

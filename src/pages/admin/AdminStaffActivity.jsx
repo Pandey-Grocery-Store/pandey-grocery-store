@@ -1,13 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, Clock, CheckCircle2, AlertCircle, Loader, ShieldCheck, Truck, Package } from 'lucide-react';
+import { 
+    Users, 
+    Clock, 
+    CheckCircle2, 
+    AlertCircle, 
+    Loader, 
+    ShieldCheck, 
+    Truck, 
+    Package, 
+    RefreshCw, 
+    Activity,
+    Calendar,
+    ArrowUpRight,
+    User
+} from 'lucide-react';
 import { adminApi, ordersApi, dashboardApi } from '../../lib/api';
 import './AdminStaffActivity.css';
 
 const roleLabels = {
-    ADMIN: 'Admin',
+    ADMIN: 'Administrator',
     MANAGEMENT: 'Store Manager',
-    STAFF: 'Staff Member',
-    DELIVERY: 'Delivery',
+    STAFF: 'Store Staff',
+    DELIVERY: 'Delivery Driver',
     CUSTOMER: 'Customer',
 };
 
@@ -34,27 +48,25 @@ export default function AdminStaffActivity() {
                 dashboardApi.getStats(),
             ]);
 
-            // Filter non-customer users as "staff"
             const allUsers = usersData?.users || [];
             const staff = allUsers.filter(u => u.role !== 'CUSTOMER');
             setStaffMembers(staff);
 
-            // Use real orders as activity log
             const orders = ordersData?.orders || [];
-            setRecentOrders(orders.slice(0, 12));
+            setRecentOrders(orders.slice(0, 15));
 
             if (statsData) {
                 setStats(statsData.stats);
             }
         } catch (err) {
             console.error('Failed to fetch staff data:', err);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }, []);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
-    // Build activity log from real orders
     const activityLog = recentOrders.map(order => {
         const date = order.date ? new Date(order.date) : new Date();
         const time = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
@@ -63,39 +75,40 @@ export default function AdminStaffActivity() {
         let type = 'info';
         switch (order.status) {
             case 'delivered':
-                action = `Order ${order.id} delivered to ${order.customer} — ₹${order.total}`;
+                action = `Order #${order.id} marked as delivered to ${order.customer} — ₹${order.total}`;
                 type = 'success';
                 break;
             case 'dispatched':
-                action = `Order ${order.id} dispatched for ${order.customer}`;
+                action = `Order #${order.id} dispatched for doorstep delivery (${order.customer})`;
                 type = 'info';
                 break;
             case 'packed':
-                action = `Order ${order.id} packed — ₹${order.total}`;
+                action = `Order #${order.id} packed & verified in inventory — ₹${order.total}`;
                 type = 'success';
                 break;
             case 'packing':
-                action = `Order ${order.id} being packed for ${order.customer}`;
+                action = `Order #${order.id} placed in packing queue by store staff`;
                 type = 'info';
                 break;
             case 'new':
-                action = `New order ${order.id} from ${order.customer} — ₹${order.total}`;
+                action = `New store order #${order.id} received from ${order.customer} — ₹${order.total}`;
                 type = 'warning';
                 break;
             default:
-                action = `Order ${order.id} — ${order.status}`;
+                action = `Order #${order.id} status updated to ${order.status}`;
         }
-        return { time, action, type, user: order.customer };
+        return { id: order.id, time, date: order.date || 'Today', action, type, user: order.customer, total: order.total };
     });
 
     if (loading) {
         return (
-            <div className="admin-staff">
+            <div className="admin-staff-page">
                 <div className="dashboard-page-header">
-                    <h1 className="dashboard-page-title">Staff Activity</h1>
+                    <h1 className="dashboard-page-title">Staff Team &amp; Audit Logs</h1>
                 </div>
-                <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
-                    <Loader size={24} className="spin" /> Loading staff data...
+                <div className="staff-loading-card card">
+                    <Loader size={36} className="spin" color="var(--primary)" />
+                    <p>Loading staff logs &amp; timeline...</p>
                 </div>
             </div>
         );
@@ -105,123 +118,129 @@ export default function AdminStaffActivity() {
     const activeOrders = stats?.activeOrders || 0;
 
     return (
-        <div className="admin-staff">
+        <div className="admin-staff-page animate-fade-in">
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">Staff Activity</h1>
-                <p className="dashboard-page-subtitle">Real-time team overview from database</p>
+                <div>
+                    <h1 className="dashboard-page-title">Team Roster &amp; Live Audit Trail</h1>
+                    <p className="dashboard-page-subtitle">Real-time team active members and operational logs</p>
+                </div>
+                <button className="btn btn-secondary btn-sm" onClick={fetchData}>
+                    <RefreshCw size={15} /> Refresh Audit
+                </button>
             </div>
 
-            {/* Staff Summary — Real Data */}
-            <div className="staff-summary">
-                <div className="staff-stat card">
-                    <Users size={20} className="staff-stat-icon" />
-                    <div>
-                        <span className="staff-stat-val">{staffMembers.length}</span>
-                        <span className="staff-stat-label">Team Members</span>
+            {/* KPI Metrics */}
+            <div className="staff-kpi-grid">
+                <div className="staff-stat-card card">
+                    <div className="stat-icon-wrap bg-purple">
+                        <Users size={22} />
+                    </div>
+                    <div className="stat-meta">
+                        <span className="stat-num">{staffMembers.length}</span>
+                        <span className="stat-label">Team Members</span>
                     </div>
                 </div>
-                <div className="staff-stat card online">
-                    <CheckCircle2 size={20} className="staff-stat-icon" />
-                    <div>
-                        <span className="staff-stat-val">{staffMembers.filter(s => s.role === 'ADMIN' || s.role === 'MANAGEMENT').length}</span>
-                        <span className="staff-stat-label">Admins</span>
+
+                <div className="staff-stat-card card">
+                    <div className="stat-icon-wrap bg-emerald">
+                        <ShieldCheck size={22} />
+                    </div>
+                    <div className="stat-meta">
+                        <span className="stat-num">{staffMembers.filter(s => s.role === 'ADMIN' || s.role === 'MANAGEMENT').length}</span>
+                        <span className="stat-label">Admins &amp; Managers</span>
                     </div>
                 </div>
-                <div className="staff-stat card">
-                    <Clock size={20} className="staff-stat-icon" />
-                    <div>
-                        <span className="staff-stat-val">{totalOrders}</span>
-                        <span className="staff-stat-label">Total Orders</span>
+
+                <div className="staff-stat-card card">
+                    <div className="stat-icon-wrap bg-blue">
+                        <Clock size={22} />
+                    </div>
+                    <div className="stat-meta">
+                        <span className="stat-num">{totalOrders}</span>
+                        <span className="stat-label">Processed Orders</span>
                     </div>
                 </div>
-                <div className="staff-stat card">
-                    <AlertCircle size={20} className="staff-stat-icon" />
-                    <div>
-                        <span className="staff-stat-val">{activeOrders}</span>
-                        <span className="staff-stat-label">Active Orders</span>
+
+                <div className="staff-stat-card card">
+                    <div className="stat-icon-wrap bg-amber">
+                        <AlertCircle size={22} />
+                    </div>
+                    <div className="stat-meta">
+                        <span className="stat-num">{activeOrders}</span>
+                        <span className="stat-label">Active Orders</span>
                     </div>
                 </div>
             </div>
 
-            <div className="staff-grid">
-                {/* Staff Cards — Real Users */}
-                <div className="staff-cards-section">
-                    <h3 className="staff-section-title">Team Members ({staffMembers.length})</h3>
-                    {staffMembers.length === 0 ? (
-                        <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>
-                            <p>No staff members yet. Assign roles from User Management.</p>
+            {/* Main Layout: Team Roster + Activity Timeline */}
+            <div className="staff-activity-layout">
+                {/* Left: Team Members */}
+                <div className="team-roster-card card">
+                    <div className="roster-header">
+                        <Users size={20} color="var(--primary)" />
+                        <div>
+                            <h3>Active Team Roster</h3>
+                            <p>Staff and admin accounts with system access</p>
                         </div>
-                    ) : (
-                        <div className="staff-cards">
-                            {staffMembers.map((member) => {
-                                const initials = (member.name || member.email.split('@')[0])
-                                    .split(' ')
-                                    .map(w => w[0])
-                                    .join('')
-                                    .toUpperCase()
-                                    .slice(0, 2);
+                    </div>
+
+                    <div className="team-members-list">
+                        {staffMembers.length === 0 ? (
+                            <div className="roster-empty">No active staff members assigned yet.</div>
+                        ) : (
+                            staffMembers.map(member => {
                                 const RoleIcon = roleIcons[member.role] || Users;
                                 return (
-                                    <div key={member.id} className="staff-card card">
-                                        <div className="staff-card-header">
-                                            <div className="staff-avatar-wrap">
-                                                <div className="staff-avatar">{initials}</div>
-                                                <span className="staff-status-dot online" />
-                                            </div>
-                                            <div className="staff-card-info">
-                                                <strong>{member.name || member.email.split('@')[0]}</strong>
-                                                <span className="staff-role">
-                                                    <RoleIcon size={12} style={{ marginRight: 4 }} />
-                                                    {roleLabels[member.role] || member.role}
-                                                </span>
-                                            </div>
+                                    <div key={member.id} className="team-member-row">
+                                        <div className="member-avatar">
+                                            {member.avatar ? (
+                                                <img src={member.avatar} alt={member.name} />
+                                            ) : (
+                                                member.name?.[0]?.toUpperCase() || <User size={16} />
+                                            )}
                                         </div>
-                                        <div className="staff-card-metrics">
-                                            <div className="staff-metric">
-                                                <span className="staff-metric-value">{member.email}</span>
-                                                <span className="staff-metric-label">Email</span>
-                                            </div>
+                                        <div className="member-info">
+                                            <strong>{member.name}</strong>
+                                            <span>{member.email}</span>
                                         </div>
-                                        <div className="staff-card-metrics">
-                                            <div className="staff-metric">
-                                                <span className="staff-metric-value" style={{ fontSize: '0.7rem', padding: '2px 8px', background: member.role === 'ADMIN' ? '#fef2f2' : '#f0fdf4', color: member.role === 'ADMIN' ? '#ef4444' : '#16a34a', borderRadius: '6px' }}>
-                                                    {member.role}
-                                                </span>
-                                                <span className="staff-metric-label">Role</span>
-                                            </div>
-                                            <div className="staff-metric">
-                                                <span className="staff-metric-value">{member.provider || 'Local'}</span>
-                                                <span className="staff-metric-label">Provider</span>
-                                            </div>
-                                        </div>
+                                        <span className={`member-role-badge role-${member.role?.toLowerCase()}`}>
+                                            <RoleIcon size={12} /> {roleLabels[member.role] || member.role}
+                                        </span>
                                     </div>
                                 );
-                            })}
-                        </div>
-                    )}
+                            })
+                        )}
+                    </div>
                 </div>
 
-                {/* Activity Log — Real Orders */}
-                <div className="activity-log-section">
-                    <h3 className="staff-section-title">Order Activity Log</h3>
-                    {activityLog.length === 0 ? (
-                        <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>
-                            <p>No order activity yet.</p>
+                {/* Right: Live Audit Log Timeline */}
+                <div className="audit-timeline-card card">
+                    <div className="timeline-header">
+                        <Activity size={20} color="var(--primary)" />
+                        <div>
+                            <h3>Live Operational Timeline</h3>
+                            <p>Chronological transaction and fulfillment events</p>
                         </div>
-                    ) : (
-                        <div className="activity-log card">
-                            {activityLog.map((entry, i) => (
-                                <div key={i} className={`activity-entry ${entry.type}`}>
-                                    <span className="activity-time">{entry.time}</span>
-                                    <div className="activity-dot" />
-                                    <div className="activity-content">
-                                        <strong>{entry.user}</strong>
-                                        <span>{entry.action}</span>
+                    </div>
+
+                    <div className="timeline-items-stream">
+                        {activityLog.length === 0 ? (
+                            <div className="timeline-empty">No activity events recorded yet.</div>
+                        ) : (
+                            activityLog.map((ev, idx) => (
+                                <div key={idx} className="timeline-stream-item">
+                                    <div className={`timeline-dot ${ev.type}`} />
+                                    <div className="timeline-content">
+                                        <p className="timeline-action-text">{ev.action}</p>
+                                        <div className="timeline-meta-row">
+                                            <span className="timeline-time"><Clock size={12} /> {ev.time}</span>
+                                            <span className="timeline-date">{ev.date}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    )}
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

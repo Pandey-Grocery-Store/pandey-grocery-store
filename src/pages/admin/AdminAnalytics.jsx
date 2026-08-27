@@ -1,7 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { categories } from '../../data/categories';
 import { productsApi, ordersApi, dashboardApi } from '../../lib/api';
-import { BarChart3, PieChart, TrendingUp, Award, DollarSign, Loader } from 'lucide-react';
+import CategoryIcon from '../../components/CategoryIcon';
+import { 
+    BarChart3, 
+    PieChart, 
+    TrendingUp, 
+    Award, 
+    DollarSign, 
+    Loader, 
+    Flame, 
+    Package, 
+    AlertTriangle, 
+    TrendingDown, 
+    Tag, 
+    Sparkles,
+    Star,
+    Layers
+} from 'lucide-react';
 import './AdminAnalytics.css';
 
 export default function AdminAnalytics() {
@@ -12,33 +28,38 @@ export default function AdminAnalytics() {
 
     const fetchData = useCallback(async () => {
         setLoading(true);
-        const [prodData, ordData, statsData] = await Promise.all([
-            productsApi.getAll(),
-            ordersApi.getAll(),
-            dashboardApi.getStats(),
-        ]);
-        setProducts(prodData?.products || []);
-        setOrders(ordData?.orders || []);
-        if (statsData) setStats(statsData.stats);
-        setLoading(false);
+        try {
+            const [prodData, ordData, statsData] = await Promise.all([
+                productsApi.getAll(),
+                ordersApi.getAll(),
+                dashboardApi.getStats(),
+            ]);
+            setProducts(prodData?.products || []);
+            setOrders(ordData?.orders || []);
+            if (statsData) setStats(statsData.stats);
+        } catch (err) {
+            console.error('Failed to load analytics data', err);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
     if (loading) {
         return (
-            <div className="admin-analytics">
+            <div className="admin-analytics-page">
                 <div className="dashboard-page-header">
-                    <h1 className="dashboard-page-title">Product Analytics</h1>
+                    <h1 className="dashboard-page-title">Product &amp; Revenue Analytics</h1>
                 </div>
-                <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
-                    <Loader size={24} className="spin" /> Loading analytics...
+                <div className="analytics-loading-card card">
+                    <Loader size={36} className="spin" color="var(--primary)" />
+                    <p>Computing store performance metrics...</p>
                 </div>
             </div>
         );
     }
 
-    // Real revenue per category: sum of (price × quantity sold) from orders
     const orderItemsByName = {};
     orders.forEach(o => {
         (o.items || []).forEach(item => {
@@ -51,13 +72,11 @@ export default function AdminAnalytics() {
 
     const categoryData = categories.map((cat) => {
         const catProducts = products.filter((p) => p.category === cat.id);
-        // Real revenue: from order items matching this category's products
         let revenue = 0;
         catProducts.forEach(p => {
             const sold = orderItemsByName[p.name?.toLowerCase()] || 0;
             revenue += p.price * sold;
         });
-        // If no orders yet, show catalog value as fallback
         if (revenue === 0) {
             revenue = catProducts.reduce((sum, p) => sum + p.price, 0);
         }
@@ -83,7 +102,7 @@ export default function AdminAnalytics() {
         const brandProducts = products.filter((p) => p.brand === brand);
         const avgRating = brandProducts.length > 0 ? (brandProducts.reduce((sum, p) => sum + (p.rating || 0), 0) / brandProducts.length).toFixed(1) : '0.0';
         return { brand, count: brandProducts.length, avgRating, avgPrice: Math.round(brandProducts.reduce((s, p) => s + p.price, 0) / brandProducts.length) };
-    }).sort((a, b) => b.count - a.count).slice(0, 10);
+    }).sort((a, b) => b.count - a.count).slice(0, 8);
 
     const lowStockProducts = products.filter(p => p.stock > 0 && p.stock <= 5);
     const outOfStock = products.filter(p => p.stock === 0);
@@ -92,66 +111,108 @@ export default function AdminAnalytics() {
     const discountedProducts = products.filter(p => p.mrp && p.price < p.mrp);
 
     const insights = [
-        topCategory && { icon: Flame, color: '#ef4444', text: `${topCategory.name} has the highest revenue (₹${topCategory.revenue.toLocaleString()}) with ${topCategory.products} products`, type: 'positive' },
-        { icon: Package, color: '#0284c7', text: `${products.length} total products in database, average customer rating ${avgRating}/5`, type: 'info' },
-        outOfStock.length > 0 && { icon: AlertTriangle, color: '#ef4444', text: `${outOfStock.length} product(s) are out of stock`, type: 'warning' },
-        lowStockProducts.length > 0 && { icon: TrendingDown, color: '#f59e0b', text: `${lowStockProducts.length} product(s) have ≤5 units in stock`, type: 'warning' },
-        discountedProducts.length > 0 && { icon: Tag, color: '#16a34a', text: `${discountedProducts.length} products are currently discounted below MRP`, type: 'positive' },
-        { icon: BarChart3, color: '#8b5cf6', text: `${orders.length} total orders worth ₹${stats?.totalRevenue?.toLocaleString() || 0}`, type: 'info' },
+        topCategory && { icon: Flame, color: '#ef4444', text: `${topCategory.name} generated the highest revenue (₹${topCategory.revenue.toLocaleString()}) across ${topCategory.products} items`, type: 'positive' },
+        { icon: Package, color: '#0284c7', text: `${products.length} catalog items tracked with average customer satisfaction score of ${avgRating}/5`, type: 'info' },
+        outOfStock.length > 0 && { icon: AlertTriangle, color: '#ef4444', text: `${outOfStock.length} items currently out of stock`, type: 'warning' },
+        lowStockProducts.length > 0 && { icon: TrendingDown, color: '#f59e0b', text: `${lowStockProducts.length} items require reordering (≤5 units in warehouse)`, type: 'warning' },
+        discountedProducts.length > 0 && { icon: Tag, color: '#10b981', text: `${discountedProducts.length} products active on promotional discount pricing`, type: 'positive' },
+        { icon: BarChart3, color: '#8b5cf6', text: `${orders.length} total orders fulfilled with ₹${stats?.totalRevenue?.toLocaleString() || 0} total sales`, type: 'info' },
     ].filter(Boolean);
 
-    if (loading) {
-        return (
-            <div className="admin-analytics">
-                <div className="dashboard-page-header">
-                    <h1 className="dashboard-page-title">Product Analytics</h1>
-                </div>
-                <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
-                    <Loader size={24} className="spin" /> Loading analytics...
-                </div>
-            </div>
-        );
-    }
+    const maxCatRevenue = Math.max(...categoryData.map(c => c.revenue), 1);
 
     return (
-        <div className="admin-analytics">
+        <div className="admin-analytics-page animate-fade-in">
             <div className="dashboard-page-header">
-                <h1 className="dashboard-page-title">Product Analytics</h1>
-                <p className="dashboard-page-subtitle">Real data from {products.length} products and {orders.length} orders</p>
+                <div>
+                    <h1 className="dashboard-page-title">Product &amp; Revenue Analytics</h1>
+                    <p className="dashboard-page-subtitle">Real-time performance across {products.length} SKUs and {orders.length} orders</p>
+                </div>
             </div>
 
-            <div className="analytics-grid">
-                <div className="card analytics-card">
-                    <h3 className="analytics-card-title"><PieChart size={18} /> Category Revenue</h3>
-                    <div className="category-bars">
-                        {categoryData.map((cat, i) => (
-                            <div key={cat.id} className="category-bar-item">
-                                <div className="cat-bar-header">
-                                    <CategoryIcon slug={cat.id} size={16} />
-                                    <span className="cat-name">{cat.name}</span>
-                                    <span className="cat-revenue">₹{cat.revenue.toLocaleString()}</span>
+            {/* Smart Store Insights Matrix */}
+            <div className="analytics-insights-section card">
+                <div className="insights-header">
+                    <Sparkles size={20} color="var(--primary)" />
+                    <h3>Automated Business Insights</h3>
+                </div>
+                <div className="insights-grid">
+                    {insights.map((item, idx) => {
+                        const Icon = item.icon;
+                        return (
+                            <div key={idx} className={`insight-card ${item.type}`}>
+                                <div className="insight-icon" style={{ color: item.color }}>
+                                    <Icon size={18} />
                                 </div>
-                                <div className="cat-bar-track">
-                                    <div className="cat-bar-fill" style={{ width: `${Math.min(100, (cat.revenue / Math.max(...categoryData.map(c => c.revenue), 1)) * 100)}%`, background: i === 0 ? 'var(--primary)' : 'var(--info)' }} />
-                                </div>
-                                <span className="cat-product-count">{cat.products} products</span>
+                                <p className="insight-text">{item.text}</p>
                             </div>
-                        ))}
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Main Analytics Grid */}
+            <div className="analytics-layout-grid">
+                {/* Category Revenue Distribution */}
+                <div className="analytics-card card">
+                    <div className="analytics-card-header">
+                        <PieChart size={20} color="var(--primary)" />
+                        <div>
+                            <h3>Department Revenue Share</h3>
+                            <p>Turnover by main store categories</p>
+                        </div>
+                    </div>
+
+                    <div className="category-revenue-bars">
+                        {categoryData.map((cat, i) => {
+                            const percent = Math.min(100, Math.round((cat.revenue / maxCatRevenue) * 100));
+                            return (
+                                <div key={cat.id} className="cat-bar-row">
+                                    <div className="cat-bar-top">
+                                        <div className="cat-icon-name">
+                                            <CategoryIcon slug={cat.id} size={18} />
+                                            <strong>{cat.name}</strong>
+                                        </div>
+                                        <span className="cat-revenue-val">₹{cat.revenue.toLocaleString()}</span>
+                                    </div>
+                                    <div className="cat-progress-track">
+                                        <div 
+                                            className="cat-progress-fill" 
+                                            style={{ 
+                                                width: `${percent}%`,
+                                                background: i === 0 ? 'linear-gradient(90deg, #10b981, #059669)' : 'linear-gradient(90deg, #3b82f6, #2563eb)'
+                                            }} 
+                                        />
+                                    </div>
+                                    <span className="cat-items-count">{cat.products} active products</span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
-                <div className="card analytics-card">
-                    <h3 className="analytics-card-title"><Award size={18} /> Brand Performance</h3>
-                    <div className="brand-table">
-                        <div className="brand-row brand-header">
-                            <span>Brand</span><span>Products</span><span>Avg Rating</span><span>Avg Price</span>
+                {/* Brand Performance */}
+                <div className="analytics-card card">
+                    <div className="analytics-card-header">
+                        <Award size={20} color="var(--primary)" />
+                        <div>
+                            <h3>Top Brand Penetration</h3>
+                            <p>Highest SKU presence and ratings</p>
                         </div>
-                        {brandData.map((b) => (
-                            <div key={b.brand} className="brand-row">
-                                <span className="brand-name">{b.brand}</span>
-                                <span>{b.count}</span>
-                                <span>⭐ {b.avgRating}</span>
-                                <span>₹{b.avgPrice}</span>
+                    </div>
+
+                    <div className="brand-performance-list">
+                        {brandData.map((b, idx) => (
+                            <div key={b.brand} className="brand-rank-item">
+                                <span className="brand-rank-num">#{idx + 1}</span>
+                                <div className="brand-info">
+                                    <strong>{b.brand}</strong>
+                                    <span>{b.count} products • Avg. ₹{b.avgPrice}</span>
+                                </div>
+                                <div className="brand-rating-badge">
+                                    <Star size={13} fill="#f59e0b" color="#f59e0b" />
+                                    <span>{b.avgRating}</span>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -159,79 +220,36 @@ export default function AdminAnalytics() {
             </div>
 
             {/* Subcategory Table */}
-            <div className="card analytics-card">
-                <h3 className="analytics-card-title"><BarChart3 size={18} /> Subcategory Performance</h3>
-                <div className="sub-table-wrapper">
-                    <table className="sub-table">
+            <div className="subcategory-table-card card">
+                <div className="subcategory-header">
+                    <Layers size={20} color="var(--primary)" />
+                    <div>
+                        <h3>Subcategory Breakdown</h3>
+                        <p>Detailed performance per niche aisle</p>
+                    </div>
+                </div>
+
+                <div className="subcat-table-wrap">
+                    <table className="subcat-table">
                         <thead>
                             <tr>
-                                <th>Rank</th>
                                 <th>Subcategory</th>
-                                <th>Category</th>
-                                <th>Products</th>
-                                <th>Revenue</th>
-                                <th>Performance</th>
+                                <th>Parent Department</th>
+                                <th>Active Items</th>
+                                <th>Est. Revenue</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {subcategoryData.map((sub, i) => {
-                                const maxRev = subcategoryData[0]?.revenue || 1;
-                                return (
-                                    <tr key={sub.id}>
-                                        <td><span className={`rank-badge ${i < 3 ? 'top' : ''}`}>#{i + 1}</span></td>
-                                        <td><strong>{sub.name}</strong><br /><span className="sub-hi">{sub.nameHi}</span></td>
-                                        <td>{sub.category}</td>
-                                        <td>{sub.products}</td>
-                                        <td className="rev-cell">₹{sub.revenue.toLocaleString()}</td>
-                                        <td>
-                                            <div className="perf-bar-track">
-                                                <div className="perf-bar-fill" style={{ width: `${(sub.revenue / maxRev) * 100}%` }} />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                            {subcategoryData.slice(0, 10).map((sub) => (
+                                <tr key={sub.id}>
+                                    <td><strong>{sub.name}</strong></td>
+                                    <td><span className="sub-dept-pill">{sub.category}</span></td>
+                                    <td>{sub.products} items</td>
+                                    <td><strong className="sub-rev-val">₹{sub.revenue.toLocaleString()}</strong></td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
-                </div>
-            </div>
-
-            {/* Price Distribution + Insights */}
-            <div className="analytics-grid">
-                <div className="card analytics-card">
-                    <h3 className="analytics-card-title"><DollarSign size={18} /> Price Distribution</h3>
-                    <div className="price-distribution">
-                        {[
-                            { range: 'Under ₹100', count: products.filter(p => p.price < 100).length },
-                            { range: '₹100 - ₹300', count: products.filter(p => p.price >= 100 && p.price < 300).length },
-                            { range: '₹300 - ₹500', count: products.filter(p => p.price >= 300 && p.price < 500).length },
-                            { range: '₹500 - ₹1000', count: products.filter(p => p.price >= 500 && p.price < 1000).length },
-                            { range: '₹1000+', count: products.filter(p => p.price >= 1000).length },
-                        ].map((range) => (
-                            <div key={range.range} className="price-range-item">
-                                <span className="price-range-label">{range.range}</span>
-                                <div className="price-range-bar-track">
-                                    <div className="price-range-bar" style={{ width: `${(range.count / (products.length || 1)) * 100}%` }} />
-                                </div>
-                                <span className="price-range-count">{range.count}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="card analytics-card">
-                    <h3 className="analytics-card-title"><TrendingUp size={18} /> Key Insights</h3>
-                    <div className="insights-list">
-                        {insights.map((insight, i) => {
-                            const Icon = insight.icon;
-                            return (
-                                <div key={i} className={`insight-item ${insight.type}`}>
-                                    <span className="insight-icon"><Icon size={16} color={insight.color} /></span>
-                                    <span>{insight.text}</span>
-                                </div>
-                            );
-                        })}
-                    </div>
                 </div>
             </div>
         </div>
