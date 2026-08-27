@@ -849,7 +849,7 @@ app.post('/api/customers', authenticate, authorize('MANAGEMENT', 'ADMIN'), async
 // Manager creates an order on behalf of customer (In-store counter or Phone/Khata order)
 app.post('/api/orders/staff-create', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
     try {
-        const { customerId, customerName, customerPhone, customerAddress, items, subtotal, discount, total, paymentType, paidAmount, dueAmount, deliveryType, notes } = req.body;
+        const { customerId, customerName, customerPhone, customerEmail, customerAddress, items, subtotal, discount, total, paymentType, paidAmount, dueAmount, deliveryType, notes } = req.body;
         if (!items || !items.length || !total) return res.status(400).json({ error: 'Order items and total amount are required' });
 
         let finalPaymentMode = 'paid_cash';
@@ -862,17 +862,48 @@ app.post('/api/orders/staff-create', authenticate, authorize('MANAGEMENT', 'ADMI
         let targetUserId = customerId;
         let finalCustomerName = customerName?.trim() || 'Walk-in Customer';
         let finalCustomerPhone = customerPhone?.trim() || '';
+        let finalCustomerEmail = customerEmail?.trim().toLowerCase() || '';
 
         if (!targetUserId) {
-            if (finalCustomerPhone) {
+            if (finalCustomerEmail && !finalCustomerEmail.includes('@pandeygrocery.local')) {
+                const found = await prisma.user.findFirst({ where: { email: finalCustomerEmail } });
+                if (found) {
+                    targetUserId = found.id;
+                    finalCustomerName = found.name;
+                    if (!finalCustomerPhone && found.phone) finalCustomerPhone = found.phone;
+                }
+            }
+            if (!targetUserId && finalCustomerPhone) {
                 const found = await prisma.user.findFirst({ where: { phone: finalCustomerPhone, role: 'CUSTOMER' } });
                 if (found) {
                     targetUserId = found.id;
                     finalCustomerName = found.name;
+                    if (!finalCustomerEmail && found.email && !found.email.includes('@pandeygrocery.local')) {
+                        finalCustomerEmail = found.email;
+                    }
+                }
+            }
+            if (!targetUserId && finalCustomerName !== 'Walk-in Customer' && (finalCustomerEmail || finalCustomerPhone)) {
+                // Auto-create customer user profile
+                try {
+                    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+                    const safeEmail = finalCustomerEmail || `cust_${finalCustomerPhone.replace(/[^0-9]/g, '')}_${randomSuffix}@pandeygrocery.local`;
+                    const newCust = await prisma.user.create({
+                        data: {
+                            name: finalCustomerName,
+                            email: safeEmail,
+                            phone: finalCustomerPhone || null,
+                            role: 'CUSTOMER',
+                            provider: 'pos_counter',
+                            emailVerified: false
+                        }
+                    });
+                    targetUserId = newCust.id;
+                } catch (e) {
+                    targetUserId = req.user.id;
                 }
             }
             if (!targetUserId) {
-                // Link to active staff manager or create quick customer
                 targetUserId = req.user.id;
             }
         }

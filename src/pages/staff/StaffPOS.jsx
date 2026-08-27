@@ -22,7 +22,8 @@ import {
     Wallet,
     Scale,
     Box,
-    Calculator
+    Calculator,
+    Mail
 } from 'lucide-react';
 import { productsApi, ordersApi, customersApi } from '../../lib/api';
 import './StaffPOS.css';
@@ -52,7 +53,7 @@ export default function StaffPOS() {
     const [custSearchQuery, setCustSearchQuery] = useState('');
     const [showCustDropdown, setShowCustDropdown] = useState(false);
     const [isCustomWalkIn, setIsCustomWalkIn] = useState(false);
-    const [customerInfo, setCustomerInfo] = useState({ name: 'Walk-in Customer', phone: '', address: 'In-store Counter Sale' });
+    const [customerInfo, setCustomerInfo] = useState({ name: 'Walk-in Customer', phone: '', email: '', address: 'In-store Counter Sale' });
 
     // Weight Product Selection Modal State
     const [weightModalProduct, setWeightModalProduct] = useState(null);
@@ -122,6 +123,7 @@ export default function StaffPOS() {
         setCustomerInfo({
             name: customer.name,
             phone: customer.phone || '',
+            email: customer.email || '',
             address: 'In-store Counter Sale'
         });
         setCustSearchQuery('');
@@ -131,7 +133,7 @@ export default function StaffPOS() {
 
     const handleClearCustomer = () => {
         setSelectedCustomer(null);
-        setCustomerInfo({ name: 'Walk-in Customer', phone: '', address: 'In-store Counter Sale' });
+        setCustomerInfo({ name: 'Walk-in Customer', phone: '', email: '', address: 'In-store Counter Sale' });
         setCustSearchQuery('');
         setIsCustomWalkIn(false);
     };
@@ -230,6 +232,7 @@ export default function StaffPOS() {
                 customerId: selectedCustomer?.id,
                 customerName: selectedCustomer ? selectedCustomer.name : customerInfo.name || 'Walk-in Customer',
                 customerPhone: selectedCustomer ? selectedCustomer.phone : customerInfo.phone || '',
+                customerEmail: selectedCustomer ? selectedCustomer.email : customerInfo.email || '',
                 customerAddress: customerInfo.address || 'In-store Counter Sale',
                 items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image })),
                 subtotal,
@@ -435,7 +438,10 @@ export default function StaffPOS() {
                                         <span className="pos-clear-pill">🟢 Khata Clear</span>
                                     )}
                                 </div>
-                                <span className="pos-cust-sub">{selectedCustomer.phone ? `📱 ${selectedCustomer.phone}` : 'No mobile number'} • {selectedCustomer.orderCount || 0} orders</span>
+                                <span className="pos-cust-sub">
+                                    {selectedCustomer.phone ? `📱 ${selectedCustomer.phone}` : 'No phone'} 
+                                    {selectedCustomer.email ? ` • ✉️ ${selectedCustomer.email}` : ''}
+                                </span>
                             </div>
                             <button 
                                 type="button" 
@@ -447,25 +453,35 @@ export default function StaffPOS() {
                             </button>
                         </div>
                     ) : isCustomWalkIn ? (
-                        /* State B: Custom Walk-in Text Inputs */
+                        /* State B: Custom Walk-in Text Inputs with Name, Phone & Email */
                         <div className="pos-customer-box animate-fade-in">
-                            <div className="pos-input-field">
+                            <div className="pos-input-field full-span">
                                 <User size={15} />
                                 <input
                                     type="text"
-                                    placeholder="Enter Customer Name"
+                                    placeholder="Customer Full Name *"
                                     value={customerInfo.name}
                                     onChange={e => setCustomerInfo({ ...customerInfo, name: e.target.value })}
                                     autoFocus
+                                    required
                                 />
                             </div>
                             <div className="pos-input-field">
                                 <Phone size={15} />
                                 <input
-                                    type="text"
+                                    type="tel"
                                     placeholder="Phone (Optional)"
                                     value={customerInfo.phone}
                                     onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+                                />
+                            </div>
+                            <div className="pos-input-field">
+                                <Mail size={15} />
+                                <input
+                                    type="email"
+                                    placeholder="Email (Optional)"
+                                    value={customerInfo.email}
+                                    onChange={e => setCustomerInfo({ ...customerInfo, email: e.target.value })}
                                 />
                             </div>
                         </div>
@@ -476,7 +492,7 @@ export default function StaffPOS() {
                                 <Search size={15} color="#94a3b8" />
                                 <input 
                                     type="text"
-                                    placeholder="Search customer name or phone..."
+                                    placeholder="Search customer by name, phone or email..."
                                     value={custSearchQuery}
                                     onChange={e => { setCustSearchQuery(e.target.value); setShowCustDropdown(true); }}
                                     onFocus={() => setShowCustDropdown(true)}
@@ -516,7 +532,7 @@ export default function StaffPOS() {
                                                 className="btn btn-xs btn-primary mt-1"
                                                 onClick={() => {
                                                     setIsCustomWalkIn(true);
-                                                    setCustomerInfo({ name: custSearchQuery, phone: '', address: 'In-store Counter Sale' });
+                                                    setCustomerInfo({ name: custSearchQuery, phone: '', email: '', address: 'In-store Counter Sale' });
                                                     setShowCustDropdown(false);
                                                 }}
                                             >
@@ -534,7 +550,7 @@ export default function StaffPOS() {
                                                     <div className="dropdown-avatar">{cust.name.charAt(0).toUpperCase()}</div>
                                                     <div>
                                                         <strong>{cust.name}</strong>
-                                                        <span>{cust.phone ? `📱 ${cust.phone}` : 'No phone linked'}</span>
+                                                        <span>{cust.phone ? `📱 ${cust.phone}` : ''} {cust.email ? `• ✉️ ${cust.email}` : ''}</span>
                                                     </div>
                                                 </div>
                                                 <div className="row-right">
