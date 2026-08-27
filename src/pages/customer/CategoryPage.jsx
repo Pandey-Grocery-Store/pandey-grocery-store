@@ -1,9 +1,10 @@
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useState, useMemo, useEffect } from 'react';
-import { SlidersHorizontal, Grid3X3, List, Loader } from 'lucide-react';
+import { SlidersHorizontal, Grid3X3, List, Loader, PackageOpen, ArrowLeft } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import PrintServicesPage from './PrintServicesPage';
 import { productsApi, categoriesApi } from '../../lib/api';
+import { getCategoryById } from '../../data/categories';
 import './CategoryPage.css';
 
 export default function CategoryPage() {
@@ -11,7 +12,8 @@ export default function CategoryPage() {
     const [searchParams] = useSearchParams();
     const subId = searchParams.get('sub');
 
-    const [category, setCategory] = useState(null);
+    // Initialize with local category structure for instant rendering
+    const [category, setCategory] = useState(() => getCategoryById(categoryId));
     const [allProducts, setAllProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -20,6 +22,11 @@ export default function CategoryPage() {
     const [activeSub, setActiveSub] = useState(subId || 'all');
     const [viewMode, setViewMode] = useState('grid');
 
+    // Update active subcategory if URL parameter changes
+    useEffect(() => {
+        if (subId) setActiveSub(subId);
+    }, [subId]);
+
     // Fetch Category & Products
     useEffect(() => {
         const fetchData = async () => {
@@ -27,9 +34,12 @@ export default function CategoryPage() {
             try {
                 // Fetch categories to find the current one by slug
                 const catsRes = await categoriesApi.getAll();
-                if (catsRes?.categories) {
-                    const currentCat = catsRes.categories.find(c => c.slug === categoryId);
-                    setCategory(currentCat || null);
+                if (catsRes?.categories && catsRes.categories.length > 0) {
+                    const currentCat = catsRes.categories.find(c => c.slug === categoryId || c.id === categoryId);
+                    if (currentCat) setCategory(currentCat);
+                } else {
+                    const fallback = getCategoryById(categoryId);
+                    if (fallback) setCategory(fallback);
                 }
 
                 // Fetch products for this category
@@ -43,6 +53,8 @@ export default function CategoryPage() {
                 }
             } catch (err) {
                 console.error("Failed to load category data", err);
+                const fallback = getCategoryById(categoryId);
+                if (fallback) setCategory(fallback);
             } finally {
                 setLoading(false);
             }
@@ -69,23 +81,34 @@ export default function CategoryPage() {
         return result;
     }, [allProducts, sortBy, priceRange]);
 
-    if (loading) {
-        return <div className="container section" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}><Loader className="spin" size={40} /></div>;
-    }
-
     if (categoryId === 'printing-binding') {
         return <PrintServicesPage />;
     }
 
-    if (!category) return <div className="container section"><h2>Category not found</h2></div>;
+    if (!category) {
+        return (
+            <div className="container section" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
+                <h2>Category not found</h2>
+                <p style={{ marginTop: '0.5rem', color: 'var(--text-secondary)' }}>The requested category does not exist.</p>
+                <Link to="/" className="btn btn-primary" style={{ marginTop: '1.5rem', display: 'inline-flex' }}>
+                    <ArrowLeft size={16} /> Back to Home
+                </Link>
+            </div>
+        );
+    }
 
     return (
         <div className="category-page">
-            <div className="category-hero" style={{ backgroundImage: `linear-gradient(135deg, rgba(232,89,12,0.85), rgba(249,115,22,0.75)), url(${category.image})` }}>
+            <div 
+                className="category-hero" 
+                style={{ 
+                    backgroundImage: `linear-gradient(135deg, rgba(22, 163, 74, 0.85), rgba(15, 23, 42, 0.8)), url(${category.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800'})` 
+                }}
+            >
                 <div className="container">
                     <span className="category-hero-icon">{category.icon}</span>
                     <h1>{category.name}</h1>
-                    <p>{category.nameHi} • {allProducts.length} products</p>
+                    <p>{category.nameHi} • {allProducts.length} items</p>
                 </div>
             </div>
 
@@ -93,7 +116,10 @@ export default function CategoryPage() {
                 {/* Subcategory Pills */}
                 {category.subcategories && category.subcategories.length > 0 && (
                     <div className="sub-pills">
-                        <button className={`sub-pill ${activeSub === 'all' ? 'active' : ''}`} onClick={() => setActiveSub('all')}>
+                        <button 
+                            className={`sub-pill ${activeSub === 'all' ? 'active' : ''}`} 
+                            onClick={() => setActiveSub('all')}
+                        >
                             All
                         </button>
                         {category.subcategories.map((sub) => (
@@ -129,24 +155,46 @@ export default function CategoryPage() {
                         </select>
                     </div>
                     <div className="toolbar-right">
-                        <span className="result-count">{filteredProducts.length} products</span>
-                        <button className={`btn btn-icon btn-ghost ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}><Grid3X3 size={18} /></button>
-                        <button className={`btn btn-icon btn-ghost ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}><List size={18} /></button>
+                        <span className="result-count">{filteredProducts.length} items</span>
+                        <button 
+                            className={`btn btn-icon btn-ghost ${viewMode === 'grid' ? 'active' : ''}`} 
+                            onClick={() => setViewMode('grid')}
+                            aria-label="Grid view"
+                        >
+                            <Grid3X3 size={18} />
+                        </button>
+                        <button 
+                            className={`btn btn-icon btn-ghost ${viewMode === 'list' ? 'active' : ''}`} 
+                            onClick={() => setViewMode('list')}
+                            aria-label="List view"
+                        >
+                            <List size={18} />
+                        </button>
                     </div>
                 </div>
 
                 {/* Products Grid */}
-                {filteredProducts.length > 0 ? (
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '4rem 0' }}>
+                        <Loader size={32} className="spin" style={{ margin: '0 auto', color: 'var(--primary)' }} />
+                        <p style={{ marginTop: '0.75rem', color: 'var(--text-secondary)' }}>Loading products...</p>
+                    </div>
+                ) : filteredProducts.length > 0 ? (
                     <div className={`grid ${viewMode === 'grid' ? 'grid-4' : 'grid-1'}`}>
                         {filteredProducts.map((product) => (
                             <ProductCard key={product.id} product={product} />
                         ))}
                     </div>
                 ) : (
-                    <div className="empty-state">
-                        <span className="empty-icon">🔍</span>
-                        <h3>No products found</h3>
-                        <p>Try adjusting your filters or browse a different category.</p>
+                    <div className="empty-state" style={{ textAlign: 'center', padding: '4rem 1rem', background: 'var(--bg-secondary)', borderRadius: '16px' }}>
+                        <PackageOpen size={48} style={{ color: 'var(--primary)', margin: '0 auto 1rem' }} />
+                        <h3>No products added yet</h3>
+                        <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                            Products will be added soon through the staff management panel.
+                        </p>
+                        <Link to="/" className="btn btn-secondary" style={{ marginTop: '1.5rem', display: 'inline-flex' }}>
+                            <ArrowLeft size={16} /> Explore All Categories
+                        </Link>
                     </div>
                 )}
             </div>

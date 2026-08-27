@@ -1,6 +1,7 @@
 export const categories = [
   {
     id: 'groceries',
+    slug: 'groceries',
     name: 'Groceries & Staples',
     nameHi: 'किराना एवं दैनिक सामग्री',
     icon: '🛒',
@@ -17,21 +18,8 @@ export const categories = [
     ],
   },
   {
-    id: 'printing-binding',
-    name: 'Printing & Binding',
-    nameHi: 'प्रिंटिंग एवं बाइंडिंग',
-    icon: '🖨️',
-    image: 'https://images.unsplash.com/photo-1562654501-a0ccc0fc3fb1?w=400',
-    subcategories: [
-      { id: 'whatsapp-printing', name: 'WhatsApp Document Printing', nameHi: 'व्हाट्सएप डॉक्यूमेंट प्रिंटिंग' },
-      { id: 'project-binding', name: 'Spiral & Project Binding', nameHi: 'स्पाइरल और प्रोजेक्ट बाइंडिंग' },
-      { id: 'photocopy-scan', name: 'Black & White / Colour Photocopy & Scanning', nameHi: 'फोटोकॉपी एवं स्कैनिंग' },
-      { id: 'academic-printing', name: 'Resume, Assignment & Report Printing', nameHi: 'रिज्यूम एवं असाइनमेंट प्रिंट' },
-      { id: 'custom-printing', name: 'Poster, Canvas & Photo Printing', nameHi: 'पोस्टर एवं फोटो प्रिंटिंग' },
-    ],
-  },
-  {
     id: 'stationery',
+    slug: 'stationery',
     name: 'Stationery & Office',
     nameHi: 'स्टेशनरी एवं ऑफिस सामग्री',
     icon: '📚',
@@ -46,6 +34,7 @@ export const categories = [
   },
   {
     id: 'household-personal',
+    slug: 'household-personal',
     name: 'Household & Care',
     nameHi: 'घरेलू एवं पर्सनल केयर',
     icon: '🧼',
@@ -58,7 +47,7 @@ export const categories = [
   },
 ];
 
-export const getCategoryById = (id) => categories.find((c) => c.id === id);
+export const getCategoryById = (id) => categories.find((c) => c.id === id || c.slug === id);
 
 export const getSubcategoryById = (catId, subId) => {
   const cat = getCategoryById(catId);
