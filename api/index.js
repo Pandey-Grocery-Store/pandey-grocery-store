@@ -39,13 +39,32 @@ function generateToken(user) {
     );
 }
 
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
     const header = req.headers.authorization;
     if (!header || !header.startsWith('Bearer ')) {
         return res.status(401).json({ error: 'Authentication required' });
     }
     try {
-        req.user = jwt.verify(header.split(' ')[1], JWT_SECRET);
+        const decoded = jwt.verify(header.split(' ')[1], JWT_SECRET);
+        req.user = decoded;
+        
+        // Guarantee email & name are present even if using an older token
+        if (!req.user.email && req.user.id) {
+            try {
+                const dbUser = await prisma.user.findUnique({
+                    where: { id: req.user.id },
+                    select: { id: true, email: true, name: true, role: true }
+                });
+                if (dbUser) {
+                    req.user.email = dbUser.email;
+                    req.user.name = dbUser.name;
+                    req.user.role = dbUser.role;
+                }
+            } catch (dbErr) {
+                console.error('Error fetching user email in auth middleware:', dbErr);
+            }
+        }
+        
         next();
     } catch {
         return res.status(401).json({ error: 'Invalid or expired token' });
