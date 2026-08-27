@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { SlidersHorizontal, Grid3X3, List, Loader, PackageOpen, ArrowLeft } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import PrintServicesPage from './PrintServicesPage';
+import CategoryIcon from '../../components/CategoryIcon';
 import { productsApi, categoriesApi } from '../../lib/api';
 import { getCategoryById } from '../../data/categories';
 import './CategoryPage.css';
@@ -106,7 +107,9 @@ export default function CategoryPage() {
                 }}
             >
                 <div className="container">
-                    <span className="category-hero-icon">{category.icon}</span>
+                    <div className="category-hero-icon-wrap" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 64, height: 64, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', marginBottom: '0.75rem' }}>
+                        <CategoryIcon slug={category.slug || category.id} size={32} color="#ffffff" />
+                    </div>
                     <h1>{category.name}</h1>
                     <p>{category.nameHi} • {allProducts.length} items</p>
                 </div>

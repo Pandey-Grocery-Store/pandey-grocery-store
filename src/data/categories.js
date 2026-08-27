@@ -4,7 +4,7 @@ export const categories = [
     slug: 'groceries',
     name: 'Groceries & Staples',
     nameHi: 'किराना एवं दैनिक सामग्री',
-    icon: '🛒',
+    icon: 'ShoppingBasket',
     image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400',
     subcategories: [
       { id: 'rice-grains', name: 'Rice & Grains', nameHi: 'चावल और अनाज' },
@@ -22,7 +22,7 @@ export const categories = [
     slug: 'stationery',
     name: 'Stationery & Office',
     nameHi: 'स्टेशनरी एवं ऑफिस सामग्री',
-    icon: '📚',
+    icon: 'BookOpen',
     image: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=400',
     subcategories: [
       { id: 'notebooks-registers', name: 'Notebooks & Registers', nameHi: 'कॉपी एवं रजिस्टर' },
@@ -37,7 +37,7 @@ export const categories = [
     slug: 'household-personal',
     name: 'Household & Care',
     nameHi: 'घरेलू एवं पर्सनल केयर',
-    icon: '🧼',
+    icon: 'Sparkles',
     image: 'https://images.unsplash.com/photo-1585421514284-efb74c2b69ba?w=400',
     subcategories: [
       { id: 'household-products', name: 'Household Products', nameHi: 'घरेलू सामान' },

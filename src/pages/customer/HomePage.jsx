@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Shield, Tag, Star, MapPin, Printer, FileText, CreditCard, Camera, Sparkles, MessageCircle, Clock } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import StoreGallery from '../../components/StoreGallery';
+import CategoryIcon from '../../components/CategoryIcon';
 import { productsApi, categoriesApi } from '../../lib/api';
 import './HomePage.css';
 
@@ -179,7 +180,7 @@ export default function HomePage() {
                                 style={{ animationDelay: `${i * 0.05}s` }}
                             >
                                 <div className="cat-card-icon-wrap">
-                                    <span className="cat-card-icon">{cat.icon}</span>
+                                    <CategoryIcon slug={cat.id || cat.slug} size={24} />
                                 </div>
                                 <div className="cat-card-details">
                                     <h3>{cat.name}</h3>

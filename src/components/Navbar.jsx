@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { categories } from '../data/categories';
+import CategoryIcon from './CategoryIcon';
 import './Navbar.css';
 
 export default function Navbar() {
@@ -148,7 +149,7 @@ export default function Navbar() {
                                 to={`/category/${cat.id}`}
                                 className={`category-link ${location.pathname.includes(cat.id) ? 'active' : ''}`}
                             >
-                                <span className="category-link-icon">{cat.icon}</span>
+                                <CategoryIcon slug={cat.id} size={15} />
                                 <span>{cat.name}</span>
                             </Link>
                         ))}
@@ -215,7 +216,7 @@ export default function Navbar() {
                                     onClick={() => setMobileOpen(false)}
                                     className="mobile-nav-link"
                                 >
-                                    <span>{cat.icon}</span> {cat.name}
+                                    <CategoryIcon slug={cat.id} size={18} /> <span>{cat.name}</span>
                                 </Link>
                             ))}
 
