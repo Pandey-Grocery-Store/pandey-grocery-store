@@ -621,14 +621,30 @@ function parseOrderPayment(paymentMode, total) {
     return { status, mode, paidAmount, dueAmount };
 }
 
-// User's own orders (any logged-in user)
+// User's own orders & Khata transactions (any logged-in user)
 app.get('/api/orders/my', authenticate, async (req, res) => {
     try {
+        const userOrConditions = [{ userId: req.user.id }];
+        if (req.user.phone) {
+            userOrConditions.push({ phone: req.user.phone });
+        }
+        if (req.user.name && req.user.name.length > 2 && req.user.name.toLowerCase() !== 'customer' && req.user.name.toLowerCase() !== 'walk-in customer') {
+            userOrConditions.push({ customer: { equals: req.user.name, mode: 'insensitive' } });
+        }
+
         const orders = await prisma.order.findMany({ 
-            where: { userId: req.user.id }, 
+            where: { OR: userOrConditions }, 
             include: { items: true, addressRef: true }, 
             orderBy: { createdAt: 'desc' } 
         });
+
+        // Background auto-link any unlinked orders to this user's account
+        for (const o of orders) {
+            if (o.userId !== req.user.id) {
+                prisma.order.update({ where: { id: o.id }, data: { userId: req.user.id } }).catch(() => {});
+            }
+        }
+
         res.json({ 
             orders: orders.map(o => {
                 const pay = parseOrderPayment(o.paymentMode, o.total);

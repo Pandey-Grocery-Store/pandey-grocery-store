@@ -1212,3 +1212,433 @@
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
 }
+
+/* ─── Khata Passbook & Transactions ─── */
+.hero-stat-item.stat-has-due .stat-num {
+    color: #dc2626;
+}
+
+.hero-stat-item.stat-clear .stat-num {
+    color: #059669;
+}
+
+.tab-pill-badge.due-badge {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+
+.khata-header-action-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pay-upi-pulse-btn {
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+}
+
+.khata-balance-hero-card {
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-sizing: border-box;
+}
+
+.khata-balance-hero-card.has-due {
+    background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%);
+    border: 1.5px solid #fecaca;
+}
+
+.khata-balance-hero-card.all-clear {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1.5px solid #bbf7d0;
+}
+
+.khata-hero-tag {
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+}
+
+.khata-balance-hero-card.has-due .khata-hero-tag {
+    color: #dc2626;
+}
+
+.khata-balance-hero-card.all-clear .khata-hero-tag {
+    color: #16a34a;
+}
+
+.khata-hero-amount {
+    font-size: 2.2rem;
+    font-weight: 900;
+    margin: 4px 0 6px 0;
+    color: #0f172a;
+}
+
+.khata-balance-hero-card.has-due .khata-hero-amount {
+    color: #b91c1c;
+}
+
+.khata-hero-sub {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.khata-hero-breakdown {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding-top: 1rem;
+    border-top: 1px dashed rgba(0, 0, 0, 0.08);
+}
+
+.khata-stat-pill {
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.khata-stat-pill .lbl {
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.khata-stat-pill .val {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.khata-stat-pill .text-success {
+    color: #16a34a;
+}
+
+.khata-filter-chips {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.25rem;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.khata-transactions-feed {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.khata-entry-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    transition: all 0.15s ease;
+}
+
+.khata-entry-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.khata-entry-card.is-due {
+    border-left: 4px solid #ef4444;
+}
+
+.khata-entry-card.is-paid {
+    border-left: 4px solid #10b981;
+}
+
+.khata-entry-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.khata-entry-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.khata-entry-avatar.due {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.khata-entry-avatar.paid {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.khata-entry-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.entry-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.entry-fulfillment-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.entry-items-preview {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    max-height: 24px;
+    overflow: hidden;
+}
+
+.entry-item-chip {
+    font-size: 0.72rem;
+    color: #475569;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 1px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.entry-date-txt {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.khata-entry-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.entry-amounts {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.entry-bill-total {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.entry-payment-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+}
+
+.entry-payment-badge.paid {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.entry-payment-badge.due {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.entry-payment-badge.partial {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.entry-view-link {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    text-decoration: none;
+}
+
+.entry-view-link:hover {
+    text-decoration: underline;
+}
+
+/* ─── UPI Khata Modal ─── */
+.upi-pay-modal {
+    max-width: 440px;
+}
+
+.upi-modal-body {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.upi-amount-hero {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1.5px solid #86efac;
+    border-radius: 14px;
+    padding: 1.25rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.upi-amount-lbl {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #15803d;
+}
+
+.upi-amount-val {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #0f172a;
+    margin: 0;
+}
+
+.upi-store-name {
+    font-size: 0.75rem;
+    color: #166534;
+    font-weight: 600;
+}
+
+.upi-id-box {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.upi-id-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.upi-id-info .lbl {
+    font-size: 0.7rem;
+    color: #64748b;
+}
+
+.upi-id-info .upi-code {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: 0.3px;
+}
+
+.upi-direct-pay-btn {
+    font-weight: 800;
+    font-size: 0.95rem;
+    padding: 12px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-decoration: none;
+}
+
+.upi-whatsapp-confirm {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.upi-whatsapp-confirm p {
+    font-size: 0.72rem;
+    color: #166534;
+    margin: 0;
+    line-height: 1.35;
+}
+
+.whatsapp-link-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+@media (max-width: 768px) {
+    .khata-balance-hero-card {
+        padding: 1.15rem;
+    }
+    .khata-hero-amount {
+        font-size: 1.8rem;
+    }
+    .khata-entry-card {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    .khata-entry-right {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 8px;
+        border-top: 1px dashed #f1f5f9;
+    }
+    .entry-amounts {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+    }
+}

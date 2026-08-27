@@ -32,7 +32,14 @@ import {
     Tag,
     RotateCcw,
     Copy,
-    AlertCircle
+    AlertCircle,
+    Wallet,
+    CreditCard,
+    QrCode,
+    Receipt,
+    FileText,
+    IndianRupee,
+    MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { ordersApi, userApi, authApi } from '../../lib/api';
@@ -41,6 +48,7 @@ import './AccountPage.css';
 
 const tabs = [
     { id: 'profile', label: 'Profile', fullLabel: 'Personal Profile', icon: User },
+    { id: 'khata', label: 'Khata', fullLabel: 'Khata & Passbook', icon: Wallet },
     { id: 'orders', label: 'Orders', fullLabel: 'My Orders', icon: Package },
     { id: 'addresses', label: 'Addresses', fullLabel: 'Saved Locations', icon: MapPin },
     { id: 'security', label: 'Security', fullLabel: 'Security & Login', icon: KeyRound },
@@ -54,6 +62,9 @@ export default function AccountPage() {
     const [myOrders, setMyOrders] = useState([]);
     const [loadingOrders, setLoadingOrders] = useState(false);
     const [orderFilter, setOrderFilter] = useState('all');
+    const [khataFilter, setKhataFilter] = useState('all'); // 'all' | 'due' | 'paid'
+    const [showUpiModal, setShowUpiModal] = useState(false);
+    const [copiedUpi, setCopiedUpi] = useState(false);
 
     // Profile Edit State
     const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -190,9 +201,8 @@ export default function AccountPage() {
         }
     }, [user]);
 
-    // Fetch orders when tab is selected
+    // Fetch user orders & Khata history on mount
     const fetchMyOrders = useCallback(async () => {
-        if (activeTab !== 'orders') return;
         setLoadingOrders(true);
         try {
             const data = await ordersApi.getMyOrders();
@@ -202,7 +212,7 @@ export default function AccountPage() {
         } finally {
             setLoadingOrders(false);
         }
-    }, [activeTab]);
+    }, []);
 
     useEffect(() => { fetchMyOrders(); }, [fetchMyOrders]);
 
@@ -268,6 +278,11 @@ export default function AccountPage() {
     };
 
     const activeOrdersCount = myOrders.filter(o => ['new', 'packing', 'packed', 'dispatched'].includes(o.status)).length;
+    
+    const totalSpent = myOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const totalPaid = myOrders.reduce((sum, o) => sum + (Number(o.paidAmount) || (o.paymentStatus === 'PAID' ? Number(o.total) : 0)), 0);
+    const totalDue = myOrders.reduce((sum, o) => sum + (Number(o.dueAmount) || (o.paymentStatus === 'PENDING' ? Number(o.total) : 0)), 0);
+    const dueOrdersCount = myOrders.filter(o => o.dueAmount > 0 || o.paymentStatus === 'PENDING' || o.paymentStatus === 'PARTIAL').length;
 
     const filteredOrders = myOrders.filter(o => {
         if (orderFilter === 'all') return true;
@@ -275,6 +290,19 @@ export default function AccountPage() {
         if (orderFilter === 'delivered') return o.status === 'delivered';
         return true;
     });
+
+    const filteredKhataOrders = myOrders.filter(o => {
+        if (khataFilter === 'all') return true;
+        if (khataFilter === 'due') return o.dueAmount > 0 || o.paymentStatus === 'PENDING' || o.paymentStatus === 'PARTIAL';
+        if (khataFilter === 'paid') return o.paymentStatus === 'PAID';
+        return true;
+    });
+
+    const copyUpiId = () => {
+        navigator.clipboard.writeText('7906966085@upi');
+        setCopiedUpi(true);
+        setTimeout(() => setCopiedUpi(false), 2000);
+    };
 
     return (
         <div className="account-page-root">
@@ -312,10 +340,16 @@ export default function AccountPage() {
                     <div className="hero-quick-stats">
                         <div className="hero-stat-item" onClick={() => setActiveTab('orders')}>
                             <div className="stat-num-row">
-                                <span className="stat-num">{myOrders.length || 0}</span>
+                                <span className="stat-num">{myOrders.length}</span>
                                 {activeOrdersCount > 0 && <span className="stat-live-pulse">{activeOrdersCount} live</span>}
                             </div>
                             <span className="stat-txt">Orders</span>
+                        </div>
+                        <div className={`hero-stat-item ${totalDue > 0 ? 'stat-has-due' : 'stat-clear'}`} onClick={() => setActiveTab('khata')}>
+                            <div className="stat-num-row">
+                                <span className="stat-num">{totalDue > 0 ? `₹${Math.round(totalDue)}` : '₹0'}</span>
+                            </div>
+                            <span className="stat-txt">{totalDue > 0 ? 'Khata Left' : 'Khata Clear'}</span>
                         </div>
                         <div className="hero-stat-item" onClick={() => setActiveTab('addresses')}>
                             <span className="stat-num">{addresses.length}</span>
@@ -345,6 +379,9 @@ export default function AccountPage() {
                                     <span className="seg-label-full">{tab.fullLabel}</span>
                                     {tab.id === 'orders' && activeOrdersCount > 0 && (
                                         <span className="tab-pill-badge">{activeOrdersCount}</span>
+                                    )}
+                                    {tab.id === 'khata' && totalDue > 0 && (
+                                        <span className="tab-pill-badge due-badge">₹{Math.round(totalDue)}</span>
                                     )}
                                 </button>
                             );
@@ -507,7 +544,135 @@ export default function AccountPage() {
                         </div>
                     )}
 
-                    {/* ── TAB 2: Orders ── */}
+                    {/* ── TAB 2: Khata & Passbook (Transactions Ledger) ── */}
+                    {activeTab === 'khata' && (
+                        <div className="account-card-panel animate-fade-in">
+                            <div className="panel-header-row">
+                                <div>
+                                    <h2 className="panel-heading">Khata Passbook &amp; Balance</h2>
+                                    <p className="panel-subheading">Track your in-store counter &amp; online purchase ledger and clear pending balance</p>
+                                </div>
+                                <div className="khata-header-action-group">
+                                    {totalDue > 0 && (
+                                        <button className="btn btn-primary btn-sm pay-upi-pulse-btn" onClick={() => setShowUpiModal(true)}>
+                                            <QrCode size={14} /> Pay Due via UPI
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* ── Hero Balance Card ── */}
+                            <div className={`khata-balance-hero-card ${totalDue > 0 ? 'has-due' : 'all-clear'}`}>
+                                <div className="khata-hero-left">
+                                    <span className="khata-hero-tag">
+                                        {totalDue > 0 ? '🔴 Pending Amount to be Paid' : '🟢 Khata Status'}
+                                    </span>
+                                    <h3 className="khata-hero-amount">
+                                        ₹{totalDue > 0 ? totalDue.toFixed(2) : '0.00'}
+                                    </h3>
+                                    <p className="khata-hero-sub">
+                                        {totalDue > 0 
+                                            ? 'You have a pending store credit balance. You can pay anytime in-store or online via UPI.'
+                                            : '✨ Wonderful! All your purchases and store bills are fully settled.'}
+                                    </p>
+                                </div>
+
+                                <div className="khata-hero-breakdown">
+                                    <div className="khata-stat-pill">
+                                        <span className="lbl">Total Purchases</span>
+                                        <strong className="val">₹{totalSpent.toFixed(2)}</strong>
+                                    </div>
+                                    <div className="khata-stat-pill">
+                                        <span className="lbl">Total Paid (Cash/UPI)</span>
+                                        <strong className="val text-success">₹{totalPaid.toFixed(2)}</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── Passbook Filter Chips ── */}
+                            <div className="khata-filter-chips">
+                                <button 
+                                    className={`order-chip ${khataFilter === 'all' ? 'active' : ''}`}
+                                    onClick={() => setKhataFilter('all')}
+                                >
+                                    All Transactions ({myOrders.length})
+                                </button>
+                                <button 
+                                    className={`order-chip due ${khataFilter === 'due' ? 'active' : ''}`}
+                                    onClick={() => setKhataFilter('due')}
+                                >
+                                    🔴 Due Left ({dueOrdersCount})
+                                </button>
+                                <button 
+                                    className={`order-chip paid ${khataFilter === 'paid' ? 'active' : ''}`}
+                                    onClick={() => setKhataFilter('paid')}
+                                >
+                                    🟢 Settled ({myOrders.filter(o => o.paymentStatus === 'PAID').length})
+                                </button>
+                            </div>
+
+                            {/* ── Passbook Transactions Feed ── */}
+                            {loadingOrders ? (
+                                <div className="panel-loading-state">
+                                    <Loader size={28} className="spin" color="var(--primary)" />
+                                    <p>Loading your Khata passbook ledger...</p>
+                                </div>
+                            ) : filteredKhataOrders.length === 0 ? (
+                                <div className="panel-empty-state">
+                                    <div className="empty-icon-bubble">
+                                        <Wallet size={36} color="var(--primary)" />
+                                    </div>
+                                    <h3>No transactions found</h3>
+                                    <p>Your store counter bills and payments will appear here automatically.</p>
+                                </div>
+                            ) : (
+                                <div className="khata-transactions-feed">
+                                    {filteredKhataOrders.map((order) => {
+                                        const isDue = order.dueAmount > 0 || order.paymentStatus === 'PENDING' || order.paymentStatus === 'PARTIAL';
+                                        return (
+                                            <div key={order.id} className={`khata-entry-card ${isDue ? 'is-due' : 'is-paid'}`}>
+                                                <div className="khata-entry-left">
+                                                    <div className={`khata-entry-avatar ${isDue ? 'due' : 'paid'}`}>
+                                                        {isDue ? <Receipt size={18} /> : <CheckCircle2 size={18} />}
+                                                    </div>
+                                                    <div className="khata-entry-info">
+                                                        <div className="entry-title-row">
+                                                            <strong>#{order.orderNumber || order.id}</strong>
+                                                            <span className="entry-fulfillment-badge">
+                                                                {order.deliveryType === 'home' ? '🚚 Home Delivery' : '🏪 In-Store Purchase'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="entry-items-preview">
+                                                            {order.items?.map((it, idx) => (
+                                                                <span key={idx} className="entry-item-chip">
+                                                                    {it.name} {it.qty > 1 ? `×${it.qty}` : ''}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                        <span className="entry-date-txt"><Clock size={11} /> {order.date} • {order.timeSlot}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="khata-entry-right">
+                                                    <div className="entry-amounts">
+                                                        <span className="entry-bill-total">₹{Number(order.total).toFixed(2)}</span>
+                                                        <span className={`entry-payment-badge ${order.paymentStatus === 'PAID' ? 'paid' : order.paymentStatus === 'PARTIAL' ? 'partial' : 'due'}`}>
+                                                            {order.paymentStatus === 'PAID' ? '🟢 Paid in Full' : order.paymentStatus === 'PARTIAL' ? `🟠 Due: ₹${order.dueAmount}` : `🔴 Left: ₹${order.dueAmount || order.total}`}
+                                                        </span>
+                                                    </div>
+                                                    <Link to={`/track/${order.id}`} className="btn-link entry-view-link">
+                                                        View Bill <ArrowRight size={13} />
+                                                    </Link>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ── TAB 3: Orders ── */}
                     {activeTab === 'orders' && (
                         <div className="account-card-panel animate-fade-in">
                             <div className="panel-header-row">
@@ -977,6 +1142,74 @@ export default function AccountPage() {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── UPI Khata Payment Modal ─── */}
+            {showUpiModal && (
+                <div className="modal-overlay animate-fade-in" onClick={() => setShowUpiModal(false)}>
+                    <div className="account-modal-card upi-pay-modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-card-header">
+                            <div className="modal-title-wrap">
+                                <QrCode size={20} color="var(--primary)" />
+                                <div>
+                                    <h3>Pay Store Khata via UPI</h3>
+                                    <p>Instant direct settlement to Pandey Grocery Store</p>
+                                </div>
+                            </div>
+                            <button className="btn-icon btn-ghost" onClick={() => setShowUpiModal(false)}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="upi-modal-body">
+                            <div className="upi-amount-hero">
+                                <span className="upi-amount-lbl">Amount to Pay</span>
+                                <h2 className="upi-amount-val">₹{totalDue.toFixed(2)}</h2>
+                                <span className="upi-store-name">Pandey Grocery Store • Kusumkhera Haldwani</span>
+                            </div>
+
+                            {/* Store UPI ID Box */}
+                            <div className="upi-id-box">
+                                <div className="upi-id-info">
+                                    <span className="lbl">Store Official UPI ID:</span>
+                                    <strong className="upi-code">7906966085@upi</strong>
+                                </div>
+                                <button type="button" className="btn btn-secondary btn-xs" onClick={copyUpiId}>
+                                    {copiedUpi ? <><Check size={12} /> Copied!</> : <><Copy size={12} /> Copy UPI</>}
+                                </button>
+                            </div>
+
+                            {/* Mobile Direct UPI Intent Buttons */}
+                            <div className="upi-apps-row">
+                                <a 
+                                    href={`upi://pay?pa=7906966085@upi&pn=Pandey%20Grocery%20Store&am=${totalDue}&cu=INR&tn=Khata%20Settlement%20${encodeURIComponent(user.name || '')}`}
+                                    className="btn btn-primary btn-md w-full upi-direct-pay-btn"
+                                >
+                                    <IndianRupee size={16} /> Open in GPay / PhonePe / Paytm
+                                </a>
+                            </div>
+
+                            {/* WhatsApp Confirmation Notification Button */}
+                            <div className="upi-whatsapp-confirm">
+                                <p>After completing payment, notify store on WhatsApp with screenshot:</p>
+                                <a 
+                                    href={`https://wa.me/917906966085?text=Namaste%20Pandey%20Store,%20I%20have%20transferred%20Rs.%20${totalDue}%20via%20UPI%20for%20my%20Khata%20account%20(${encodeURIComponent(user.name || '')},%20Email:%20${encodeURIComponent(user.email)}).%20Please%20find%20attached%20payment%20screenshot.`} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="btn btn-secondary btn-sm w-full whatsapp-link-btn"
+                                >
+                                    <MessageSquare size={14} color="#16a34a" /> Share Screenshot on WhatsApp
+                                </a>
+                            </div>
+                        </div>
+
+                        <div className="modal-card-footer">
+                            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowUpiModal(false)}>
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
