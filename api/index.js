@@ -522,9 +522,18 @@ app.post('/api/products', authenticate, authorize('MANAGEMENT', 'ADMIN'), async 
         const { name, nameHi, brand, category, subcategory, price, mrp, unit, image, description, stock, rating, productType } = req.body;
         if (!name || !brand || !category || !price || !mrp) return res.status(400).json({ error: 'Missing required product fields' });
         
-        const fallbackImg = category === 'stationery' 
+        // Auto-resolve raw Category ID to slug (e.g. cmtb5... -> stationery)
+        let resolvedCategory = category.trim();
+        const matchedCat = await prisma.category.findFirst({
+            where: { OR: [{ id: resolvedCategory }, { slug: resolvedCategory }] }
+        });
+        if (matchedCat) {
+            resolvedCategory = matchedCat.slug;
+        }
+
+        const fallbackImg = resolvedCategory === 'stationery' 
             ? 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=400'
-            : category === 'household-personal'
+            : resolvedCategory === 'household-personal'
             ? 'https://images.unsplash.com/photo-1585421514284-efb74c2b69ba?w=400'
             : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400';
 
@@ -536,7 +545,7 @@ app.post('/api/products', authenticate, authorize('MANAGEMENT', 'ADMIN'), async 
                 name: name.trim(),
                 nameHi: nameHi?.trim() || null,
                 brand: brand.trim(),
-                category: category.trim(),
+                category: resolvedCategory,
                 subcategory: subcategory?.trim() || 'all',
                 price: parseFloat(price),
                 mrp: parseFloat(mrp),
@@ -559,6 +568,12 @@ app.put('/api/products/:id', authenticate, authorize('MANAGEMENT', 'ADMIN'), asy
     try {
         const data = {};
         ['name', 'nameHi', 'brand', 'category', 'subcategory', 'unit', 'image', 'description'].forEach(f => { if (req.body[f] !== undefined) data[f] = req.body[f]; });
+        if (data.category) {
+            const matchedCat = await prisma.category.findFirst({
+                where: { OR: [{ id: data.category }, { slug: data.category }] }
+            });
+            if (matchedCat) data.category = matchedCat.slug;
+        }
         ['price', 'mrp', 'rating'].forEach(f => { if (req.body[f] !== undefined) data[f] = parseFloat(req.body[f]); });
         ['stock', 'reviews'].forEach(f => { if (req.body[f] !== undefined) data[f] = parseInt(req.body[f]); });
         if (req.body.isActive !== undefined) data.isActive = Boolean(req.body.isActive);

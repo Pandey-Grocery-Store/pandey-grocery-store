@@ -112,24 +112,30 @@ export default function StaffProducts() {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
+    const getCategoryName = (catValue) => {
+        if (!catValue) return 'General';
+        const found = categoryList.find(c => c.slug === catValue || c.id === catValue || c.name.toLowerCase() === catValue.toLowerCase());
+        return found ? found.name : (catValue.charAt(0).toUpperCase() + catValue.slice(1));
+    };
+
     const activeCategories = [
         { id: 'all', name: 'All Departments', icon: Layers },
         ...categoryList.map(c => ({
-            id: c.id || c.slug,
+            id: c.slug || c.id,
             name: c.name,
-            icon: c.id === 'stationery' ? BookOpen : c.id === 'household-personal' ? Sparkles : ShoppingBasket,
+            icon: (c.slug === 'stationery' || c.id === 'stationery') ? BookOpen : (c.slug === 'household-personal' || c.id === 'household-personal') ? Sparkles : ShoppingBasket,
             subcategories: c.subcategories || []
         }))
     ];
 
-    const currentCategoryObj = categoryList.find(c => (c.id === newProduct.category || c.slug === newProduct.category));
+    const currentCategoryObj = categoryList.find(c => (c.slug === newProduct.category || c.id === newProduct.category));
     const currentSubcategories = currentCategoryObj?.subcategories || [];
 
     const filtered = productList.filter((p) => {
         const matchSearch = p.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase())) ||
                             (p.nameHi && p.nameHi.toLowerCase().includes(searchQuery.toLowerCase()));
-        const matchCategory = filterCategory === 'all' || p.category === filterCategory;
+        const matchCategory = filterCategory === 'all' || p.category === filterCategory || (currentCategoryObj && p.category === currentCategoryObj.id);
         return matchSearch && matchCategory;
     });
 
@@ -421,7 +427,7 @@ export default function StaffProducts() {
                                                 <span className="p-table-brand">{product.brand}</span>
                                             </td>
                                             <td>
-                                                <span className="p-cat-tag">{product.category}</span>
+                                                <span className="p-cat-tag">{getCategoryName(product.category)}</span>
                                             </td>
                                             <td>
                                                 {isEditing ? (
@@ -672,15 +678,15 @@ export default function StaffProducts() {
                                         {/* Department Selector Pills */}
                                         <div className="ap-dept-pills-row">
                                             {categoryList.map((cat) => {
-                                                const isSelected = newProduct.category === (cat.id || cat.slug);
-                                                const Icon = cat.id === 'stationery' ? BookOpen : cat.id === 'household-personal' ? Sparkles : ShoppingBasket;
+                                                const catKey = cat.slug || cat.id;
+                                                const isSelected = newProduct.category === catKey;
+                                                const Icon = (cat.slug === 'stationery' || cat.id === 'stationery') ? BookOpen : (cat.slug === 'household-personal' || cat.id === 'household-personal') ? Sparkles : ShoppingBasket;
                                                 return (
                                                     <button
                                                         type="button"
-                                                        key={cat.id || cat.slug}
+                                                        key={catKey}
                                                         className={`ap-dept-btn ${isSelected ? 'selected' : ''}`}
                                                         onClick={() => {
-                                                            const catKey = cat.id || cat.slug;
                                                             const firstSub = cat.subcategories?.[0]?.id || 'all';
                                                             setNewProduct({ ...newProduct, category: catKey, subcategory: firstSub });
                                                         }}
