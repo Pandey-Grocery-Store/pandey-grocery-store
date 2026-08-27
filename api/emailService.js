@@ -1,5 +1,9 @@
 import nodemailer from 'nodemailer';
 
+// ── Module-level config (safe for templates — read env at import time) ──
+const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://pandeygrocery-store.vercel.app';
+const adminAlertEmail = process.env.ADMIN_ALERT_EMAIL || process.env.SMTP_USER || 'grocerypandey.store@gmail.com';
+
 // ── Dynamic SMTP Transporter Helper ──
 export function getTransporter() {
     const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
@@ -22,8 +26,8 @@ export function getTransporter() {
         smtpUser,
         smtpPass,
         emailFrom: process.env.EMAIL_FROM || `"Pandey Grocery Store" <${smtpUser}>`,
-        adminAlertEmail: process.env.ADMIN_ALERT_EMAIL || smtpUser,
-        appBaseUrl: process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://pandeygrocery-store.vercel.app',
+        adminAlertEmail,
+        appBaseUrl,
     };
 }
 
