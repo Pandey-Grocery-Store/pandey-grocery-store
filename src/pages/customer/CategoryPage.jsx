@@ -1,6 +1,21 @@
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useMemo, useEffect } from 'react';
-import { SlidersHorizontal, Grid3X3, List, Loader, PackageOpen, ArrowLeft, Search, Check, Sparkles, ShoppingBag, Store, ShieldCheck, ChevronRight } from 'lucide-react';
+import { 
+    SlidersHorizontal, 
+    Grid3X3, 
+    List, 
+    Loader, 
+    PackageOpen, 
+    ArrowLeft, 
+    Search, 
+    Check, 
+    Sparkles, 
+    ShoppingBag, 
+    Store, 
+    ShieldCheck, 
+    ChevronRight,
+    Printer
+} from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import PrintServicesPage from './PrintServicesPage';
 import CategoryIcon from '../../components/CategoryIcon';
