@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "server": "node --env-file=.env api/index.js",
     "build": "prisma generate --schema=server/prisma/schema.prisma && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

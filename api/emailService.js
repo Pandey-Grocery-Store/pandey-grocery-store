@@ -563,6 +563,40 @@ export async function sendDeliveryAssignmentCustomerEmail(toEmail, order, riderN
     });
 }
 
+export async function sendDeliveryAssignmentRiderEmail(riderEmail, order) {
+    if (!riderEmail) return { success: false, reason: 'No rider email' };
+
+    const items = order.items || [];
+    const itemsSummary = items.map(i => `${i.name} (x${i.quantity || i.qty || 1})`).join(', ');
+
+    const html = `
+    <div style="font-family: sans-serif; padding: 20px; background: #f8fafc;">
+        <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 14px; padding: 24px; border: 1px solid #e2e8f0;">
+            <h2 style="color: #059669; margin: 0 0 8px;">📦 New Delivery Assignment!</h2>
+            <p style="color: #334155; font-size: 14px; line-height: 1.5;">
+                You have been assigned to deliver Order <strong>#${order.orderNumber || order.id}</strong>.
+            </p>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin: 16px 0;">
+                <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;"><strong>Customer:</strong> ${order.customer || 'Customer'}</div>
+                <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;"><strong>Phone:</strong> ${order.phone || 'N/A'}</div>
+                <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;"><strong>Drop Address:</strong> ${order.address || 'Haldwani'}</div>
+                <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;"><strong>Collect Total:</strong> ₹${order.total} (${order.paymentMode || 'COD'})</div>
+                <div style="font-size: 13px; color: #64748b;"><strong>Items:</strong> ${itemsSummary}</div>
+            </div>
+            <a href="${appBaseUrl}/delivery/dashboard" style="background: #059669; color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 700; font-size: 13px;">
+                Open Delivery Dashboard
+            </a>
+        </div>
+    </div>`;
+
+    return sendEmail({
+        to: riderEmail,
+        subject: `📦 New Delivery Task: Order #${order.orderNumber || order.id} (₹${order.total})`,
+        html,
+        text: `New delivery assignment for Order #${order.orderNumber || order.id}. Deliver to ${order.address}. Total: ₹${order.total}`,
+    });
+}
+
 // ════════════════════ 11. Low Stock Inventory Alert Email ════════════════════
 export async function sendLowStockAlertEmail(product) {
     if (!adminAlertEmail) return;

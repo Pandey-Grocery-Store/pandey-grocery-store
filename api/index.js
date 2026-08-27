@@ -747,5 +747,13 @@ app.post('/api/notifications/broadcast-email', authenticate, authorize('ADMIN'),
     }
 });
 
+// ── Local Dev Server Listener (Port 5001 for Vite proxy) ──
+if (!process.env.VERCEL) {
+    const PORT = process.env.PORT || 5001;
+    app.listen(PORT, () => {
+        console.log(`🚀 Pandey Grocery API running locally on http://localhost:${PORT}`);
+    });
+}
+
 // ── Export for Vercel ──
 export default app;
