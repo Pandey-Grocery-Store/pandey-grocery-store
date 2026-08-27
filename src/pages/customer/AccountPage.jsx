@@ -100,6 +100,9 @@ export default function AccountPage() {
         setPwError('');
         setPwSuccess('');
         setShowPasswordModal(true);
+        if (mode === 'reset-code') {
+            handleSendResetEmail();
+        }
     };
 
     const handleChangePassword = async (e) => {
@@ -120,11 +123,15 @@ export default function AccountPage() {
     };
 
     const handleSendResetEmail = async () => {
+        if (!user?.email) {
+            setPwError('No email address found for this user account.');
+            return;
+        }
         setPwError('');
         setPwLoading(true);
         try {
-            await authApi.forgotPassword(user.email);
-            setPwSuccess(`6-digit recovery code sent to ${user.email}`);
+            const res = await authApi.forgotPassword(user.email);
+            setPwSuccess(res?.message || `6-digit recovery code sent to ${user.email}`);
             setPwModalMode('reset-code');
         } catch (err) {
             setPwError(err.message || 'Failed to send recovery email.');

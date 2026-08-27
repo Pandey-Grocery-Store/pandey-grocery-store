@@ -173,49 +173,53 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 // ── Forgot Password: Send 6-Digit Password Reset OTP Email ──
 app.post('/api/auth/forgot-password', async (req, res) => {
     try {
-        const { email } = req.body;
+        let { email } = req.body;
         if (!email) return res.status(400).json({ error: 'Email address required' });
+        email = email.trim().toLowerCase();
 
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) {
-            // For security, do not disclose whether user exists, return friendly success
-            return res.json({ message: 'If an account exists with this email, a reset code was sent.' });
-        }
+        let user = await prisma.user.findFirst({
+            where: { email: { equals: email, mode: 'insensitive' } }
+        });
 
         const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
         await prisma.otp.updateMany({ where: { email, used: false }, data: { used: true } });
         await prisma.otp.create({ data: { email, code: resetCode, expiresAt: new Date(Date.now() + 600000) } });
 
-        try {
-            await sendPasswordResetOtpEmail(user.email, resetCode, user.name);
-            console.log(`📧 Password reset code sent to ${user.email}`);
-        } catch (mailErr) {
-            console.error('Password reset email error:', mailErr.message);
+        const recipientName = user ? user.name : email.split('@')[0];
+        const mailRes = await sendPasswordResetOtpEmail(email, resetCode, recipientName);
+        console.log(`📧 Password reset code sent to ${email} (Success: ${mailRes.success})`);
+
+        if (!mailRes.success && mailRes.error) {
+            console.error('Email delivery error details:', mailRes.error);
         }
 
-        res.json({ message: 'Password recovery code sent to your email' });
+        res.json({ success: true, message: `6-digit password recovery code sent to ${email}` });
     } catch (err) {
         console.error('Forgot password error:', err);
-        res.status(500).json({ error: 'Failed to process password reset request' });
+        res.status(500).json({ error: err.message || 'Failed to process password reset request' });
     }
 });
 
 // ── Reset Password with Verified OTP Code ──
 app.post('/api/auth/reset-password', async (req, res) => {
     try {
-        const { email, code, newPassword } = req.body;
+        let { email, code, newPassword } = req.body;
         if (!email || !code || !newPassword) return res.status(400).json({ error: 'Email, recovery code, and new password are required' });
         if (newPassword.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        email = email.trim().toLowerCase();
+        code = code.trim();
 
         const otp = await prisma.otp.findFirst({
-            where: { email, code, used: false, expiresAt: { gt: new Date() } },
+            where: { email: { equals: email, mode: 'insensitive' }, code, used: false, expiresAt: { gt: new Date() } },
             orderBy: { createdAt: 'desc' }
         });
 
         if (!otp) return res.status(401).json({ error: 'Invalid or expired recovery code' });
         await prisma.otp.update({ where: { id: otp.id }, data: { used: true } });
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        let user = await prisma.user.findFirst({
+            where: { email: { equals: email, mode: 'insensitive' } }
+        });
         if (!user) return res.status(404).json({ error: 'User account not found' });
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -228,13 +232,14 @@ app.post('/api/auth/reset-password', async (req, res) => {
         sendPasswordChangedAlert(updatedUser.email, updatedUser.name).catch(e => console.error('Password reset alert error:', e.message));
 
         res.json({
+            success: true,
             message: 'Password reset successfully. You are now logged in.',
             token: generateToken(updatedUser),
             user: { id: updatedUser.id, name: updatedUser.name, email: updatedUser.email, role: updatedUser.role, avatar: updatedUser.avatar }
         });
     } catch (err) {
         console.error('Reset password error:', err);
-        res.status(500).json({ error: 'Failed to reset password' });
+        res.status(500).json({ error: err.message || 'Failed to reset password' });
     }
 });
 
