@@ -521,8 +521,13 @@ app.post('/api/print-jobs', authenticate, async (req, res) => {
             }
         });
 
-        if (req.user?.email) {
-            sendPrintJobEmail(req.user.email, job).catch(e => console.error('Print job email error:', e.message));
+        let targetEmail = req.user?.email;
+        if (!targetEmail && req.user?.id) {
+            const u = await prisma.user.findUnique({ where: { id: req.user.id } });
+            targetEmail = u?.email;
+        }
+        if (targetEmail) {
+            sendPrintJobEmail(targetEmail, job).catch(e => console.error('Print job email error:', e.message));
         }
 
         res.status(201).json({ job });
@@ -578,8 +583,14 @@ app.patch('/api/print-jobs/:id/status', authenticate, authorize('MANAGEMENT', 'A
             include: { user: { select: { email: true, name: true } } } 
         });
 
-        if (job.user?.email && (status === 'done' || status === 'paid')) {
-            sendPrintJobStatusUpdateEmail(job.user.email, job, status).catch(e => console.error('Print job status email error:', e.message));
+        let targetEmail = job.user?.email;
+        if (!targetEmail && job.userId) {
+            const u = await prisma.user.findUnique({ where: { id: job.userId } });
+            targetEmail = u?.email;
+        }
+
+        if (targetEmail && (status === 'done' || status === 'paid')) {
+            sendPrintJobStatusUpdateEmail(targetEmail, job, status).catch(e => console.error('Print job status email error:', e.message));
         }
 
         res.json({ job: { ...job, fileUrls: JSON.parse(job.fileUrls || '[]') } });
