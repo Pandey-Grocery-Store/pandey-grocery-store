@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, User, Menu, X, Heart, MapPin } from 'lucide-react';
+import { ShoppingBag, Search, User, Menu, X, Heart, MapPin, Printer, Sparkles, Phone } from 'lucide-react';
 import { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -25,84 +25,118 @@ export default function Navbar() {
 
     return (
         <>
-            {/* Top strip */}
+            {/* Top Announcement Strip */}
             <div className="top-strip">
                 <div className="container top-strip-inner">
                     <div className="top-strip-left">
-                        <MapPin size={13} />
-                        <span>Delivering to Haldwani, Uttarakhand</span>
+                        <span className="live-store-pulse" />
+                        <MapPin size={13} className="strip-icon" />
+                        <span><strong>In-Store Shopping &amp; Print Hub:</strong> Haldwani, Uttarakhand</span>
                     </div>
                     <div className="top-strip-right">
-                        <span>📞 Help: +91 9410516899</span>
+                        <a href="tel:+919410516899" className="top-link">
+                            <Phone size={12} />
+                            <span>+91 9410516899</span>
+                        </a>
                         {!isLoggedIn ? (
-                            <Link to="/login" className="top-link">Sign In</Link>
+                            <Link to="/login" className="top-link auth-pill">Sign In / Register</Link>
                         ) : (
-                            <span className="top-link" onClick={logout} style={{ cursor: 'pointer' }}>
-                                Logout ({user.name})
-                            </span>
+                            <div className="top-user-pill">
+                                <span>Hello, {user.name}</span>
+                                <button onClick={logout} className="top-logout-btn">Logout</button>
+                            </div>
                         )}
                     </div>
                 </div>
             </div>
 
             {/* Main Navbar */}
-            <nav className="navbar">
+            <header className="navbar">
                 <div className="container navbar-inner">
+                    {/* Logo */}
                     <Link to="/" className="navbar-logo">
-                        <img src="/favicon.svg" alt="Pandey Grocery Store" className="logo-icon" width="36" height="36" />
-                        <div>
-                            <span className="logo-text">Pandey Grocery Store</span>
-                            <span className="logo-tagline">Indian Groceries & Daily Essentials</span>
+                        <div className="logo-icon-wrap">
+                            <img src="/favicon.svg" alt="Pandey Grocery Store" className="logo-icon" width="34" height="34" />
+                        </div>
+                        <div className="logo-text-group">
+                            <span className="logo-text">Pandey Grocery</span>
+                            <span className="logo-tagline">Store &amp; Print Hub • Haldwani</span>
                         </div>
                     </Link>
 
+                    {/* Search Bar */}
                     <form className="navbar-search" onSubmit={handleSearch}>
                         <Search size={18} className="search-icon" />
                         <input
                             type="text"
-                            placeholder="Search for groceries, utensils, and more..."
+                            placeholder="Search fresh groceries, stationery, essentials..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="search-input"
                         />
-                        {searchQuery && (
+                        {searchQuery ? (
                             <button type="submit" className="search-submit-btn">
                                 Search
                             </button>
+                        ) : (
+                            <span className="search-shortcut">⌘K</span>
                         )}
                     </form>
 
+                    {/* Nav Actions */}
                     <div className="navbar-actions">
+                        {/* Quick Print Hub Badge Link */}
+                        <Link to="/category/printing-binding" className="nav-print-badge" title="Document & ID Print Hub">
+                            <Printer size={16} />
+                            <span>Print Hub</span>
+                        </Link>
+
                         {isLoggedIn && ['ADMIN', 'MANAGEMENT'].includes(user.role) && (
-                            <Link to={user.role === 'ADMIN' ? '/admin' : '/staff'} className="btn btn-sm btn-secondary">
+                            <Link to={user.role === 'ADMIN' ? '/admin' : '/staff'} className="btn btn-sm btn-accent nav-dash-btn">
                                 Dashboard
                             </Link>
                         )}
                         {isLoggedIn && user.role === 'DELIVERY' && (
                             <Link to="/delivery" className="btn btn-sm btn-secondary">
-                                🛵 My Deliveries
+                                🛵 Deliveries
                             </Link>
                         )}
-                        <Link to="/wishlist" className="nav-action-btn" title="Wishlist">
+
+                        <Link to="/wishlist" className="nav-action-btn desktop-only" title="Wishlist">
                             <Heart size={20} />
                         </Link>
+
                         <Link to="/account" className="nav-action-btn" title="Account">
                             <User size={20} />
                             {isLoggedIn && <span className="nav-dot" />}
                         </Link>
-                        <Link to="/cart" className="nav-action-btn cart-btn" title="Cart">
-                            <ShoppingCart size={20} />
+
+                        <Link to="/cart" className="nav-action-btn cart-btn" title="Shopping Cart">
+                            <ShoppingBag size={20} />
                             {itemCount > 0 && <span className="cart-badge">{itemCount}</span>}
                         </Link>
-                        <button className="nav-action-btn mobile-menu-btn" onClick={() => setMobileOpen(!mobileOpen)}>
+
+                        <button 
+                            className="nav-action-btn mobile-menu-btn" 
+                            onClick={() => setMobileOpen(!mobileOpen)}
+                            aria-label="Toggle Navigation Menu"
+                        >
                             {mobileOpen ? <X size={22} /> : <Menu size={22} />}
                         </button>
                     </div>
                 </div>
 
-                {/* Category Bar */}
+                {/* Categories & Services Horizontal Strip */}
                 <div className="category-bar">
                     <div className="container category-bar-inner">
+                        <Link 
+                            to="/" 
+                            className={`category-link ${location.pathname === '/' ? 'active' : ''}`}
+                        >
+                            <Sparkles size={14} className="cat-icon-svg" />
+                            <span>Home</span>
+                        </Link>
+
                         {categories.map((cat) => (
                             <Link
                                 key={cat.id}
@@ -110,48 +144,111 @@ export default function Navbar() {
                                 className={`category-link ${location.pathname.includes(cat.id) ? 'active' : ''}`}
                             >
                                 <span className="category-link-icon">{cat.icon}</span>
-                                {cat.name}
+                                <span>{cat.name}</span>
                             </Link>
                         ))}
-                        <Link to="/offers" className={`category-link offers-link ${location.pathname === '/offers' ? 'active' : ''}`}>
-                            🏷️ Offers
+
+                        <Link 
+                            to="/category/printing-binding" 
+                            className={`category-link print-special-link ${location.pathname.includes('printing-binding') ? 'active' : ''}`}
+                        >
+                            <Printer size={15} />
+                            <span>Print &amp; ID Cards</span>
+                        </Link>
+
+                        <Link 
+                            to="/offers" 
+                            className={`category-link offers-link ${location.pathname === '/offers' ? 'active' : ''}`}
+                        >
+                            <span>🏷️ Today's Offers</span>
                         </Link>
                     </div>
                 </div>
-            </nav>
+            </header>
 
-            {/* Mobile menu */}
+            {/* Mobile Search Bar below Navbar on small screens */}
+            <div className="mobile-search-strip">
+                <form className="mobile-search-form" onSubmit={handleSearch}>
+                    <Search size={16} className="mobile-search-icon" />
+                    <input
+                        type="text"
+                        placeholder="Search groceries, stationery, print..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="mobile-search-input"
+                    />
+                    {searchQuery && (
+                        <button type="submit" className="mobile-search-btn">Search</button>
+                    )}
+                </form>
+            </div>
+
+            {/* Mobile Drawer Menu */}
             {mobileOpen && (
                 <div className="mobile-nav-overlay" onClick={() => setMobileOpen(false)}>
                     <div className="mobile-nav" onClick={(e) => e.stopPropagation()}>
                         <div className="mobile-nav-header">
-                            <span className="logo-text"><img src="/favicon.svg" alt="" width="28" height="28" style={{ verticalAlign: 'middle', marginRight: '8px' }} />Pandey Grocery Store</span>
-                            <button onClick={() => setMobileOpen(false)}><X size={22} /></button>
+                            <div className="mobile-nav-brand">
+                                <img src="/favicon.svg" alt="" width="30" height="30" />
+                                <span className="logo-text">Pandey Grocery</span>
+                            </div>
+                            <button className="btn-icon btn-ghost" onClick={() => setMobileOpen(false)}>
+                                <X size={22} />
+                            </button>
                         </div>
-                        <form className="mobile-search" onSubmit={handleSearch}>
-                            <Search size={18} />
-                            <input
-                                placeholder="Search products..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </form>
+
                         <div className="mobile-nav-links">
-                            <Link to="/" onClick={() => setMobileOpen(false)}>Home</Link>
+                            <Link to="/" onClick={() => setMobileOpen(false)} className="mobile-nav-link">
+                                🏠 Home
+                            </Link>
+
+                            <div className="mobile-nav-heading">Categories</div>
                             {categories.map((cat) => (
-                                <Link key={cat.id} to={`/category/${cat.id}`} onClick={() => setMobileOpen(false)}>
-                                    {cat.icon} {cat.name}
+                                <Link 
+                                    key={cat.id} 
+                                    to={`/category/${cat.id}`} 
+                                    onClick={() => setMobileOpen(false)}
+                                    className="mobile-nav-link"
+                                >
+                                    <span>{cat.icon}</span> {cat.name}
                                 </Link>
                             ))}
-                            <Link to="/offers" onClick={() => setMobileOpen(false)}>🏷️ Offers</Link>
-                            <Link to="/wishlist" onClick={() => setMobileOpen(false)}>❤️ Wishlist</Link>
-                            <Link to="/cart" onClick={() => setMobileOpen(false)}>🛒 Cart ({itemCount})</Link>
-                            <Link to="/account" onClick={() => setMobileOpen(false)}>👤 My Account</Link>
+
+                            <div className="mobile-nav-heading">Services &amp; Deals</div>
+                            <Link 
+                                to="/category/printing-binding" 
+                                onClick={() => setMobileOpen(false)}
+                                className="mobile-nav-link print-highlight"
+                            >
+                                🖨️ Document &amp; ID Print Hub
+                            </Link>
+                            <Link to="/offers" onClick={() => setMobileOpen(false)} className="mobile-nav-link">
+                                🏷️ Exclusive Offers &amp; Coupons
+                            </Link>
+                            <Link to="/wishlist" onClick={() => setMobileOpen(false)} className="mobile-nav-link">
+                                ❤️ My Wishlist
+                            </Link>
+                            <Link to="/cart" onClick={() => setMobileOpen(false)} className="mobile-nav-link">
+                                🛒 My Cart ({itemCount})
+                            </Link>
+                            <Link to="/account" onClick={() => setMobileOpen(false)} className="mobile-nav-link">
+                                👤 My Profile &amp; Orders
+                            </Link>
+
                             {isLoggedIn && ['ADMIN', 'MANAGEMENT'].includes(user.role) && (
-                                <Link to={user.role === 'ADMIN' ? '/admin' : '/staff'} onClick={() => setMobileOpen(false)}>
-                                    📊 Dashboard
+                                <Link 
+                                    to={user.role === 'ADMIN' ? '/admin' : '/staff'} 
+                                    onClick={() => setMobileOpen(false)}
+                                    className="mobile-nav-link admin-link"
+                                >
+                                    📊 Staff / Admin Dashboard
                                 </Link>
                             )}
+                        </div>
+
+                        <div className="mobile-nav-footer">
+                            <p className="mobile-store-info">📍 Near Temple, Haldwani</p>
+                            <p className="mobile-store-phone">📞 +91 9410516899</p>
                         </div>
                     </div>
                 </div>

@@ -1,0 +1,118 @@
+/* ── Mobile Bottom Navigation Bar ── */
+.mobile-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.07);
+    z-index: 999;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (max-width: 768px) {
+    .mobile-bottom-nav {
+        display: block;
+    }
+}
+
+.mobile-bottom-nav-inner {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: var(--bottom-nav-height);
+    padding: 0 4px;
+}
+
+.mobile-bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 100%;
+    color: var(--gray-500);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+    position: relative;
+    padding: 4px 0;
+}
+
+.nav-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+}
+
+.nav-svg-icon {
+    transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.mobile-nav-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    margin-top: 2px;
+    letter-spacing: -0.01em;
+    transition: color var(--transition-fast);
+}
+
+/* Active State */
+.mobile-bottom-nav-item.active {
+    color: var(--primary);
+}
+
+.mobile-bottom-nav-item.active .nav-svg-icon {
+    transform: translateY(-2px) scale(1.1);
+    color: var(--primary);
+}
+
+.mobile-bottom-nav-item.active .mobile-nav-label {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+/* Print Hub Highlight Item */
+.mobile-bottom-nav-item.highlight-item .nav-icon-wrapper {
+    background: var(--primary-gradient-subtle);
+    border-radius: var(--radius-sm);
+    width: 32px;
+    height: 28px;
+}
+
+.mobile-bottom-nav-item.highlight-item.active .nav-icon-wrapper {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.35);
+}
+
+.mobile-bottom-nav-item.highlight-item.active .nav-svg-icon {
+    color: white;
+}
+
+/* Cart Badge */
+.mobile-nav-badge {
+    position: absolute;
+    top: -4px;
+    right: -8px;
+    background: var(--accent-gradient);
+    color: white;
+    font-size: 0.625rem;
+    font-weight: 800;
+    min-width: 17px;
+    height: 17px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(249, 115, 22, 0.4);
+    animation: fadeIn 0.2s ease;
+}
