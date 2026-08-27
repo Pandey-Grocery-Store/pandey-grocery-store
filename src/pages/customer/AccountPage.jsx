@@ -30,7 +30,7 @@ import {
     Check
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { ordersApi, userApi } from '../../lib/api';
+import { ordersApi, userApi, authApi } from '../../lib/api';
 import { statusLabels, statusColors } from '../../data/orders';
 import './AccountPage.css';
 
@@ -74,6 +74,77 @@ export default function AccountPage() {
         pin: '263139',
         isDefault: false
     });
+
+    // Password Security Modal State
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [pwModalMode, setPwModalMode] = useState('change'); // 'change' | 'reset-code'
+    const [pwCurrent, setPwCurrent] = useState('');
+    const [pwNew, setPwNew] = useState('');
+    const [pwConfirm, setPwConfirm] = useState('');
+    const [pwResetCode, setPwResetCode] = useState('');
+    const [pwLoading, setPwLoading] = useState(false);
+    const [pwError, setPwError] = useState('');
+    const [pwSuccess, setPwSuccess] = useState('');
+
+    const openPasswordModal = (mode = 'change') => {
+        setPwModalMode(mode);
+        setPwCurrent('');
+        setPwNew('');
+        setPwConfirm('');
+        setPwResetCode('');
+        setPwError('');
+        setPwSuccess('');
+        setShowPasswordModal(true);
+    };
+
+    const handleChangePassword = async (e) => {
+        e.preventDefault();
+        if (pwNew.length < 6) { setPwError('New password must be at least 6 characters'); return; }
+        if (pwNew !== pwConfirm) { setPwError('New passwords do not match'); return; }
+        setPwError('');
+        setPwLoading(true);
+        try {
+            await userApi.changePassword({ currentPassword: pwCurrent, newPassword: pwNew });
+            setPwSuccess('Password updated successfully! A security confirmation was sent to your email.');
+            setTimeout(() => setShowPasswordModal(false), 2000);
+        } catch (err) {
+            setPwError(err.message || 'Failed to update password. Current password may be incorrect.');
+        } finally {
+            setPwLoading(false);
+        }
+    };
+
+    const handleSendResetEmail = async () => {
+        setPwError('');
+        setPwLoading(true);
+        try {
+            await authApi.forgotPassword(user.email);
+            setPwSuccess(`6-digit recovery code sent to ${user.email}`);
+            setPwModalMode('reset-code');
+        } catch (err) {
+            setPwError(err.message || 'Failed to send recovery email.');
+        } finally {
+            setPwLoading(false);
+        }
+    };
+
+    const handleResetWithCode = async (e) => {
+        e.preventDefault();
+        if (!pwResetCode || !pwNew) { setPwError('Please fill all fields'); return; }
+        if (pwNew.length < 6) { setPwError('New password must be at least 6 characters'); return; }
+        if (pwNew !== pwConfirm) { setPwError('New passwords do not match'); return; }
+        setPwError('');
+        setPwLoading(true);
+        try {
+            await authApi.resetPassword(user.email, pwResetCode, pwNew);
+            setPwSuccess('Password reset successfully! Account secured.');
+            setTimeout(() => setShowPasswordModal(false), 2000);
+        } catch (err) {
+            setPwError(err.message || 'Failed to reset password. Check your recovery code.');
+        } finally {
+            setPwLoading(false);
+        }
+    };
 
     // Initialize user state
     useEffect(() => {
@@ -528,11 +599,16 @@ export default function AccountPage() {
                                     </div>
                                     <div className="sec-feature-text">
                                         <h4>Account Password</h4>
-                                        <p>Secure login password for your store account.</p>
+                                        <p>Change your password or request an email recovery code.</p>
                                     </div>
-                                    <button className="btn btn-secondary btn-sm" onClick={() => alert('Password reset verification link sent to ' + user.email)}>
-                                        Reset Password
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                        <button className="btn btn-secondary btn-sm" onClick={() => openPasswordModal('change')}>
+                                            Change Password
+                                        </button>
+                                        <button className="btn btn-outline btn-sm" onClick={() => { openPasswordModal('reset-code'); handleSendResetEmail(); }}>
+                                            Reset via Email
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="security-feature-card">
@@ -563,6 +639,158 @@ export default function AccountPage() {
                     )}
                 </div>
             </div>
+
+            {/* ─── Password Change & Email Reset Modal ─── */}
+            {showPasswordModal && (
+                <div className="modal-overlay animate-fade-in" onClick={() => setShowPasswordModal(false)}>
+                    <div className="address-modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px' }}>
+                        <div className="modal-card-header">
+                            <div className="modal-title-wrap">
+                                <KeyRound size={18} color="var(--primary)" />
+                                <h3>{pwModalMode === 'change' ? 'Update Password' : 'Reset Password with Email Code'}</h3>
+                            </div>
+                            <button className="btn-icon btn-ghost" onClick={() => setShowPasswordModal(false)}>
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {pwError && (
+                            <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '10px 14px', borderRadius: '10px', fontSize: '0.85rem', margin: '14px 20px 0' }}>
+                                {pwError}
+                            </div>
+                        )}
+
+                        {pwSuccess && (
+                            <div style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: '10px 14px', borderRadius: '10px', fontSize: '0.85rem', margin: '14px 20px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <CheckCircle2 size={16} />
+                                <span>{pwSuccess}</span>
+                            </div>
+                        )}
+
+                        {pwModalMode === 'change' ? (
+                            <form onSubmit={handleChangePassword} className="modal-form-body">
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                    <div className="m-form-group">
+                                        <label>Current Password</label>
+                                        <input 
+                                            type="password" 
+                                            className="input" 
+                                            placeholder="Enter your current password" 
+                                            value={pwCurrent} 
+                                            onChange={e => setPwCurrent(e.target.value)} 
+                                            required 
+                                        />
+                                    </div>
+
+                                    <div className="m-form-group">
+                                        <label>New Password (min 6 chars)</label>
+                                        <input 
+                                            type="password" 
+                                            className="input" 
+                                            placeholder="Enter new password" 
+                                            value={pwNew} 
+                                            onChange={e => setPwNew(e.target.value)} 
+                                            required 
+                                            minLength={6}
+                                        />
+                                    </div>
+
+                                    <div className="m-form-group">
+                                        <label>Confirm New Password</label>
+                                        <input 
+                                            type="password" 
+                                            className="input" 
+                                            placeholder="Confirm new password" 
+                                            value={pwConfirm} 
+                                            onChange={e => setPwConfirm(e.target.value)} 
+                                            required 
+                                            minLength={6}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="modal-card-footer" style={{ marginTop: '1.25rem' }}>
+                                    <button 
+                                        type="button" 
+                                        className="btn btn-ghost btn-sm" 
+                                        onClick={handleSendResetEmail}
+                                        style={{ fontSize: '0.8rem', color: 'var(--primary)' }}
+                                    >
+                                        Forgot Password? Use Email Code
+                                    </button>
+                                    <button type="submit" className="btn btn-primary btn-sm" disabled={pwLoading}>
+                                        {pwLoading ? 'Saving...' : 'Update Password'}
+                                    </button>
+                                </div>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleResetWithCode} className="modal-form-body">
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.45 }}>
+                                        Enter the 6-digit recovery code sent to <strong>{user.email}</strong> and create a new password.
+                                    </p>
+
+                                    <div className="m-form-group">
+                                        <label>6-Digit Email Recovery Code</label>
+                                        <input 
+                                            type="text" 
+                                            className="input" 
+                                            placeholder="• • • • • •" 
+                                            value={pwResetCode} 
+                                            onChange={e => setPwResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))} 
+                                            maxLength={6}
+                                            required 
+                                            autoFocus
+                                            style={{ letterSpacing: '4px', textAlign: 'center', fontWeight: '800' }}
+                                        />
+                                    </div>
+
+                                    <div className="m-form-group">
+                                        <label>New Password (min 6 chars)</label>
+                                        <input 
+                                            type="password" 
+                                            className="input" 
+                                            placeholder="Enter new password" 
+                                            value={pwNew} 
+                                            onChange={e => setPwNew(e.target.value)} 
+                                            required 
+                                            minLength={6}
+                                        />
+                                    </div>
+
+                                    <div className="m-form-group">
+                                        <label>Confirm New Password</label>
+                                        <input 
+                                            type="password" 
+                                            className="input" 
+                                            placeholder="Confirm new password" 
+                                            value={pwConfirm} 
+                                            onChange={e => setPwConfirm(e.target.value)} 
+                                            required 
+                                            minLength={6}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="modal-card-footer" style={{ marginTop: '1.25rem' }}>
+                                    <button 
+                                        type="button" 
+                                        className="btn btn-ghost btn-sm" 
+                                        onClick={handleSendResetEmail}
+                                        disabled={pwLoading}
+                                        style={{ fontSize: '0.8rem' }}
+                                    >
+                                        Resend Code
+                                    </button>
+                                    <button type="submit" className="btn btn-primary btn-sm" disabled={pwLoading || pwResetCode.length !== 6}>
+                                        {pwLoading ? 'Resetting...' : 'Reset & Secure Account'}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* ─── Add / Edit Address Modal ─── */}
             {showAddressModal && (
