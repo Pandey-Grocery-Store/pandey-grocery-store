@@ -60,6 +60,8 @@
     font-weight: 900;
     line-height: 1.15;
     color: var(--text-primary);
+    margin-top: 0;
+    padding-top: var(--space-1);
     margin-bottom: var(--space-4);
     letter-spacing: -0.03em;
 }
@@ -67,6 +69,7 @@
 @media (min-width: 768px) {
     .hero-title {
         font-size: 3.25rem;
+        padding-top: var(--space-2);
     }
 }
 
@@ -456,8 +459,8 @@
 .store-address-text {
     font-size: 0.9375rem;
     color: var(--text-secondary);
-    line-height: 1.6;
-    margin-bottom: var(--space-4);
+    line-height: 1.65;
+    margin-bottom: var(--space-6);
 }
 
 .store-timings {
