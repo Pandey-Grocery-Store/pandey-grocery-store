@@ -276,6 +276,17 @@ export default function PrintServicesPage() {
     const [passportA4Blob, setPassportA4Blob] = useState(null);
     const [passportGenerating, setPassportGenerating] = useState(false);
 
+    // Watermark option (Toggle whether store branding / watermark text is drawn on A4 output)
+    const [enableWatermark, setEnableWatermark] = useState(() => {
+        const saved = localStorage.getItem('print_watermark_enabled');
+        return saved !== null ? saved === 'true' : false; // Clean output by default unless toggled on
+    });
+
+    const toggleWatermark = (val) => {
+        setEnableWatermark(val);
+        localStorage.setItem('print_watermark_enabled', val.toString());
+    };
+
     // Submission state
     const [uploading, setUploading] = useState(false);
     const [submitted, setSubmitted] = useState(false);
@@ -344,11 +355,13 @@ export default function PrintServicesPage() {
                 img.src = src;
             });
 
-            // Store Title on A4 Sheet
-            ctx.fillStyle = '#0f172a';
-            ctx.font = 'bold 56px Arial, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('Pandey Grocery Store — ID Card Print', A4_W / 2, 160);
+            // Store Title on A4 Sheet (Only if watermark is enabled)
+            if (enableWatermark) {
+                ctx.fillStyle = '#0f172a';
+                ctx.font = 'bold 56px Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Pandey Grocery Store — ID Card Print', A4_W / 2, 160);
+            }
 
             // Card Standard Dimensions (85.6mm x 53.98mm at 300 DPI) -> 1012px x 638px
             const cardW = ID_W;
@@ -357,11 +370,14 @@ export default function PrintServicesPage() {
 
             // 1. Draw Front Side
             const frontImg = await loadImage(idFrontPreview);
-            const frontY = 320;
+            const frontY = enableWatermark ? 320 : (idBackPreview ? 260 : 360);
             
-            ctx.fillStyle = '#64748b';
-            ctx.font = '600 36px Arial, sans-serif';
-            ctx.fillText('— Front Side —', A4_W / 2, frontY - 20);
+            if (enableWatermark) {
+                ctx.fillStyle = '#64748b';
+                ctx.font = '600 36px Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('— Front Side —', A4_W / 2, frontY - 20);
+            }
 
             // Card shadow & border
             ctx.strokeStyle = '#cbd5e1';
@@ -372,11 +388,14 @@ export default function PrintServicesPage() {
             // 2. Draw Back Side if provided
             if (idBackPreview) {
                 const backImg = await loadImage(idBackPreview);
-                const backY = frontY + cardH + 180;
+                const backY = frontY + cardH + (enableWatermark ? 180 : 120);
 
-                ctx.fillStyle = '#64748b';
-                ctx.font = '600 36px Arial, sans-serif';
-                ctx.fillText('— Back Side —', A4_W / 2, backY - 20);
+                if (enableWatermark) {
+                    ctx.fillStyle = '#64748b';
+                    ctx.font = '600 36px Arial, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('— Back Side —', A4_W / 2, backY - 20);
+                }
 
                 ctx.strokeStyle = '#cbd5e1';
                 ctx.lineWidth = 3;
@@ -384,10 +403,13 @@ export default function PrintServicesPage() {
                 ctx.drawImage(backImg, centerX, backY, cardW, cardH);
             }
 
-            // Cut Guidelines Footer
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '400 32px Arial, sans-serif';
-            ctx.fillText('Printed via Pandey Store WiFi Print Station (Epson L3250)', A4_W / 2, A4_H - 100);
+            // Cut Guidelines Footer (Only if watermark is enabled)
+            if (enableWatermark) {
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '400 32px Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Printed via Pandey Store WiFi Print Station (Epson L3250)', A4_W / 2, A4_H - 100);
+            }
 
             const outDataUrl = canvas.toDataURL('image/jpeg', 0.95);
             setIdA4DataUrl(outDataUrl);
@@ -400,13 +422,13 @@ export default function PrintServicesPage() {
         } finally {
             setIdGenerating(false);
         }
-    }, [idFrontPreview, idBackPreview]);
+    }, [idFrontPreview, idBackPreview, enableWatermark]);
 
     useEffect(() => {
         if (idFrontPreview && activeService === 'id-card') {
             generateIdA4();
         }
-    }, [idFrontPreview, idBackPreview, activeService, generateIdA4]);
+    }, [idFrontPreview, idBackPreview, enableWatermark, activeService, generateIdA4]);
 
     // ─── Passport Photo handlers ───
     const handlePassportUpload = (e) => {
@@ -482,11 +504,13 @@ export default function PrintServicesPage() {
                 }
             }
 
-            // Header note
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '30px Arial, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(`Pandey Grocery Store • ${passportQty} Passport Photos (35mm × 45mm Standard)`, A4_W / 2, 90);
+            // Header note (Only if watermark is enabled)
+            if (enableWatermark) {
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '30px Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`Pandey Grocery Store • ${passportQty} Passport Photos (35mm × 45mm Standard)`, A4_W / 2, 90);
+            }
 
             const outDataUrl = canvas.toDataURL('image/jpeg', 0.95);
             setPassportA4DataUrl(outDataUrl);
@@ -499,13 +523,13 @@ export default function PrintServicesPage() {
         } finally {
             setPassportGenerating(false);
         }
-    }, [passportPreview, passportQty]);
+    }, [passportPreview, passportQty, enableWatermark]);
 
     useEffect(() => {
         if (passportPreview && activeService === 'passport-photo') {
             generatePassportA4();
         }
-    }, [passportPreview, passportQty, activeService, generatePassportA4]);
+    }, [passportPreview, passportQty, enableWatermark, activeService, generatePassportA4]);
 
     // ─── Download A4 ───
     const downloadA4FromDataUrl = (dataUrl, filename) => {
@@ -773,6 +797,26 @@ export default function PrintServicesPage() {
                             </div>
                         </div>
 
+                        {/* Watermark / Branding Option */}
+                        <div className="watermark-toggle-card">
+                            <div className="watermark-toggle-info">
+                                <span className="watermark-toggle-title">
+                                    <Sparkles size={15} color="var(--primary)" /> Store Watermark &amp; Branding
+                                </span>
+                                <span className="watermark-toggle-sub">
+                                    {enableWatermark ? 'Watermark header, side labels & footer printed on A4 sheet' : 'Clean output (no watermark or header text on sheet)'}
+                                </span>
+                            </div>
+                            <label className="toggle-switch" title="Toggle Watermark">
+                                <input
+                                    type="checkbox"
+                                    checked={enableWatermark}
+                                    onChange={(e) => toggleWatermark(e.target.checked)}
+                                />
+                                <span className="toggle-slider" />
+                            </label>
+                        </div>
+
                         {/* Live A4 Preview */}
                         <A4Preview
                             dataUrl={idA4DataUrl}
@@ -858,6 +902,26 @@ export default function PrintServicesPage() {
                                 <input id="passport-input" type="file" accept="image/*" onChange={handlePassportUpload} hidden />
                             </div>
                         )}
+
+                        {/* Watermark / Branding Option */}
+                        <div className="watermark-toggle-card">
+                            <div className="watermark-toggle-info">
+                                <span className="watermark-toggle-title">
+                                    <Sparkles size={15} color="var(--primary)" /> Store Watermark &amp; Branding
+                                </span>
+                                <span className="watermark-toggle-sub">
+                                    {enableWatermark ? 'Watermark header text printed on top of A4 sheet' : 'Clean output (no watermark or header text on sheet)'}
+                                </span>
+                            </div>
+                            <label className="toggle-switch" title="Toggle Watermark">
+                                <input
+                                    type="checkbox"
+                                    checked={enableWatermark}
+                                    onChange={(e) => toggleWatermark(e.target.checked)}
+                                />
+                                <span className="toggle-slider" />
+                            </label>
+                        </div>
 
                         {/* Live Passport A4 Preview */}
                         <A4Preview
