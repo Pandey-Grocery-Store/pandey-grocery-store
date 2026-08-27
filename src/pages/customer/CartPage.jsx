@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Minus, Plus, X, ShoppingCart, Tag, ArrowRight } from 'lucide-react';
+import { Minus, Plus, X, ShoppingCart, Tag, ArrowRight, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
 import { useCart } from '../../context/CartContext';
 import './CartPage.css';
@@ -19,7 +19,9 @@ export default function CartPage() {
         return (
             <div className="container section empty-cart">
                 <div className="empty-cart-content">
-                    <span className="empty-cart-icon">🛒</span>
+                    <div className="empty-cart-icon-wrap" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 90, height: 90, borderRadius: '50%', background: 'var(--primary-50)', margin: '0 auto 1.5rem' }}>
+                        <ShoppingBag size={48} color="var(--primary)" />
+                    </div>
                     <h2>Your cart is empty</h2>
                     <p>Looks like you haven't added anything yet. Browse our products and add items to your cart!</p>
                     <Link to="/" className="btn btn-primary btn-lg">Start Shopping</Link>
@@ -87,7 +89,9 @@ export default function CartPage() {
                             )}
                             {coupon && (
                                 <div className="applied-coupon">
-                                    <span>✅ {coupon.code}: {coupon.label}</span>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                        <CheckCircle2 size={16} color="#16a34a" /> {coupon.code}: {coupon.label}
+                                    </span>
                                     <button onClick={removeCoupon} className="coupon-remove">Remove</button>
                                 </div>
                             )}

@@ -1,5 +1,6 @@
 import React from 'react';
 import Marquee from 'react-fast-marquee';
+import { Store } from 'lucide-react';
 import './StoreGallery.css';
 
 export default function StoreGallery() {
@@ -20,7 +21,9 @@ export default function StoreGallery() {
         <section className="store-gallery-section section">
             <div className="container">
                 <div className="section-header-row" style={{ textAlign: 'center', display: 'block', marginBottom: '2rem' }}>
-                    <h2 className="section-title" style={{ fontSize: '2rem' }}>🏪 Take a Look Inside</h2>
+                    <h2 className="section-title" style={{ fontSize: '2rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                        <Store size={26} color="var(--primary)" /> Take a Look Inside
+                    </h2>
                     <p className="section-subtitle">Real photos of our aisles, fresh produce, and fully stocked shelves in Haldwani.</p>
                 </div>
             </div>

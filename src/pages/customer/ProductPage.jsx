@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Heart, Star, Minus, Plus, Shield, RotateCcw, Share2, Loader } from 'lucide-react';
+import { ShoppingCart, Heart, Star, Minus, Plus, Shield, RotateCcw, Share2, Loader, AlertTriangle } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import { productsApi } from '../../lib/api';
 import { useCart } from '../../context/CartContext';
@@ -124,7 +124,9 @@ export default function ProductPage() {
                         </div>
 
                         {product.stock <= 10 && (
-                            <p className="stock-warning">⚠️ Only {product.stock} left in stock — order soon!</p>
+                            <p className="stock-warning">
+                                <AlertTriangle size={16} /> Only {product.stock} left in stock — order soon!
+                            </p>
                         )}
 
                         <div className="product-guarantees">

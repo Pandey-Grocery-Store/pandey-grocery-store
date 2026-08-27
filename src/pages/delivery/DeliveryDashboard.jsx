@@ -76,7 +76,9 @@ export default function DeliveryDashboard() {
     return (
         <div style={{ maxWidth: 600, margin: '0 auto', padding: '1.5rem' }}>
             <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                <h2 style={{ margin: 0, fontSize: '1.5rem' }}>🛵 Delivery Dashboard</h2>
+                <h2 style={{ margin: 0, fontSize: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                    <Truck size={24} color="var(--primary)" /> Delivery Dashboard
+                </h2>
                 <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0' }}>Welcome, {user?.name}</p>
             </div>
 
@@ -88,11 +90,11 @@ export default function DeliveryDashboard() {
                     style={{ width: '100%', padding: '0.75rem', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                 >
                     <Navigation size={20} className={tracking ? 'spin' : ''} />
-                    {tracking ? '📍 Sharing Location...' : 'Start Location Sharing'}
+                    {tracking ? 'Sharing Location Live...' : 'Start Location Sharing'}
                 </button>
                 {currentLocation && (
-                    <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                        📍 {currentLocation.lat.toFixed(5)}, {currentLocation.lng.toFixed(5)}
+                    <p style={{ margin: '0.5rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                        <MapPin size={12} /> {currentLocation.lat.toFixed(5)}, {currentLocation.lng.toFixed(5)}
                     </p>
                 )}
             </div>

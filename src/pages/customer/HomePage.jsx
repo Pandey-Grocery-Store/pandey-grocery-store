@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Shield, Tag, Star, MapPin, Printer, FileText, CreditCard, Camera, Sparkles, MessageCircle, Clock } from 'lucide-react';
+import { ArrowRight, Shield, Tag, Star, MapPin, Printer, FileText, CreditCard, Camera, Sparkles, MessageCircle, Clock, ShoppingBasket, Store, Zap, Flame } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import StoreGallery from '../../components/StoreGallery';
 import CategoryIcon from '../../components/CategoryIcon';
@@ -14,36 +14,37 @@ export default function HomePage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchHomeData = async () => {
+        const loadHomeData = async () => {
+            setLoading(true);
             try {
-                const [catsRes, featRes, bestRes] = await Promise.all([
+                const [catRes, prodRes] = await Promise.all([
                     categoriesApi.getAll(),
-                    productsApi.getAll({ sort: 'rating', limit: 8 }),
-                    productsApi.getAll({ sort: 'reviews', limit: 8 })
+                    productsApi.getAll(),
                 ]);
-                if (catsRes?.categories) setCategories(catsRes.categories);
-                if (featRes?.products) setFeatured(featRes.products);
-                if (bestRes?.products) setBestSellers(bestRes.products);
+                if (catRes?.categories) setCategories(catRes.categories);
+                if (prodRes?.products) {
+                    setFeatured(prodRes.products.slice(0, 8));
+                    setBestSellers(prodRes.products.filter(p => (p.reviews || 0) > 10).slice(0, 4));
+                }
             } catch (err) {
                 console.error("Failed to load home data", err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchHomeData();
+        loadHomeData();
     }, []);
 
     return (
         <div className="home-page">
             {/* ── Dynamic Hero Section ── */}
-            <section className="hero">
-                <div className="container hero-inner">
-                    <div className="hero-content animate-fade-in">
-                        <div className="hero-badge-wrap">
-                            <span className="hero-badge">
-                                <span className="badge-pulse" />
-                                🟢 Store Open in Haldwani • 8 AM - 9:30 PM
-                            </span>
+            <section className="hero-section">
+                <div className="container hero-container">
+                    <div className="hero-text-content animate-fade-in">
+                        <div className="hero-badge">
+                            <span className="live-dot" />
+                            <MapPin size={13} className="hero-badge-icon" />
+                            <span>Your Local Haldwani Grocery &amp; Print Shop</span>
                         </div>
 
                         <h1 className="hero-title">
@@ -57,7 +58,7 @@ export default function HomePage() {
 
                         <div className="hero-actions">
                             <Link to="/category/groceries" className="btn btn-primary btn-lg hero-btn">
-                                🛒 Shop Groceries <ArrowRight size={18} />
+                                <ShoppingBasket size={18} /> Shop Groceries <ArrowRight size={18} />
                             </Link>
                             <Link to="/category/printing-binding" className="btn btn-accent btn-lg hero-btn">
                                 <Printer size={18} /> Print &amp; ID Cards
@@ -66,21 +67,21 @@ export default function HomePage() {
 
                         <div className="hero-features-strip">
                             <div className="hero-feature-item">
-                                <span className="feat-icon">🏪</span>
+                                <span className="feat-icon"><Store size={20} color="#16a34a" /></span>
                                 <div>
                                     <strong>In-Store Shopping</strong>
                                     <span>Pick &amp; pay at store</span>
                                 </div>
                             </div>
                             <div className="hero-feature-item">
-                                <span className="feat-icon">🖨️</span>
+                                <span className="feat-icon"><Printer size={20} color="#7c3aed" /></span>
                                 <div>
                                     <strong>Epson Print Station</strong>
                                     <span>High-res A4 &amp; ID card</span>
                                 </div>
                             </div>
                             <div className="hero-feature-item">
-                                <span className="feat-icon">⚡</span>
+                                <span className="feat-icon"><Zap size={20} color="#f59e0b" /></span>
                                 <div>
                                     <strong>Instant UPI / Cash</strong>
                                     <span>Pay at counter</span>
@@ -110,7 +111,9 @@ export default function HomePage() {
                                 </Link>
 
                                 <Link to="/category/printing-binding" className="showcase-item print-card">
-                                    <div className="showcase-icon-badge">🖨️</div>
+                                    <div className="showcase-icon-badge">
+                                        <Printer size={24} color="#7c3aed" />
+                                    </div>
                                     <div className="showcase-info">
                                         <h4>Print Hub</h4>
                                         <span>Documents, ID Cards &amp; Photos</span>
@@ -137,7 +140,9 @@ export default function HomePage() {
                 <div className="container">
                     <div className="print-spotlight-card">
                         <div className="spotlight-left">
-                            <span className="spotlight-tag">🖨️ In-Store Print Station (Epson L3250)</span>
+                            <span className="spotlight-tag">
+                                <Printer size={14} /> In-Store Print Station (Epson L3250)
+                            </span>
                             <h2>Need Documents, ID Cards, or Passport Photos Printed?</h2>
                             <p>Upload your files directly from your phone or PC. Our smart system formats ID cards and passport photos onto A4 paper ready for instant printing when you visit!</p>
                             
@@ -199,7 +204,9 @@ export default function HomePage() {
                     <div className="container">
                         <div className="section-header-row">
                             <div>
-                                <h2 className="section-title">⭐ Featured In Store</h2>
+                                <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <Star size={22} color="#f59e0b" /> Featured In Store
+                                </h2>
                                 <p className="section-subtitle">Top rated products in Haldwani</p>
                             </div>
                             <Link to="/category/groceries" className="btn btn-secondary btn-sm">
@@ -222,7 +229,9 @@ export default function HomePage() {
                     <div className="container">
                         <div className="section-header-row">
                             <div>
-                                <h2 className="section-title">🔥 Most Popular</h2>
+                                <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <Flame size={22} color="#ef4444" /> Most Popular
+                                </h2>
                                 <p className="section-subtitle">Customer favourites this week</p>
                             </div>
                             <Link to="/offers" className="btn btn-secondary btn-sm">
@@ -247,7 +256,9 @@ export default function HomePage() {
                 <div className="container">
                     <div className="store-location-card">
                         <div className="store-info-col">
-                            <span className="location-pill">📍 Visit Our Shop</span>
+                            <span className="location-pill">
+                                <MapPin size={13} /> Visit Our Shop
+                            </span>
                             <h2>Pandey Grocery Store</h2>
                             <p className="store-address-text">
                                 Lal Danth Bypass Rd, Radhe Krishna Puram / Adarsh Nagar, Heera Nagar, Haldwani, Uttarakhand 263139

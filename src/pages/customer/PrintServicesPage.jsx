@@ -229,7 +229,9 @@ function A4Preview({ dataUrl, title, onDownload, onPrint, loading }) {
         <div className="a4-preview-section animate-fade-in">
             <div className="a4-preview-header">
                 <h3>{title}</h3>
-                <span className="a4-ready-badge">✓ Ready to Print (300 DPI A4)</span>
+                <span className="a4-ready-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <CheckCircle2 size={13} /> Ready to Print (300 DPI A4)
+                </span>
             </div>
             <div className="a4-preview-wrap">
                 <img src={dataUrl} alt={title} className="a4-preview-img" />
@@ -593,7 +595,7 @@ export default function PrintServicesPage() {
                 <div className="container">
                     <div className="print-success animate-fade-in">
                         <div className="print-success-icon"><CheckCircle2 size={56} /></div>
-                        <h2>Print Job Received! 🎉</h2>
+                        <h2>Print Job Received!</h2>
                         <p>Your files have been formatted and sent to our in-store printing station.</p>
                         <p className="print-success-hint">Visit <strong>Pandey Grocery Store</strong> in Haldwani to collect your prints and pay at the counter.</p>
                         <div className="print-success-actions">

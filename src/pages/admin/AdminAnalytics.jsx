@@ -85,21 +85,33 @@ export default function AdminAnalytics() {
         return { brand, count: brandProducts.length, avgRating, avgPrice: Math.round(brandProducts.reduce((s, p) => s + p.price, 0) / brandProducts.length) };
     }).sort((a, b) => b.count - a.count).slice(0, 10);
 
-    // Real insights from actual data
-    const lowStockProducts = products.filter(p => p.stock <= 5);
+    const lowStockProducts = products.filter(p => p.stock > 0 && p.stock <= 5);
     const outOfStock = products.filter(p => p.stock === 0);
     const topCategory = [...categoryData].sort((a, b) => b.revenue - a.revenue)[0];
     const avgRating = products.length > 0 ? (products.reduce((s, p) => s + (p.rating || 0), 0) / products.length).toFixed(1) : '0';
     const discountedProducts = products.filter(p => p.mrp && p.price < p.mrp);
 
     const insights = [
-        topCategory && { icon: '🔥', text: `${topCategory.name} has the highest revenue (₹${topCategory.revenue.toLocaleString()}) with ${topCategory.products} products`, type: 'positive' },
-        { icon: '📦', text: `${products.length} total products in database, average rating ${avgRating}⭐`, type: 'info' },
-        outOfStock.length > 0 && { icon: '⚠️', text: `${outOfStock.length} product(s) are out of stock`, type: 'warning' },
-        lowStockProducts.length > 0 && { icon: '📉', text: `${lowStockProducts.length} product(s) have ≤5 units in stock`, type: 'warning' },
-        discountedProducts.length > 0 && { icon: '🏷️', text: `${discountedProducts.length} products are currently discounted below MRP`, type: 'positive' },
-        { icon: '📊', text: `${orders.length} total orders worth ₹${stats?.totalRevenue?.toLocaleString() || 0}`, type: 'info' },
+        topCategory && { icon: Flame, color: '#ef4444', text: `${topCategory.name} has the highest revenue (₹${topCategory.revenue.toLocaleString()}) with ${topCategory.products} products`, type: 'positive' },
+        { icon: Package, color: '#0284c7', text: `${products.length} total products in database, average customer rating ${avgRating}/5`, type: 'info' },
+        outOfStock.length > 0 && { icon: AlertTriangle, color: '#ef4444', text: `${outOfStock.length} product(s) are out of stock`, type: 'warning' },
+        lowStockProducts.length > 0 && { icon: TrendingDown, color: '#f59e0b', text: `${lowStockProducts.length} product(s) have ≤5 units in stock`, type: 'warning' },
+        discountedProducts.length > 0 && { icon: Tag, color: '#16a34a', text: `${discountedProducts.length} products are currently discounted below MRP`, type: 'positive' },
+        { icon: BarChart3, color: '#8b5cf6', text: `${orders.length} total orders worth ₹${stats?.totalRevenue?.toLocaleString() || 0}`, type: 'info' },
     ].filter(Boolean);
+
+    if (loading) {
+        return (
+            <div className="admin-analytics">
+                <div className="dashboard-page-header">
+                    <h1 className="dashboard-page-title">Product Analytics</h1>
+                </div>
+                <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
+                    <Loader size={24} className="spin" /> Loading analytics...
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="admin-analytics">
@@ -108,7 +120,6 @@ export default function AdminAnalytics() {
                 <p className="dashboard-page-subtitle">Real data from {products.length} products and {orders.length} orders</p>
             </div>
 
-            {/* Category Performance */}
             <div className="analytics-grid">
                 <div className="card analytics-card">
                     <h3 className="analytics-card-title"><PieChart size={18} /> Category Revenue</h3>
@@ -116,7 +127,7 @@ export default function AdminAnalytics() {
                         {categoryData.map((cat, i) => (
                             <div key={cat.id} className="category-bar-item">
                                 <div className="cat-bar-header">
-                                    <span className="cat-icon">{cat.icon}</span>
+                                    <CategoryIcon slug={cat.id} size={16} />
                                     <span className="cat-name">{cat.name}</span>
                                     <span className="cat-revenue">₹{cat.revenue.toLocaleString()}</span>
                                 </div>
@@ -211,12 +222,15 @@ export default function AdminAnalytics() {
                 <div className="card analytics-card">
                     <h3 className="analytics-card-title"><TrendingUp size={18} /> Key Insights</h3>
                     <div className="insights-list">
-                        {insights.map((insight, i) => (
-                            <div key={i} className={`insight-item ${insight.type}`}>
-                                <span className="insight-icon">{insight.icon}</span>
-                                <span>{insight.text}</span>
-                            </div>
-                        ))}
+                        {insights.map((insight, i) => {
+                            const Icon = insight.icon;
+                            return (
+                                <div key={i} className={`insight-item ${insight.type}`}>
+                                    <span className="insight-icon"><Icon size={16} color={insight.color} /></span>
+                                    <span>{insight.text}</span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>

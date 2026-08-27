@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Search, SlidersHorizontal, X, Loader } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Loader, ShoppingBasket, BookOpen, Sparkles, Tag } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import { productsApi, categoriesApi } from '../../lib/api';
 import './SearchPage.css';
@@ -132,13 +132,16 @@ export default function SearchPage() {
                                 </div>
                             ) : (
                                 <div className="no-results animate-fade-in">
-                                    <span className="no-results-icon">🔍</span>
+                                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--gray-100)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                                        <Search size={32} color="var(--gray-400)" />
+                                    </div>
                                     <h3>No products found</h3>
                                     <p>Try different keywords or browse our categories</p>
                                     <div className="no-results-suggestions">
-                                        <Link to="/category/groceries" className="btn btn-secondary btn-sm">🛒 Groceries</Link>
-                                        <Link to="/category/utensils" className="btn btn-secondary btn-sm">🍳 Utensils</Link>
-                                        <Link to="/offers" className="btn btn-secondary btn-sm">🏷️ Offers</Link>
+                                        <Link to="/category/groceries" className="btn btn-secondary btn-sm"><ShoppingBasket size={15} /> Groceries</Link>
+                                        <Link to="/category/stationery" className="btn btn-secondary btn-sm"><BookOpen size={15} /> Stationery</Link>
+                                        <Link to="/category/household-personal" className="btn btn-secondary btn-sm"><Sparkles size={15} /> Household</Link>
+                                        <Link to="/offers" className="btn btn-secondary btn-sm"><Tag size={15} /> Offers</Link>
                                     </div>
                                 </div>
                             )}
@@ -146,12 +149,14 @@ export default function SearchPage() {
                     )
                 ) : (
                     <div className="search-empty animate-fade-in">
-                        <span className="search-empty-icon">🔍</span>
+                        <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--primary-50)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                            <Search size={36} color="var(--primary)" />
+                        </div>
                         <h2>What are you looking for?</h2>
-                        <p>Search for groceries, spices, utensils, brands and more</p>
+                        <p>Search for groceries, spices, stationery, brands and more</p>
                         <div className="popular-searches">
                             <span className="popular-label">Popular:</span>
-                            {['Basmati Rice', 'Toor Dal', 'Pressure Cooker', 'Tea', 'Ghee', 'Masala'].map(term => (
+                            {['Basmati Rice', 'Toor Dal', 'Register', 'Pen', 'Ghee', 'Masala'].map(term => (
                                 <button
                                     key={term}
                                     className="popular-tag"

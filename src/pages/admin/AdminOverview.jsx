@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { IndianRupee, ShoppingCart, Users, Package, Loader, ChevronRight, Edit3, Save, X, Trash2, RefreshCw } from 'lucide-react';
+import { IndianRupee, ShoppingCart, Users, Package, Loader, ChevronRight, Edit3, Save, X, Trash2, RefreshCw, TrendingUp, AlertTriangle, CheckCircle2, BarChart3, Tag } from 'lucide-react';
 import { statusLabels, statusColors, orderStatuses } from '../../data/orders';
 import { dashboardApi, ordersApi, productsApi } from '../../lib/api';
 import StatsCard from '../../components/StatsCard';
@@ -149,19 +149,16 @@ export default function AdminOverview() {
                                         <span className="mini-bar-label">{d.month}</span>
                                     </div>
                                 );
-                            }) : [65, 45, 80, 55, 90, 70].map((h, i) => (
-                                <div key={i} className="mini-bar" style={{ height: `${h}%`, animationDelay: `${i * 0.05}s` }}>
-                                    <span className="mini-bar-label">{['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'][i]}</span>
-                                </div>
-                            ))}
+                            }) : null}
                         </div>
                         <div className="chart-legend">
-                            <span>📈 Total: ₹{stats.totalRevenue.toLocaleString()} from {stats.totalOrders} orders</span>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <TrendingUp size={15} color="var(--primary)" /> Total: ₹{stats.totalRevenue.toLocaleString()} from {stats.totalOrders} orders
+                            </span>
                         </div>
                     </div>
                 </div>
 
-                {/* Order Status Distribution */}
                 <div className="card overview-status-card">
                     <h3 className="overview-card-title">Order Status</h3>
                     <div className="status-distribution">
@@ -173,11 +170,11 @@ export default function AdminOverview() {
                                 <div key={key} className="status-bar-row">
                                     <div className="status-bar-info">
                                         <span className="status-dot-sm" style={{ background: statusColors[key] }} />
-                                        <span>{label}</span>
-                                        <span className="status-count">{count}</span>
+                                        <span className="status-label">{label}</span>
+                                        <span className="status-count">{count} ({pct}%)</span>
                                     </div>
-                                    <div className="status-bar-track">
-                                        <div className="status-bar-fill" style={{ width: `${pct}%`, background: statusColors[key] }} />
+                                    <div className="status-track">
+                                        <div className="status-fill" style={{ width: `${pct}%`, background: statusColors[key] }} />
                                     </div>
                                 </div>
                             );
@@ -187,7 +184,6 @@ export default function AdminOverview() {
             </div>
 
             <div className="overview-grid">
-                {/* Recent Orders with CRUD */}
                 <div className="card overview-recent-card">
                     <div className="card-header-row">
                         <h3 className="overview-card-title">Recent Orders</h3>
@@ -196,37 +192,23 @@ export default function AdminOverview() {
                         </button>
                     </div>
                     <div className="recent-orders-list">
-                        {recentOrders.map((order) => {
-                            const nextStatus = getNextStatus(order.status);
-                            return (
-                                <div key={order.id} className="recent-order-item">
-                                    <div className="recent-order-info">
-                                        <strong>{order.id}</strong>
-                                        <span>{order.customer}</span>
-                                    </div>
-                                    <div className="recent-order-meta">
-                                        <span className="badge" style={{ background: `${statusColors[order.status]}18`, color: statusColors[order.status], fontSize: '0.7rem' }}>
-                                            {statusLabels[order.status]}
-                                        </span>
-                                        <span className="recent-order-total">₹{order.total}</span>
-                                        {nextStatus && (
-                                            <button
-                                                className="btn btn-xs btn-success"
-                                                onClick={() => updateOrderStatus(order, nextStatus)}
-                                                disabled={saving}
-                                                title={`Move to ${statusLabels[nextStatus]}`}
-                                            >
-                                                → {statusLabels[nextStatus]}
-                                            </button>
-                                        )}
-                                    </div>
+                        {recentOrders.map((order) => (
+                            <div key={order.id} className="recent-order-item">
+                                <div className="recent-order-info">
+                                    <strong>{order.id}</strong>
+                                    <span>{order.customer}</span>
                                 </div>
-                            );
-                        })}
+                                <div className="recent-order-meta">
+                                    <span className="badge" style={{ background: `${statusColors[order.status]}18`, color: statusColors[order.status] }}>
+                                        {statusLabels[order.status]}
+                                    </span>
+                                    <span className="recent-order-total">₹{order.total}</span>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
-                {/* Top Products with CRUD */}
                 <div className="card overview-top-card">
                     <div className="card-header-row">
                         <h3 className="overview-card-title">Top Products</h3>
@@ -238,33 +220,26 @@ export default function AdminOverview() {
                         {topProducts.map((p, i) => (
                             <div key={p.id} className="top-product-item">
                                 <span className="top-rank">#{i + 1}</span>
-                                <img src={p.image} alt={p.name} className="top-product-img" />
                                 <div className="top-product-info">
                                     <span className="top-product-name">{p.name}</span>
                                     <span className="top-product-brand">{p.brand}</span>
                                 </div>
                                 {editingProductId === p.id ? (
                                     <div className="top-product-edit">
-                                        <div className="edit-field">
-                                            <label>₹</label>
-                                            <input type="number" value={editData.price} onChange={e => setEditData(d => ({ ...d, price: e.target.value }))} className="edit-input" />
-                                        </div>
-                                        <div className="edit-field">
-                                            <label>Stock</label>
-                                            <input type="number" value={editData.stock} onChange={e => setEditData(d => ({ ...d, stock: e.target.value }))} className="edit-input" />
-                                        </div>
-                                        <button className="btn btn-xs btn-success" onClick={() => saveEditProduct(p.id)} disabled={saving}><Save size={12} /></button>
+                                        <input type="number" value={editData.price} onChange={e => setEditData(d => ({ ...d, price: e.target.value }))} className="edit-input" />
+                                        <input type="number" value={editData.stock} onChange={e => setEditData(d => ({ ...d, stock: e.target.value }))} className="edit-input" />
+                                        <button className="btn btn-xs btn-success" onClick={() => saveEditProduct(p.id)}><Save size={12} /></button>
                                         <button className="btn btn-xs btn-outline" onClick={cancelEditProduct}><X size={12} /></button>
                                     </div>
                                 ) : (
                                     <div className="top-product-meta">
                                         <span className="top-product-price">₹{p.price}</span>
-                                        <span className="top-product-stock" style={{ color: p.stock <= 10 ? '#ef4444' : '#16a34a' }}>
-                                            {p.stock <= 10 ? `⚠️ ${p.stock}` : `✅ ${p.stock}`}
+                                        <span className="top-product-stock" style={{ color: p.stock <= 10 ? '#ef4444' : '#16a34a', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                            {p.stock <= 10 ? <><AlertTriangle size={12} /> {p.stock}</> : <><CheckCircle2 size={12} /> {p.stock}</>}
                                         </span>
                                         <div className="product-actions">
-                                            <button className="btn btn-xs btn-outline" onClick={() => startEditProduct(p)} title="Edit"><Edit3 size={12} /></button>
-                                            <button className="btn btn-xs btn-danger-outline" onClick={() => deleteProduct(p.id)} title="Delete"><Trash2 size={12} /></button>
+                                            <button className="btn btn-xs btn-outline" onClick={() => startEditProduct(p)}><Edit3 size={12} /></button>
+                                            <button className="btn btn-xs btn-danger-outline" onClick={() => deleteProduct(p.id)}><Trash2 size={12} /></button>
                                         </div>
                                     </div>
                                 )}
@@ -274,24 +249,28 @@ export default function AdminOverview() {
                 </div>
             </div>
 
-            {/* Quick Actions */}
             <div className="card quick-actions-card">
                 <h3 className="overview-card-title">Quick Actions</h3>
                 <div className="quick-actions-grid">
                     {[
-                        { label: 'Add Product', icon: '📦', desc: 'List a new product', path: '/staff/products' },
-                        { label: 'View Orders', icon: '📋', desc: 'Manage pending orders', path: '/staff/orders' },
-                        { label: 'Manage Users', icon: '👥', desc: 'User roles & access', path: '/admin/users' },
-                        { label: 'Generate Report', icon: '📊', desc: 'Download sales report', path: '/admin/reports' },
-                        { label: 'Staff Activity', icon: '📡', desc: 'Monitor staff actions', path: '/admin/staff-activity' },
-                        { label: 'Inventory', icon: '🏷️', desc: 'Stock management', path: '/staff/inventory' },
-                    ].map((action, i) => (
-                        <button key={i} className="quick-action-btn" onClick={() => navigate(action.path)}>
-                            <span className="quick-action-icon">{action.icon}</span>
-                            <span className="quick-action-label">{action.label}</span>
-                            <span className="quick-action-desc">{action.desc}</span>
-                        </button>
-                    ))}
+                        { label: 'Add Product', icon: Package, color: '#0284c7', desc: 'List a new product', path: '/staff/products' },
+                        { label: 'View Orders', icon: ShoppingCart, color: '#16a34a', desc: 'Manage pending orders', path: '/staff/orders' },
+                        { label: 'Manage Users', icon: Users, color: '#8b5cf6', desc: 'User roles & access', path: '/admin/users' },
+                        { label: 'Generate Report', icon: BarChart3, color: '#f59e0b', desc: 'Download sales report', path: '/admin/reports' },
+                        { label: 'Staff Activity', icon: RefreshCw, color: '#ec4899', desc: 'Monitor staff actions', path: '/admin/staff-activity' },
+                        { label: 'Inventory', icon: Tag, color: '#059669', desc: 'Stock management', path: '/staff/inventory' },
+                    ].map((action, i) => {
+                        const Icon = action.icon;
+                        return (
+                            <button key={i} className="quick-action-btn" onClick={() => navigate(action.path)}>
+                                <span className="quick-action-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: 10, background: `${action.color}18` }}>
+                                    <Icon size={20} color={action.color} />
+                                </span>
+                                <span className="quick-action-label">{action.label}</span>
+                                <span className="quick-action-desc">{action.desc}</span>
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
         </div>

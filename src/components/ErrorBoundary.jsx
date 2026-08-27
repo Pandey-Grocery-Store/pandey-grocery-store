@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { AlertTriangle } from 'lucide-react';
 
 export default class ErrorBoundary extends Component {
     constructor(props) {
@@ -28,7 +29,9 @@ export default class ErrorBoundary extends Component {
                     fontFamily: 'Inter, system-ui, sans-serif',
                     background: '#fafafa',
                 }}>
-                    <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>⚠️</div>
+                    <div style={{ marginBottom: '1.25rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 80, height: 80, borderRadius: '50%', background: '#fef3c7' }}>
+                        <AlertTriangle size={44} color="#d97706" />
+                    </div>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827', marginBottom: '0.5rem' }}>
                         Something went wrong
                     </h1>

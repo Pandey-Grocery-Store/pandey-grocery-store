@@ -101,7 +101,7 @@ export default function StaffPOS() {
                 <div className="pos-product-grid">
                     {filteredProducts.map(product => (
                         <div key={product.id} className={`pos-product-card ${product.stock === 0 ? 'out-of-stock' : ''}`} onClick={() => product.stock > 0 && addToCart(product)}>
-                            <img src={product.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f3f4f6'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='%239ca3af' font-size='28'%3E🛒%3C/text%3E%3C/svg%3E"} alt={product.name} />
+                            <img src={product.image || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%2316a34a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 11-1 9'%3E%3C/path%3E%3Cpath d='m19 11-4-7'%3E%3C/path%3E%3Cpath d='M2 11h20'%3E%3C/path%3E%3Cpath d='m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8c.9 0 1.8-.7 2-1.6l1.7-7.4'%3E%3C/path%3E%3Cpath d='m4.5 15.5h15'%3E%3C/path%3E%3Cpath d='m5 11 4-7'%3E%3C/path%3E%3Cpath d='m9 11 1 9'%3E%3C/path%3E%3C/svg%3E"} alt={product.name} />
                             <div className="pos-product-info">
                                 <h4>{product.name}</h4>
                                 <span>₹{product.price}</span>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Tag, Clock, ArrowRight, Star, Zap, Gift, Percent } from 'lucide-react';
+import { Tag, Clock, ArrowRight, Star, Zap, Gift, Percent, Flame } from 'lucide-react';
 import ProductCard from '../../components/ProductCard';
 import { productsApi } from '../../lib/api';
 import './OffersPage.css';
@@ -86,7 +86,9 @@ export default function OffersPage() {
                     <div className="container">
                         <div className="section-header-row">
                             <div>
-                                <h2 className="section-title">🔥 Best Deals</h2>
+                                <h2 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <Flame size={22} color="#ef4444" /> Best Deals
+                                </h2>
                                 <p className="section-subtitle">Products with the biggest discounts right now</p>
                             </div>
                             <Link to="/category/groceries" className="btn btn-secondary">

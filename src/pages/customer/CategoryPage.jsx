@@ -12,19 +12,19 @@ const categoryThemes = {
     'groceries': {
         gradient: 'linear-gradient(135deg, #059669 0%, #064e3b 100%)',
         accentColor: '#10b981',
-        tag: '🌾 Fresh & Organic Staples',
+        tag: 'Fresh & Organic Daily Staples',
         desc: 'Daily pulses, rice, pure oils, spices, dairy products & kitchen essentials in Haldwani.',
     },
     'stationery': {
         gradient: 'linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%)',
         accentColor: '#8b5cf6',
-        tag: '📚 School, College & Office',
+        tag: 'School, College & Office Supplies',
         desc: 'Registers, copies, pens, chart papers, files, folders & complete office stationery supplies.',
     },
     'household-personal': {
         gradient: 'linear-gradient(135deg, #0284c7 0%, #0c4a6e 100%)',
         accentColor: '#0ea5e9',
-        tag: '🧼 Home Hygiene & Personal Care',
+        tag: 'Home Hygiene & Personal Care',
         desc: 'Top quality cleaning supplies, detergents, soaps, hygiene essentials & household goods.',
     },
 };
@@ -328,8 +328,8 @@ export default function CategoryPage() {
                             <Link to="/" className="btn btn-primary btn-lg">
                                 <ShoppingBag size={18} /> Explore Store Home
                             </Link>
-                            <Link to="/category/printing-binding" className="btn btn-secondary btn-lg">
-                                🖨️ Visit Print Hub
+                            <Link to="/category/printing-binding" className="btn btn-secondary btn-lg" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Printer size={18} /> Visit Print Hub
                             </Link>
                         </div>
                     </div>

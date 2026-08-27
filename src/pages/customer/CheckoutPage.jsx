@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MapPin, Clock, CreditCard, Smartphone, Wallet, Banknote, CheckCircle2 } from 'lucide-react';
+import { MapPin, Clock, CreditCard, Smartphone, Wallet, Banknote, CheckCircle2, Home, Store } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { ordersApi } from '../../lib/api';
@@ -67,7 +67,7 @@ export default function CheckoutPage() {
             <div className="container section order-success">
                 <div className="order-success-content animate-fade-in">
                     <CheckCircle2 size={64} className="success-icon" />
-                    <h1>Order Placed Successfully! 🎉</h1>
+                    <h1>Order Placed Successfully!</h1>
                     <p>Your order has been received and is being processed. You will receive a confirmation on WhatsApp shortly.</p>
                     <div className="order-success-details card">
                         <p><strong>Order ID:</strong> ORD-{Math.floor(1000 + Math.random() * 9000)}</p>
@@ -104,14 +104,14 @@ export default function CheckoutPage() {
                                 <label className={`delivery-option ${deliveryType === 'home' ? 'active' : ''}`}>
                                     <input type="radio" name="delivery" value="home" checked={deliveryType === 'home'} onChange={(e) => setDeliveryType(e.target.value)} />
                                     <div>
-                                        <strong>🏠 Home Delivery</strong>
+                                        <strong style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Home size={16} /> Home Delivery</strong>
                                         <span>Delivered to your doorstep</span>
                                     </div>
                                 </label>
                                 <label className={`delivery-option ${deliveryType === 'pickup' ? 'active' : ''}`}>
                                     <input type="radio" name="delivery" value="pickup" checked={deliveryType === 'pickup'} onChange={(e) => setDeliveryType(e.target.value)} />
                                     <div>
-                                        <strong>🏪 Store Pickup</strong>
+                                        <strong style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Store size={16} /> Store Pickup</strong>
                                         <span>Collect from Pandey Grocery Store</span>
                                     </div>
                                 </label>
@@ -221,7 +221,9 @@ export default function CheckoutPage() {
                             {isSubmitting ? 'Processing...' : `Place Order — ₹${total.toFixed(2)}`}
                         </button>
                         
-                        <p className="checkout-secure" style={{marginTop: '1rem'}}>💵 Cash on Delivery — Pay when you receive your order</p>
+                        <p className="checkout-secure" style={{marginTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            <Banknote size={16} /> Cash on Delivery — Pay when you receive your order
+                        </p>
                     </div>
                 </form>
             </div>

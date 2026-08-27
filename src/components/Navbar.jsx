@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Search, User, Menu, X, Heart, MapPin, Printer, Sparkles, Phone, LayoutDashboard } from 'lucide-react';
+import { ShoppingBag, Search, User, Menu, X, Heart, MapPin, Printer, Sparkles, Phone, LayoutDashboard, Tag, Home, Truck } from 'lucide-react';
 import { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -104,7 +104,7 @@ export default function Navbar() {
                         )}
                         {isLoggedIn && user.role === 'DELIVERY' && (
                             <Link to="/delivery" className="btn btn-sm btn-secondary" title="My Deliveries">
-                                🛵 <span className="dash-btn-label">Deliveries</span>
+                                <Truck size={15} /> <span className="dash-btn-label">Deliveries</span>
                             </Link>
                         )}
 
@@ -166,7 +166,8 @@ export default function Navbar() {
                             to="/offers" 
                             className={`category-link offers-link ${location.pathname === '/offers' ? 'active' : ''}`}
                         >
-                            <span>🏷️ Today's Offers</span>
+                            <Tag size={14} />
+                            <span>Today's Offers</span>
                         </Link>
                     </div>
                 </div>
@@ -205,7 +206,7 @@ export default function Navbar() {
 
                         <div className="mobile-nav-links">
                             <Link to="/" onClick={() => setMobileOpen(false)} className="mobile-nav-link">
-                                🏠 Home
+                                <Home size={17} /> <span>Home</span>
                             </Link>
 
                             <div className="mobile-nav-heading">Categories</div>
@@ -226,19 +227,19 @@ export default function Navbar() {
                                 onClick={() => setMobileOpen(false)}
                                 className="mobile-nav-link print-highlight"
                             >
-                                🖨️ Document &amp; ID Print Hub
+                                <Printer size={17} /> <span>Document &amp; ID Print Hub</span>
                             </Link>
                             <Link to="/offers" onClick={() => setMobileOpen(false)} className="mobile-nav-link">
-                                🏷️ Exclusive Offers &amp; Coupons
+                                <Tag size={17} /> <span>Exclusive Offers &amp; Deals</span>
                             </Link>
                             <Link to="/wishlist" onClick={() => setMobileOpen(false)} className="mobile-nav-link">
-                                ❤️ My Wishlist
+                                <Heart size={17} /> <span>My Wishlist</span>
                             </Link>
                             <Link to="/cart" onClick={() => setMobileOpen(false)} className="mobile-nav-link">
-                                🛒 My Cart ({itemCount})
+                                <ShoppingBag size={17} /> <span>My Cart ({itemCount})</span>
                             </Link>
                             <Link to="/account" onClick={() => setMobileOpen(false)} className="mobile-nav-link">
-                                👤 My Profile &amp; Orders
+                                <User size={17} /> <span>My Profile &amp; Orders</span>
                             </Link>
 
                             {isLoggedIn && ['ADMIN', 'MANAGEMENT'].includes(user.role) && (
@@ -247,14 +248,14 @@ export default function Navbar() {
                                     onClick={() => setMobileOpen(false)}
                                     className="mobile-nav-link admin-link"
                                 >
-                                    📊 Staff / Admin Dashboard
+                                    <LayoutDashboard size={17} /> <span>Staff / Admin Dashboard</span>
                                 </Link>
                             )}
                         </div>
 
                         <div className="mobile-nav-footer">
-                            <p className="mobile-store-info">📍 Near Temple, Haldwani</p>
-                            <p className="mobile-store-phone">📞 +91 9410516899</p>
+                            <p className="mobile-store-info"><MapPin size={13} /> Near Temple, Haldwani</p>
+                            <p className="mobile-store-phone"><Phone size={13} /> +91 9410516899</p>
                         </div>
                     </div>
                 </div>

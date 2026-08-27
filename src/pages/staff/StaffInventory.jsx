@@ -127,7 +127,9 @@ export default function StaffInventory() {
 
             {/* Reorder Suggestions */}
             <div className="reorder-section card">
-                <h3 className="reorder-title">📦 Suggested Reorders</h3>
+                <h3 className="reorder-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Package size={20} color="var(--primary)" /> Suggested Reorders
+                </h3>
                 <p className="reorder-subtitle">Based on current stock levels and sales velocity</p>
                 <table className="reorder-table">
                     <thead>

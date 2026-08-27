@@ -41,8 +41,8 @@ export default function Footer() {
                         <h4>Explore</h4>
                         <Link to="/">Home</Link>
                         <Link to="/category/groceries">Groceries &amp; Staples</Link>
-                        <Link to="/category/printing-binding" className="footer-highlight-link">
-                            🖨️ Print Hub &amp; ID Cards
+                        <Link to="/category/printing-binding" className="footer-highlight-link" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Printer size={15} /> Print Hub &amp; ID Cards
                         </Link>
                         <Link to="/category/stationery">Stationery &amp; Office</Link>
                         <Link to="/category/household-personal">Household &amp; Care</Link>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Download, FileText, Calendar, Loader } from 'lucide-react';
+import { Download, FileText, Calendar, Loader, IndianRupee, Package, Users, Tag, Flame, Star, AlertTriangle } from 'lucide-react';
 import { statusLabels } from '../../data/orders';
 import { ordersApi, productsApi, adminApi, dashboardApi } from '../../lib/api';
 import './AdminReports.css';
@@ -28,17 +28,19 @@ export default function AdminReports() {
         setLoading(false);
     }, []);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
-    const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
+    const totalRevenue = stats?.totalRevenue || orders.reduce((sum, o) => sum + (o.total || 0), 0);
     const avgOrderValue = orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0;
     const totalItems = orders.reduce((sum, o) => sum + (o.items || []).reduce((s, i) => s + (i.qty || i.quantity || 1), 0), 0);
 
     const reports = [
-        { id: 'sales', label: 'Sales Report', icon: '💰', desc: 'Revenue, orders, and transaction details' },
-        { id: 'inventory', label: 'Inventory Report', icon: '📦', desc: 'Stock levels, reorder alerts, and movement' },
-        { id: 'customer', label: 'Customer Report', icon: '👥', desc: 'Customer activity and roles' },
-        { id: 'product', label: 'Product Report', icon: '🏷️', desc: 'Top sellers, low stock, and pricing' },
+        { id: 'sales', label: 'Sales Report', icon: IndianRupee, color: '#16a34a', desc: 'Revenue, orders, and transaction details' },
+        { id: 'inventory', label: 'Inventory Report', icon: Package, color: '#0284c7', desc: 'Stock levels, reorder alerts, and movement' },
+        { id: 'customer', label: 'Customer Report', icon: Users, color: '#8b5cf6', desc: 'Customer activity and roles' },
+        { id: 'product', label: 'Product Report', icon: Tag, color: '#f59e0b', desc: 'Top sellers, low stock, and pricing' },
     ];
 
     // Export CSV helper
@@ -53,24 +55,25 @@ export default function AdminReports() {
             });
             filename = 'sales_report.csv';
         } else if (reportType === 'inventory') {
-            csv = 'Product,Brand,Category,Price,MRP,Stock,Status\n';
+            csv = 'Product Name,Category,Price,Stock,Status\n';
             products.forEach(p => {
-                const status = p.stock === 0 ? 'Out of Stock' : p.stock <= 10 ? 'Low Stock' : 'In Stock';
-                csv += `"${p.name}","${p.brand}","${p.category}",${p.price},${p.mrp || p.price},${p.stock},${status}\n`;
+                const status = p.stock === 0 ? 'Out of Stock' : p.stock <= 5 ? 'Low Stock' : 'In Stock';
+                csv += `"${p.name}",${p.category},${p.price},${p.stock},${status}\n`;
             });
             filename = 'inventory_report.csv';
         } else if (reportType === 'customer') {
-            csv = 'Name,Email,Role,Provider\n';
+            csv = 'Name,Email,Phone,Role,Orders\n';
             users.forEach(u => {
-                csv += `"${u.name || 'N/A'}","${u.email}",${u.role},${u.provider || 'Local'}\n`;
+                const userOrders = orders.filter(o => o.userId === u.id).length;
+                csv += `"${u.name}","${u.email}","${u.phone || 'N/A'}",${u.role},${userOrders}\n`;
             });
             filename = 'customer_report.csv';
-        } else {
-            csv = 'Product,Brand,Price,Stock,Rating,Reviews\n';
+        } else if (reportType === 'product') {
+            csv = 'Product Name,Brand,Category,Price,MRP,Rating,Reviews\n';
             products.forEach(p => {
-                csv += `"${p.name}","${p.brand}",${p.price},${p.stock},${p.rating || 0},${p.reviews || 0}\n`;
+                csv += `"${p.name}","${p.brand || 'N/A'}",${p.category},${p.price},${p.mrp || p.price},${p.rating || 0},${p.reviews || 0}\n`;
             });
-            filename = 'product_report.csv';
+            filename = 'product_performance_report.csv';
         }
 
         const blob = new Blob([csv], { type: 'text/csv' });
@@ -95,6 +98,8 @@ export default function AdminReports() {
         );
     }
 
+    const currentReport = reports.find(r => r.id === reportType) || reports[0];
+    const CurrentIcon = currentReport.icon;
     const customerCount = users.filter(u => u.role === 'CUSTOMER').length;
 
     return (
@@ -106,17 +111,20 @@ export default function AdminReports() {
 
             {/* Report Type Selector */}
             <div className="report-selector">
-                {reports.map((r) => (
-                    <button
-                        key={r.id}
-                        className={`report-type-btn card ${reportType === r.id ? 'active' : ''}`}
-                        onClick={() => setReportType(r.id)}
-                    >
-                        <span className="report-type-icon">{r.icon}</span>
-                        <span className="report-type-label">{r.label}</span>
-                        <span className="report-type-desc">{r.desc}</span>
-                    </button>
-                ))}
+                {reports.map((r) => {
+                    const Icon = r.icon;
+                    return (
+                        <button
+                            key={r.id}
+                            className={`report-type-btn card ${reportType === r.id ? 'active' : ''}`}
+                            onClick={() => setReportType(r.id)}
+                        >
+                            <span className="report-type-icon" style={{ color: r.color }}><Icon size={22} /></span>
+                            <span className="report-type-label">{r.label}</span>
+                            <span className="report-type-desc">{r.desc}</span>
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Filters */}
@@ -142,8 +150,8 @@ export default function AdminReports() {
 
             {/* Report Preview */}
             <div className="report-preview card">
-                <h3 className="report-preview-title">
-                    {reports.find(r => r.id === reportType)?.icon} {reports.find(r => r.id === reportType)?.label}
+                <h3 className="report-preview-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <CurrentIcon size={20} color={currentReport.color} /> {currentReport.label}
                 </h3>
 
                 {reportType === 'sales' && (
@@ -267,17 +275,23 @@ export default function AdminReports() {
                         </p>
                         <div className="product-report-grid">
                             <div className="product-report-section">
-                                <h4>🔥 Top Rated Products</h4>
+                                <h4 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <Flame size={16} color="#ef4444" /> Top Rated Products
+                                </h4>
                                 {[...products].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 5).map((p, i) => (
                                     <div key={p.id} className="product-report-item">
                                         <span className="pr-rank">#{i + 1}</span>
                                         <span>{p.name}</span>
-                                        <span className="pr-reviews">⭐ {p.rating || 0} ({p.reviews || 0} reviews)</span>
+                                        <span className="pr-reviews" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                            <Star size={12} color="#f59e0b" /> {p.rating || 0} ({p.reviews || 0} reviews)
+                                        </span>
                                     </div>
                                 ))}
                             </div>
                             <div className="product-report-section">
-                                <h4>⚠️ Low Stock Alert</h4>
+                                <h4 style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <AlertTriangle size={16} color="#f59e0b" /> Low Stock Alert
+                                </h4>
                                 {[...products].sort((a, b) => a.stock - b.stock).slice(0, 5).map((p, i) => (
                                     <div key={p.id} className="product-report-item">
                                         <span className={`pr-rank ${p.stock <= 5 ? 'low' : ''}`}>#{i + 1}</span>

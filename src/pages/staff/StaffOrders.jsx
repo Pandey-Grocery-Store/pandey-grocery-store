@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { statusLabels, statusColors, orderStatuses } from '../../data/orders';
 import { ordersApi } from '../../lib/api';
-import { Clock, Package, Truck, CheckCircle2, ChevronDown, ChevronUp, Loader } from 'lucide-react';
+import { Clock, Package, Truck, CheckCircle2, ChevronDown, ChevronUp, Loader, Store, Home } from 'lucide-react';
 import './StaffOrders.css';
 
 export default function StaffOrders() {
@@ -99,7 +99,11 @@ export default function StaffOrders() {
                                             <td>{order.items.length} items</td>
                                             <td className="order-total-cell">₹{order.total}</td>
                                             <td><span className="badge badge-info">{order.payment}</span></td>
-                                            <td><span className={`badge ${order.deliveryType === 'pickup' ? 'badge-warning' : 'badge-primary'}`}>{order.deliveryType === 'pickup' ? '🏪 Pickup' : '🏠 Delivery'}</span></td>
+                                            <td>
+                                                <span className={`badge ${order.deliveryType === 'pickup' ? 'badge-warning' : 'badge-primary'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                    {order.deliveryType === 'pickup' ? <><Store size={12} /> Pickup</> : <><Home size={12} /> Delivery</>}
+                                                </span>
+                                            </td>
                                             <td>
                                                 <span className="status-chip" style={{ background: `${statusColors[order.status]}18`, color: statusColors[order.status] }}>
                                                     <StatusIcon size={14} /> {statusLabels[order.status]}
