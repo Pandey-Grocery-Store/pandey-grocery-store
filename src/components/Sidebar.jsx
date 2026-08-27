@@ -18,8 +18,10 @@ const adminLinks = [
     { to: '/admin/users', icon: UserCog, label: 'User Management' },
 ];
 
-export default function Sidebar({ type = 'staff' }) {
-    const [collapsed, setCollapsed] = useState(false);
+export default function Sidebar({ type = 'staff', collapsed: externalCollapsed, setCollapsed: externalSetCollapsed }) {
+    const [localCollapsed, setLocalCollapsed] = useState(false);
+    const collapsed = externalCollapsed !== undefined ? externalCollapsed : localCollapsed;
+    const setCollapsed = externalSetCollapsed || setLocalCollapsed;
     const [mobileOpen, setMobileOpen] = useState(false);
     const { user, logout } = useAuth();
     const location = useLocation();

@@ -2,14 +2,21 @@
     display: flex;
     min-height: 100vh;
     background: var(--bg-secondary);
+    width: 100%;
 }
 
 .dashboard-main {
     flex: 1;
-    margin-left: var(--sidebar-width);
+    margin-left: 260px;
     padding: var(--space-8);
     transition: margin-left var(--transition-base);
     min-width: 0;
+    width: calc(100% - 260px);
+}
+
+.dashboard-main.collapsed {
+    margin-left: 72px;
+    width: calc(100% - 72px);
 }
 
 .dashboard-page-header {
@@ -29,8 +36,10 @@
 }
 
 @media (max-width: 768px) {
-    .dashboard-main {
-        margin-left: 0;
+    .dashboard-main,
+    .dashboard-main.collapsed {
+        margin-left: 0 !important;
+        width: 100% !important;
         padding: 16px;
         padding-top: 72px;
     }
