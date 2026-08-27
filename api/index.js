@@ -19,6 +19,8 @@ import {
     sendDeliveryAssignmentCustomerEmail,
     sendDeliveryAssignmentRiderEmail,
     sendLowStockAlertEmail,
+    sendStaffOrderReceiptEmail,
+    sendMonthlyKhataReminderEmail,
     verifySmtpConnection,
     sendEmail
 } from './emailService.js';
@@ -1070,10 +1072,74 @@ app.post('/api/orders/staff-create', authenticate, authorize('MANAGEMENT', 'ADMI
             }
         }
 
+        // Send order creation receipt email to customer if they have a valid email
+        try {
+            let customerRecipientEmail = finalCustomerEmail;
+            if (!customerRecipientEmail && targetUserId) {
+                const u = await prisma.user.findUnique({ where: { id: targetUserId }, select: { email: true } });
+                if (u?.email) customerRecipientEmail = u.email;
+            }
+            if (customerRecipientEmail && !customerRecipientEmail.includes('@pandeygrocery.local')) {
+                const payModeLabel = finalPaymentMode === 'paid_cash' 
+                    ? '💵 Cash Paid' 
+                    : finalPaymentMode === 'paid_upi' 
+                        ? '📱 Online UPI Paid' 
+                        : '🔴 Store Khata (Due)';
+                sendStaffOrderReceiptEmail(customerRecipientEmail, order, payModeLabel).catch(err => {
+                    console.error('[EmailService] Staff order receipt email sending failed:', err);
+                });
+            }
+        } catch (emailErr) {
+            console.error('[EmailService] Order creation receipt check error:', emailErr);
+        }
+
         res.status(201).json({ success: true, order });
     } catch (err) {
         console.error('Staff create order error:', err);
         res.status(500).json({ error: 'Failed to create order on behalf of customer' });
+    }
+});
+
+// Helper: Process and send peaceful monthly Khata statement reminder emails
+export async function processMonthlyKhataReminders() {
+    const customers = await prisma.user.findMany({
+        where: { role: 'CUSTOMER' },
+        include: { orders: true }
+    });
+
+    const currentMonth = new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+    const sentList = [];
+
+    for (const cust of customers) {
+        if (!cust.email || cust.email.includes('@pandeygrocery.local')) continue;
+
+        // Calculate total due across all orders for this customer
+        const totalDue = cust.orders.reduce((sum, o) => {
+            const pay = parseOrderPayment(o.paymentMode, o.total);
+            return sum + (pay.dueAmount || 0);
+        }, 0);
+
+        if (totalDue > 0) {
+            try {
+                await sendMonthlyKhataReminderEmail(cust.email, cust.name, totalDue, currentMonth);
+                sentList.push({ name: cust.name, email: cust.email, due: totalDue });
+            } catch (e) {
+                console.error(`[EmailService] Failed to send monthly Khata email to ${cust.email}:`, e);
+            }
+        }
+    }
+
+    return { count: sentList.length, sentList, month: currentMonth };
+}
+
+// Manager / Admin trigger for monthly Khata reminder emails
+app.post('/api/khata/send-monthly-reminders', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
+    try {
+        const result = await processMonthlyKhataReminders();
+        res.json({ success: true, message: `Sent peaceful Khata statement reminders to ${result.count} customers`, ...result });
+    } catch (err) {
+        console.error('Send monthly khata reminders endpoint error:', err);
+        res.status(500).json({ error: 'Failed to send monthly Khata reminders' });
     }
 });
 

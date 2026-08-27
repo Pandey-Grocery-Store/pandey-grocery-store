@@ -87,6 +87,25 @@ export default function StaffOrders() {
     const [createSubmitting, setCreateSubmitting] = useState(false);
     const [createError, setCreateError] = useState('');
 
+    // Monthly Khata Reminder State
+    const [sendingReminders, setSendingReminders] = useState(false);
+    const [reminderBanner, setReminderBanner] = useState('');
+
+    const handleSendMonthlyReminders = async () => {
+        if (!window.confirm('Send peaceful monthly Khata statement reminder emails to all customers with pending balance?')) return;
+        setSendingReminders(true);
+        setReminderBanner('');
+        try {
+            const res = await ordersApi.sendMonthlyReminders();
+            setReminderBanner(res?.message || `Sent ${res?.count || 0} peaceful Khata statement reminder emails!`);
+            setTimeout(() => setReminderBanner(''), 6000);
+        } catch (err) {
+            alert(err.message || 'Failed to send monthly reminder emails.');
+        } finally {
+            setSendingReminders(false);
+        }
+    };
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
@@ -357,8 +376,17 @@ export default function StaffOrders() {
                     <p className="dashboard-page-subtitle">Track hand-to-hand payments, customer accounts &amp; end-of-month balances</p>
                 </div>
                 <div className="dash-header-actions">
+                    <button 
+                        className="btn btn-secondary btn-sm" 
+                        onClick={handleSendMonthlyReminders} 
+                        disabled={sendingReminders}
+                        title="Send gentle monthly statement emails to customers with balance left"
+                    >
+                        {sendingReminders ? <Loader size={14} className="spin" /> : <Mail size={14} />} 
+                        {sendingReminders ? 'Sending...' : 'Monthly Statement Reminders'}
+                    </button>
                     <button className="btn btn-secondary btn-sm" onClick={() => setShowNewCustomerModal(true)}>
-                        <UserPlus size={15} /> + New Customer Account
+                        <UserPlus size={15} /> + New Customer
                     </button>
                     <button className="btn btn-primary create-order-btn" onClick={() => { setShowCreateModal(true); setSelectedCustomer(null); }}>
                         <PlusCircle size={16} /> Create Store Order / Khata
@@ -368,6 +396,13 @@ export default function StaffOrders() {
                     </button>
                 </div>
             </div>
+
+            {/* Reminder Alert Banner */}
+            {reminderBanner && (
+                <div className="banner-alert success mb-3 animate-fade-in" style={{ padding: '10px 16px', background: '#dcfce7', color: '#15803d', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: '700' }}>
+                    <Check size={16} /> {reminderBanner}
+                </div>
+            )}
 
             {/* View Switcher: Fulfillment Queue vs Kirana Khata Ledger */}
             <div className="orders-view-nav-bar">

@@ -663,3 +663,189 @@ export async function sendLowStockAlertEmail(product) {
         text: `Low stock alert for ${product.name}. Only ${product.stock} units remaining.`,
     });
 }
+
+// ════════════════════ 12. Staff In-Store POS Order Receipt Email ════════════════════
+export async function sendStaffOrderReceiptEmail(toEmail, order, paymentModeText) {
+    if (!toEmail || toEmail.includes('@pandeygrocery.local')) return { success: false, reason: 'Invalid or placeholder email' };
+
+    const items = order.items || [];
+    const itemsHtml = items.map(item => `
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+            <td style="padding: 10px 0; color: #0f172a; font-size: 14px; font-weight: 600;">
+                ${item.name}
+            </td>
+            <td style="padding: 10px 0; text-align: center; color: #64748b; font-size: 14px;">
+                ×${item.quantity || item.qty || 1}
+            </td>
+            <td style="padding: 10px 0; text-align: right; color: #0f172a; font-size: 14px; font-weight: 700;">
+                ₹${((item.price || 0) * (item.quantity || item.qty || 1)).toFixed(2)}
+            </td>
+        </tr>
+    `).join('');
+
+    const trackUrl = `${appBaseUrl}/track/${order.orderNumber || order.id}`;
+    const accountUrl = `${appBaseUrl}/account`;
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="margin: 0; padding: 20px; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+            <div style="background: linear-gradient(135deg, #059669 0%, #064e3b 100%); padding: 28px 24px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">🛍️ Purchase Bill Receipt</h1>
+                <p style="color: rgba(255,255,255,0.9); margin: 6px 0 0; font-size: 14px;">Pandey Grocery Store • Kusumkhera, Haldwani</p>
+            </div>
+
+            <div style="padding: 24px;">
+                <div style="display: flex; justify-content: space-between; border-bottom: 1.5px solid #f1f5f9; padding-bottom: 14px; margin-bottom: 16px;">
+                    <div>
+                        <span style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Bill Receipt No.</span>
+                        <div style="font-size: 16px; font-weight: 900; color: #0f172a;">#${order.orderNumber || order.id}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Payment Mode</span>
+                        <div style="font-size: 13px; font-weight: 800; color: #059669;">
+                            ${paymentModeText || 'Counter Sale'}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <p style="font-size: 14px; color: #334155; margin: 0 0 12px; line-height: 1.5;">
+                        Hello <strong>${order.customer || 'Customer'}</strong>, thank you for shopping with us today at Pandey Grocery Store. Here is your detailed purchase receipt:
+                    </p>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1.5px solid #e2e8f0; color: #94a3b8; font-size: 11px; text-transform: uppercase;">
+                                <th style="text-align: left; padding-bottom: 6px;">Item</th>
+                                <th style="text-align: center; padding-bottom: 6px;">Qty/Weight</th>
+                                <th style="text-align: right; padding-bottom: 6px;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 900; color: #0f172a;">
+                        <span>Total Bill Amount:</span>
+                        <span style="color: #059669; font-size: 18px;">₹${(order.total || 0).toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="${accountUrl}" style="background: #059669; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 800; display: inline-block; margin-right: 8px;">
+                        📖 View Account & Passbook
+                    </a>
+                    <a href="${trackUrl}" style="background: #f1f5f9; color: #334155; text-decoration: none; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 700; display: inline-block;">
+                        📄 View Full Invoice
+                    </a>
+                </div>
+            </div>
+
+            <div style="background: #f8fafc; padding: 16px 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+                <p style="color: #64748b; font-size: 12px; margin: 0 0 4px;">Store Helpline: <strong>+91 79069 66085</strong> • Kaladhungi Road, Haldwani</p>
+                <p style="color: #94a3b8; font-size: 11px; margin: 0;">© ${new Date().getFullYear()} Pandey Grocery Store • Always Fresh, Always Near</p>
+            </div>
+        </div>
+    </body>
+    </html>`;
+
+    return sendEmail({
+        to: toEmail,
+        subject: `Receipt for Order #${order.orderNumber || order.id} (₹${order.total}) — Pandey Grocery Store`,
+        html,
+        text: `Your purchase receipt #${order.orderNumber || order.id} for ₹${order.total} from Pandey Grocery Store is confirmed. View details at ${trackUrl}`,
+    });
+}
+
+// ════════════════════ 13. Peaceful Monthly Khata Reminder Email ════════════════════
+export async function sendMonthlyKhataReminderEmail(toEmail, customerName, totalDue, monthName) {
+    if (!toEmail || toEmail.includes('@pandeygrocery.local')) return { success: false, reason: 'Invalid or placeholder email' };
+
+    const currentMonth = monthName || new Date().toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+    const accountUrl = `${appBaseUrl}/account`;
+    const whatsappUrl = `https://wa.me/917906966085?text=Namaste%20Pandey%20Store,%20I%20am%20reviewing%20my%20monthly%20Khata%20statement%20for%20${encodeURIComponent(customerName || '')}.`;
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="margin: 0; padding: 20px; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <div style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 18px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+            <!-- Peaceful Top Banner -->
+            <div style="background: linear-gradient(135deg, #047857 0%, #064e3b 100%); padding: 30px 24px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">🕊️ Store Khata Statement</h1>
+                <p style="color: rgba(255,255,255,0.9); margin: 6px 0 0; font-size: 14px;">Pandey Grocery Store • ${currentMonth}</p>
+            </div>
+
+            <!-- Warm Polite Content -->
+            <div style="padding: 26px 24px;">
+                <h2 style="color: #0f172a; margin: 0 0 10px; font-size: 18px; font-weight: 700;">
+                    Namaste ${customerName || 'Customer'} ji 🙏
+                </h2>
+                <p style="color: #475569; font-size: 14px; line-height: 1.6; margin: 0 0 18px;">
+                    Warm greetings from the Pandey family at Pandey Grocery Store. We hope you and your family are having a wonderful start to this new month.
+                </p>
+                <p style="color: #475569; font-size: 14px; line-height: 1.6; margin: 0 0 20px;">
+                    As part of our regular monthly store accounts, here is a gentle summary of your current store ledger balance:
+                </p>
+
+                <!-- Peaceful Balance Box -->
+                <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 14px; padding: 20px; text-align: center; margin-bottom: 22px;">
+                    <span style="font-size: 12px; font-weight: 800; color: #15803d; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">
+                        Current Outstanding Balance
+                    </span>
+                    <div style="font-size: 32px; font-weight: 900; color: #0f172a; margin-bottom: 4px;">
+                        ₹${Number(totalDue).toFixed(2)}
+                    </div>
+                    <span style="font-size: 12px; color: #166534;">
+                        Ledger statement as of 1st ${currentMonth}
+                    </span>
+                </div>
+
+                <!-- UPI & Settlement Details -->
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 22px;">
+                    <strong style="font-size: 13px; color: #0f172a; display: block; margin-bottom: 6px;">Convenient Settlement Options:</strong>
+                    <ul style="margin: 0; padding-left: 18px; color: #64748b; font-size: 13px; line-height: 1.6;">
+                        <li><strong>In-Store Visit:</strong> Pay hand-to-hand with cash or scanner on your next grocery visit.</li>
+                        <li><strong>Direct UPI Payment:</strong> Transfer to store UPI ID <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; color: #0f172a; font-weight: bold;">7906966085@upi</code>.</li>
+                        <li><strong>Online Passbook:</strong> View all individual bills and pay via UPI directly from your account page.</li>
+                    </ul>
+                </div>
+
+                <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin: 0 0 24px; text-align: center;">
+                    You are a valued neighbor and patron of our store. Whenever it is convenient for you, you can clear this balance. Thank you for your continued trust!
+                </p>
+
+                <!-- Actions -->
+                <div style="text-align: center;">
+                    <a href="${accountUrl}" style="background: #059669; color: #ffffff; text-decoration: none; padding: 13px 26px; border-radius: 12px; font-size: 14px; font-weight: 800; display: inline-block; margin-bottom: 8px;">
+                        📱 View Passbook &amp; Pay via UPI
+                    </a>
+                    <br/>
+                    <a href="${whatsappUrl}" style="color: #059669; text-decoration: underline; font-size: 13px; font-weight: 600;">
+                        Have questions? Chat with us on WhatsApp (+91 79069 66085)
+                    </a>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f8fafc; padding: 16px 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+                <p style="color: #64748b; font-size: 12px; margin: 0 0 4px;">Pandey Grocery Store • Kusumkhera, Kaladhungi Road, Haldwani</p>
+                <p style="color: #94a3b8; font-size: 11px; margin: 0;">© ${new Date().getFullYear()} Pandey Grocery Store • Local Trust &amp; Quality Since Day One</p>
+            </div>
+        </div>
+    </body>
+    </html>`;
+
+    return sendEmail({
+        to: toEmail,
+        subject: `Namaste ${customerName || 'Customer'} ji — Store Khata Statement for ${currentMonth} (Pandey Grocery Store)`,
+        html,
+        text: `Namaste ${customerName || 'Customer'} ji, your store Khata balance as of ${currentMonth} is ₹${Number(totalDue).toFixed(2)}. You can clear it during your next visit or online via UPI (7906966085@upi). View passbook at ${accountUrl}`,
+    });
+}

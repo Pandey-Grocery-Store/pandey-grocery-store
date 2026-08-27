@@ -89,6 +89,7 @@ export const ordersApi = {
     staffCreate: (data) => request('/orders/staff-create', { method: 'POST', body: JSON.stringify(data) }),
     updateStatus: (id, status) => request(`/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
     updatePayment: (id, data) => request(`/orders/${id}/payment`, { method: 'PATCH', body: JSON.stringify(data) }),
+    sendMonthlyReminders: () => request('/khata/send-monthly-reminders', { method: 'POST' }),
 };
 
 // ── Customer Accounts & Khata Profiles API ──
@@ -96,6 +97,7 @@ export const customersApi = {
     getAll: () => tryRequest('/customers'),
     create: (data) => request('/customers', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/customers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    sendMonthlyReminders: () => request('/khata/send-monthly-reminders', { method: 'POST' }),
 };
 
 // ── Dashboard API ──
