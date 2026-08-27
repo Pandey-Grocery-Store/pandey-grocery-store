@@ -64,11 +64,6 @@ export const userApi = {
     deleteAddress: (id) => request(`/user/address/${id}`, { method: 'DELETE' }),
 };
 
-// ── Categories API ──
-export const categoriesApi = {
-    getAll: () => tryRequest('/categories'),
-};
-
 // ── Products API ──
 export const productsApi = {
     getAll: (params = {}) => {
@@ -100,21 +95,40 @@ export const dashboardApi = {
     getTopProducts: () => tryRequest('/dashboard/top-products'),
 };
 
-// ── Upload API (Vercel Blob) ──
+// ── Categories & Subcategories API ──
+export const categoriesApi = {
+    getAll: () => tryRequest('/categories'),
+    addSubcategory: (categoryId, data) => request(`/categories/${categoryId}/subcategories`, { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// ── Upload API (Vercel Blob + Local DataURI Fallback) ──
 export const uploadApi = {
     uploadImage: async (file) => {
-        const token = getToken();
-        const res = await fetch(`${API_BASE}/upload?filename=${encodeURIComponent(file.name)}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': file.type,
-                ...(token && { Authorization: `Bearer ${token}` }),
-            },
-            body: file,
+        try {
+            const token = getToken();
+            const res = await fetch(`${API_BASE}/upload?filename=${encodeURIComponent(file.name)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': file.type,
+                    ...(token && { Authorization: `Bearer ${token}` }),
+                },
+                body: file,
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data?.url) return data;
+            }
+        } catch (e) {
+            console.warn('Remote upload failed, converting to local data URI:', e);
+        }
+
+        // Instant local FileReader fallback
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve({ url: reader.result });
+            reader.onerror = () => resolve({ url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400' });
+            reader.readAsDataURL(file);
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Upload failed');
-        return data;
     },
     uploadPrintFile: async (file) => {
         const token = getToken();

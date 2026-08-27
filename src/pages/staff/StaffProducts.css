@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════════════
-   STAFF PRODUCT CATALOG & ADD NEW PRODUCT MODAL — MODERN MATTE STYLESHEET
+   STAFF PRODUCT CATALOG & DYNAMIC PRODUCT TYPES — MODERN MATTE STYLESHEET
    ══════════════════════════════════════════════════════════════════════════ */
 
 .staff-products-page {
@@ -207,8 +207,8 @@
 }
 
 .p-table-thumb {
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
     border-radius: 8px;
     object-fit: cover;
     background: #f8fafc;
@@ -238,6 +238,30 @@
     color: #94a3b8;
 }
 
+/* Product Type Badge */
+.p-type-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.p-type-pill.type-fixed {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.p-type-pill.type-weight {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+
 .p-table-brand {
     font-weight: 700;
     color: #475569;
@@ -257,6 +281,12 @@
     font-size: 0.95rem;
     font-weight: 800;
     color: #059669;
+}
+
+.p-table-selling small {
+    font-size: 0.72rem;
+    color: #64748b;
+    font-weight: 600;
 }
 
 .p-table-mrp {
@@ -370,11 +400,19 @@
     min-width: 0;
 }
 
-.p-mobile-info h4 {
+.p-mob-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+}
+
+.p-mob-title-row h4 {
     font-size: 0.88rem;
     font-weight: 800;
     color: #0f172a;
     margin: 0;
+    line-height: 1.25;
 }
 
 .p-mobile-hi {
@@ -402,6 +440,12 @@
     font-size: 0.95rem;
     font-weight: 800;
     color: #059669;
+}
+
+.p-mob-selling small {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
 }
 
 .p-mobile-mrp {
@@ -457,7 +501,7 @@
     border: 1px solid #e2e8f0;
     border-radius: 20px;
     width: 100%;
-    max-width: 900px;
+    max-width: 920px;
     max-height: 92vh;
     display: flex;
     flex-direction: column;
@@ -543,7 +587,7 @@
 
 .ap-modal-body-split {
     display: grid;
-    grid-template-columns: 1.4fr 1fr;
+    grid-template-columns: 1.35fr 1fr;
     gap: 16px;
     padding: 18px 20px;
     overflow-y: auto;
@@ -596,6 +640,78 @@
     letter-spacing: 0.03em;
 }
 
+/* ─── 1. Product Type Selector Grid ─── */
+.ap-product-type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.ap-type-option-box {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s ease;
+}
+
+.ap-type-option-box:hover {
+    border-color: #94a3b8;
+    background: #f1f5f9;
+}
+
+.ap-type-option-box.active {
+    border-color: #059669;
+    background: #f0fdf4;
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.1);
+}
+
+.type-icon-circle {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.type-icon-circle.weight-icon {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+.type-text-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.type-text-wrap strong {
+    font-size: 0.825rem;
+    color: #0f172a;
+}
+
+.type-text-wrap span {
+    font-size: 0.7rem;
+    color: #64748b;
+    line-height: 1.25;
+}
+
+.type-check-icon {
+    color: #059669;
+    flex-shrink: 0;
+}
+
 /* Department Selector Pills */
 .ap-dept-pills-row {
     display: grid;
@@ -630,6 +746,28 @@
     border-color: #0f172a;
     color: #ffffff;
     box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+}
+
+.subcat-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.add-sub-btn {
+    font-size: 0.72rem;
+    color: #059669;
+    font-weight: 700;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.add-sub-btn:hover {
+    text-decoration: underline;
 }
 
 /* Inputs & Grid Layout */
@@ -731,6 +869,162 @@
     align-items: center;
     gap: 6px;
     font-weight: 600;
+}
+
+/* ─── Bi-directional Weight Calculator Widget ─── */
+.ap-weight-calc-widget {
+    background: #ffffff;
+    border: 1.5px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.calc-widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.calc-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: #1e3a8a;
+}
+
+.rate-badge {
+    font-size: 0.7rem;
+    font-weight: 800;
+    background: #eff6ff;
+    color: #2563eb;
+    padding: 2px 8px;
+    border-radius: 20px;
+    border: 1px solid #bfdbfe;
+}
+
+.calc-tabs-row {
+    display: flex;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 8px;
+    gap: 4px;
+}
+
+.calc-mode-tab {
+    flex: 1;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.calc-mode-tab.active {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.calc-interactive-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.calc-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.calc-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.calc-field label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #475569;
+}
+
+.calc-arrow {
+    color: #94a3b8;
+    padding-top: 14px;
+}
+
+.calc-result-box {
+    flex: 1;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.res-label {
+    font-size: 0.68rem;
+    color: #047857;
+    font-weight: 600;
+}
+
+.res-val {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #059669;
+    line-height: 1.1;
+}
+
+.res-sub {
+    font-size: 0.68rem;
+    color: #64748b;
+}
+
+.calc-quick-pills {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.calc-quick-pills span {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.calc-pill {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 2px 7px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.calc-pill:hover, 
+.calc-pill.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+    font-weight: 700;
 }
 
 /* Image Upload Zone */
@@ -855,6 +1149,26 @@
     border-radius: 4px;
 }
 
+.ap-card-type-tag {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 4px;
+}
+
+.ap-card-type-tag.fixed-tag {
+    background: rgba(15, 23, 42, 0.75);
+    color: #ffffff;
+}
+
+.ap-card-type-tag.weight-tag {
+    background: #2563eb;
+    color: #ffffff;
+}
+
 .ap-card-body {
     padding: 12px 14px;
     display: flex;
@@ -918,6 +1232,12 @@
     color: #059669;
 }
 
+.ap-card-selling small {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
 .ap-card-mrp {
     font-size: 0.78rem;
     color: #94a3b8;
@@ -941,6 +1261,28 @@
     background: #fef2f2;
     color: #dc2626;
     border: 1px solid #fecaca;
+}
+
+.ap-card-weight-mock-pills {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.mock-weight-chip {
+    font-size: 0.68rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+}
+
+.mock-weight-chip.active {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #2563eb;
+    font-weight: 700;
 }
 
 .ap-card-mock-btn {
@@ -983,8 +1325,62 @@
     padding: 9px 18px;
 }
 
+/* ─── Subcategory Creation Modal ─── */
+.subcat-modal-dialog {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.subcat-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 18px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.subcat-modal-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.subcat-modal-title h3 {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+}
+
+.subcat-modal-form {
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.subcat-instruct {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.subcat-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #f1f5f9;
+}
+
 /* ─── Responsive Media Queries ─── */
-@media (max-width: 800px) {
+@media (max-width: 840px) {
     .ap-modal-body-split {
         grid-template-columns: 1fr;
         padding: 14px 16px;
@@ -1002,6 +1398,9 @@
 }
 
 @media (max-width: 520px) {
+    .ap-product-type-grid {
+        grid-template-columns: 1fr;
+    }
     .ap-dept-pills-row {
         grid-template-columns: 1fr;
     }

@@ -253,3 +253,249 @@
         padding: 0 4px;
     }
 }
+
+/* ─── Loose / Weight Product Styles ─── */
+.product-card-badges-row {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 2;
+}
+
+.weight-type-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    background: #2563eb;
+    color: #ffffff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.card-weight-selector-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    margin: 4px 0 2px;
+}
+
+.card-weight-chips {
+    display: flex;
+    gap: 3px;
+}
+
+.weight-chip {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.weight-chip:hover {
+    border-color: #2563eb;
+    color: #2563eb;
+}
+
+.weight-chip.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+}
+
+.custom-calc-link {
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #059669;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 4px;
+    padding: 2px 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.custom-calc-link:hover {
+    background: #059669;
+    color: #ffffff;
+}
+
+/* Weight Modal */
+.weight-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.weight-calc-modal-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.w-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.w-modal-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.w-modal-title h4 {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+}
+
+.w-modal-body {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.w-rate-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.w-rate-label strong {
+    color: #059669;
+}
+
+.w-calc-input-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.w-calc-input-block label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #334155;
+}
+
+.w-input-group {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.w-input-group span {
+    position: absolute;
+    left: 12px;
+    font-weight: 800;
+    color: #64748b;
+}
+
+.w-input-group input {
+    padding-left: 26px;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.w-computed-box {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.c-label {
+    font-size: 0.7rem;
+    color: #047857;
+    font-weight: 600;
+}
+
+.c-val {
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: #059669;
+    line-height: 1.1;
+}
+
+.c-sub {
+    font-size: 0.72rem;
+    color: #64748b;
+}
+
+.w-quick-presets {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.w-quick-presets span {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.w-preset-btn {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 2px 7px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+
+.w-preset-btn:hover,
+.w-preset-btn.active {
+    background: #059669;
+    border-color: #059669;
+    color: #ffffff;
+}
+
+.w-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-top: 1px solid #f1f5f9;
+}

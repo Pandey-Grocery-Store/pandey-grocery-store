@@ -310,12 +310,150 @@ app.post('/api/user/addresses', authenticate, async (req, res) => {
     } catch (err) { res.status(500).json({ error: 'Failed to add address' }); }
 });
 
-// ════════════════════ CATEGORIES ════════════════════
+// ════════════════════ CATEGORIES & SUBCATEGORIES ════════════════════
+const BASE_CATEGORIES = [
+    {
+        id: 'groceries',
+        slug: 'groceries',
+        name: 'Groceries & Staples',
+        nameHi: 'किराना एवं दैनिक सामग्री',
+        icon: 'ShoppingBasket',
+        image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400',
+        subcategories: [
+            { id: 'rice-grains', name: 'Rice & Grains', nameHi: 'चावल और अनाज' },
+            { id: 'spices-masala', name: 'Spices & Masalas', nameHi: 'मसाले और गरम मसाले' },
+            { id: 'cooking-oil', name: 'Cooking Oil', nameHi: 'खाना पकाने का तेल' },
+            { id: 'packaged-foods', name: 'Packaged Foods', nameHi: 'पैक्ड खाद्य पदार्थ' },
+            { id: 'dairy-products', name: 'Dairy Products', nameHi: 'डेयरी उत्पाद' },
+            { id: 'beverages', name: 'Beverages', nameHi: 'पेय पदार्थ' },
+            { id: 'snacks', name: 'Snacks & Namkeen', nameHi: 'स्नैक्स और नमकीन' },
+            { id: 'fresh-produce', name: 'Fresh Fruits & Vegetables', nameHi: 'ताज़ी फल और सब्ज़ियाँ' },
+        ],
+    },
+    {
+        id: 'stationery',
+        slug: 'stationery',
+        name: 'Stationery & Office',
+        nameHi: 'स्टेशनरी एवं ऑफिस सामग्री',
+        icon: 'BookOpen',
+        image: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=400',
+        subcategories: [
+            { id: 'notebooks-registers', name: 'Notebooks & Registers', nameHi: 'कॉपी एवं रजिस्टर' },
+            { id: 'pens-pencils', name: 'Pens, Pencils & School Supplies', nameHi: 'पेन, पेंसिल एवं स्कूल सामग्री' },
+            { id: 'files-folders', name: 'Files & Folders', nameHi: 'फ़ाइलें और फ़ोल्डर' },
+            { id: 'art-craft', name: 'Art, Craft & Chart Paper', nameHi: 'आर्ट, क्राफ्ट एवं चार्ट पेपर' },
+            { id: 'office-supplies', name: 'Sticky Notes & Office Supplies', nameHi: 'कार्यालय सामग्री' },
+        ],
+    },
+    {
+        id: 'household-personal',
+        slug: 'household-personal',
+        name: 'Household & Care',
+        nameHi: 'घरेलू एवं पर्सनल केयर',
+        icon: 'Sparkles',
+        image: 'https://images.unsplash.com/photo-1585421514284-efb74c2b69ba?w=400',
+        subcategories: [
+            { id: 'household-products', name: 'Household Products', nameHi: 'घरेलू सामान' },
+            { id: 'cleaning-supplies', name: 'Cleaning Supplies', nameHi: 'सफाई का सामान' },
+            { id: 'personal-care', name: 'Personal Care Products', nameHi: 'पर्सनल केयर' },
+        ],
+    },
+];
+
 app.get('/api/categories', async (req, res) => {
     try {
-        const categories = await prisma.category.findMany();
-        res.json({ categories: categories.map(c => ({ ...c, subcategories: JSON.parse(c.subcategories) })) });
-    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to fetch categories' }); }
+        let dbCategories = await prisma.category.findMany();
+        if (!dbCategories || dbCategories.length === 0) {
+            // Seed base categories in DB
+            for (const cat of BASE_CATEGORIES) {
+                await prisma.category.upsert({
+                    where: { slug: cat.slug },
+                    update: {},
+                    create: {
+                        id: cat.id,
+                        slug: cat.slug,
+                        name: cat.name,
+                        nameHi: cat.nameHi,
+                        icon: cat.icon,
+                        image: cat.image,
+                        subcategories: JSON.stringify(cat.subcategories)
+                    }
+                });
+            }
+            dbCategories = await prisma.category.findMany();
+        }
+
+        const formatted = dbCategories.map(c => {
+            let parsedSubs = [];
+            try { parsedSubs = JSON.parse(c.subcategories); } catch { parsedSubs = []; }
+            const baseCat = BASE_CATEGORIES.find(b => b.slug === c.slug);
+            const baseSubs = baseCat ? baseCat.subcategories : [];
+            const mergedSubs = [...baseSubs];
+            for (const sub of parsedSubs) {
+                if (!mergedSubs.some(m => m.id === sub.id)) {
+                    mergedSubs.push(sub);
+                }
+            }
+            return {
+                id: c.id,
+                slug: c.slug,
+                name: c.name,
+                nameHi: c.nameHi,
+                icon: c.icon,
+                image: c.image,
+                subcategories: mergedSubs
+            };
+        });
+
+        res.json({ categories: formatted });
+    } catch (err) {
+        console.error('Fetch categories error:', err);
+        res.json({ categories: BASE_CATEGORIES });
+    }
+});
+
+// Admin creates a dynamic subcategory
+app.post('/api/categories/:categoryId/subcategories', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
+    try {
+        const { categoryId } = req.params;
+        const { name, nameHi } = req.body;
+        if (!name || !name.trim()) return res.status(400).json({ error: 'Subcategory name is required' });
+
+        const subId = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `sub-${Date.now()}`;
+        const newSub = { id: subId, name: name.trim(), nameHi: nameHi?.trim() || name.trim() };
+
+        let cat = await prisma.category.findFirst({ where: { OR: [{ id: categoryId }, { slug: categoryId }] } });
+        if (!cat) {
+            const base = BASE_CATEGORIES.find(b => b.id === categoryId || b.slug === categoryId);
+            if (!base) return res.status(404).json({ error: 'Category not found' });
+            cat = await prisma.category.create({
+                data: {
+                    id: base.id,
+                    slug: base.slug,
+                    name: base.name,
+                    nameHi: base.nameHi,
+                    icon: base.icon,
+                    image: base.image,
+                    subcategories: JSON.stringify([...base.subcategories, newSub])
+                }
+            });
+        } else {
+            let subs = [];
+            try { subs = JSON.parse(cat.subcategories); } catch { subs = []; }
+            if (!subs.some(s => s.id === subId)) {
+                subs.push(newSub);
+                cat = await prisma.category.update({
+                    where: { id: cat.id },
+                    data: { subcategories: JSON.stringify(subs) }
+                });
+            }
+        }
+
+        res.status(201).json({ success: true, subcategory: newSub, category: cat });
+    } catch (err) {
+        console.error('Create subcategory error:', err);
+        res.status(500).json({ error: 'Failed to create subcategory' });
+    }
 });
 
 // ════════════════════ PRODUCTS ════════════════════
@@ -323,15 +461,16 @@ app.get('/api/products', async (req, res) => {
     try {
         const { category, subcategory, search, sort, limit } = req.query;
         const where = { isActive: true };
-        if (category) where.category = category;
-        if (subcategory) where.subcategory = subcategory;
+        if (category && category !== 'all') where.category = category;
+        if (subcategory && subcategory !== 'all') where.subcategory = subcategory;
         if (search) where.OR = [{ name: { contains: search, mode: 'insensitive' } }, { brand: { contains: search, mode: 'insensitive' } }, { description: { contains: search, mode: 'insensitive' } }];
         let orderBy = { createdAt: 'desc' };
         if (sort === 'price-low') orderBy = { price: 'asc' };
         else if (sort === 'price-high') orderBy = { price: 'desc' };
         else if (sort === 'rating') orderBy = { rating: 'desc' };
         else if (sort === 'reviews') orderBy = { reviews: 'desc' };
-        res.json({ products: await prisma.product.findMany({ where, orderBy, take: limit ? parseInt(limit) : undefined }) });
+        const products = await prisma.product.findMany({ where, orderBy, take: limit ? parseInt(limit) : undefined });
+        res.json({ products });
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to fetch products' }); }
 });
 
@@ -345,10 +484,40 @@ app.get('/api/products/:id', async (req, res) => {
 
 app.post('/api/products', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
     try {
-        const { name, nameHi, brand, category, subcategory, price, mrp, unit, image, description, stock, rating } = req.body;
-        if (!name || !brand || !category || !subcategory || !price || !mrp || !unit) return res.status(400).json({ error: 'Missing fields' });
-        res.status(201).json({ product: await prisma.product.create({ data: { name, nameHi, brand, category, subcategory, price: parseFloat(price), mrp: parseFloat(mrp), unit, image: image || '', description, stock: parseInt(stock) || 100, rating: parseFloat(rating) || 4.0 } }) });
-    } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to create product' }); }
+        const { name, nameHi, brand, category, subcategory, price, mrp, unit, image, description, stock, rating, productType } = req.body;
+        if (!name || !brand || !category || !price || !mrp) return res.status(400).json({ error: 'Missing required product fields' });
+        
+        const fallbackImg = category === 'stationery' 
+            ? 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=400'
+            : category === 'household-personal'
+            ? 'https://images.unsplash.com/photo-1585421514284-efb74c2b69ba?w=400'
+            : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400';
+
+        const finalImage = (image && image.trim()) ? image.trim() : fallbackImg;
+        const finalUnit = unit?.trim() || (productType === 'weight' ? '1 kg' : '1 Unit');
+
+        const product = await prisma.product.create({
+            data: {
+                name: name.trim(),
+                nameHi: nameHi?.trim() || null,
+                brand: brand.trim(),
+                category: category.trim(),
+                subcategory: subcategory?.trim() || 'all',
+                price: parseFloat(price),
+                mrp: parseFloat(mrp),
+                unit: finalUnit,
+                image: finalImage,
+                description: description?.trim() || (productType === 'weight' ? '[TYPE:weight] Fresh loose grocery item sold by weight' : null),
+                stock: parseInt(stock) !== undefined && !isNaN(parseInt(stock)) ? parseInt(stock) : 50,
+                rating: parseFloat(rating) || 4.5,
+            }
+        });
+
+        res.status(201).json({ success: true, product });
+    } catch (err) {
+        console.error('Create product error:', err);
+        res.status(500).json({ error: err.message || 'Failed to create product' });
+    }
 });
 
 app.put('/api/products/:id', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
@@ -492,12 +661,24 @@ app.get('/api/dashboard/top-products', authenticate, authorize('MANAGEMENT', 'AD
     catch (err) { res.status(500).json({ error: 'Failed to fetch top products' }); }
 });
 
-// ════════════════════ UPLOAD (Vercel Blob) ════════════════════
-app.post('/api/upload', authenticate, authorize('MANAGEMENT', 'ADMIN'), express.raw({ type: 'image/*', limit: '5mb' }), async (req, res) => {
+// ════════════════════ UPLOAD (Vercel Blob + Base64 Fallback) ════════════════════
+app.post('/api/upload', authenticate, authorize('MANAGEMENT', 'ADMIN'), express.raw({ type: 'image/*', limit: '10mb' }), async (req, res) => {
     try {
         const filename = req.query.filename || `product-${Date.now()}.jpg`;
-        const blob = await put(`pandey-grocery-store/${filename}`, req.body, { access: 'public', token: process.env.BLOB_READ_WRITE_TOKEN });
-        res.json({ url: blob.url });
+        if (process.env.BLOB_READ_WRITE_TOKEN) {
+            try {
+                const blob = await put(`pandey-grocery-store/${filename}`, req.body, { access: 'public', token: process.env.BLOB_READ_WRITE_TOKEN });
+                return res.json({ url: blob.url });
+            } catch (blobErr) {
+                console.warn('Vercel blob upload failed, using base64 fallback:', blobErr.message);
+            }
+        }
+        
+        // Base64 Data URL fallback for immediate local persistence
+        const mime = req.headers['content-type'] || 'image/jpeg';
+        const base64 = req.body.toString('base64');
+        const dataUrl = `data:${mime};base64,${base64}`;
+        res.json({ url: dataUrl });
     } catch (err) {
         console.error('Upload error:', err);
         res.status(500).json({ error: 'Upload failed' });
@@ -505,11 +686,22 @@ app.post('/api/upload', authenticate, authorize('MANAGEMENT', 'ADMIN'), express.
 });
 
 // Upload for print services (any authenticated customer)
-app.post('/api/upload/print', authenticate, express.raw({ type: ['image/*', 'application/pdf'], limit: '10mb' }), async (req, res) => {
+app.post('/api/upload/print', authenticate, express.raw({ type: ['image/*', 'application/pdf'], limit: '15mb' }), async (req, res) => {
     try {
         const filename = req.query.filename || `print-${Date.now()}.jpg`;
-        const blob = await put(`pandey-grocery-store/print-jobs/${filename}`, req.body, { access: 'public', token: process.env.BLOB_READ_WRITE_TOKEN });
-        res.json({ url: blob.url });
+        if (process.env.BLOB_READ_WRITE_TOKEN) {
+            try {
+                const blob = await put(`pandey-grocery-store/print-jobs/${filename}`, req.body, { access: 'public', token: process.env.BLOB_READ_WRITE_TOKEN });
+                return res.json({ url: blob.url });
+            } catch (blobErr) {
+                console.warn('Vercel blob print upload failed, using fallback:', blobErr.message);
+            }
+        }
+        
+        const mime = req.headers['content-type'] || 'image/jpeg';
+        const base64 = req.body.toString('base64');
+        const dataUrl = `data:${mime};base64,${base64}`;
+        res.json({ url: dataUrl });
     } catch (err) {
         console.error('Print upload error:', err);
         res.status(500).json({ error: 'Upload failed' });
