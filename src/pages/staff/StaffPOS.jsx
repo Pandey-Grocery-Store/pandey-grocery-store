@@ -283,11 +283,20 @@ export default function StaffPOS() {
         setIsSubmitting(true);
         setError(null);
         try {
+            const finalCustName = selectedCustomer 
+                ? selectedCustomer.name 
+                : isCustomWalkIn 
+                    ? (customerInfo.name?.trim() || 'Walk-in Customer')
+                    : (custSearchQuery.trim() || customerInfo.name?.trim() || 'Walk-in Customer');
+
+            const finalCustPhone = selectedCustomer ? selectedCustomer.phone : customerInfo.phone?.trim() || '';
+            const finalCustEmail = selectedCustomer ? selectedCustomer.email : customerInfo.email?.trim() || '';
+
             const orderData = {
                 customerId: selectedCustomer?.id,
-                customerName: selectedCustomer ? selectedCustomer.name : customerInfo.name || 'Walk-in Customer',
-                customerPhone: selectedCustomer ? selectedCustomer.phone : customerInfo.phone || '',
-                customerEmail: selectedCustomer ? selectedCustomer.email : customerInfo.email || '',
+                customerName: finalCustName,
+                customerPhone: finalCustPhone,
+                customerEmail: finalCustEmail,
                 customerAddress: customerInfo.address || 'In-store Counter Sale',
                 items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image })),
                 subtotal,
@@ -303,14 +312,20 @@ export default function StaffPOS() {
             setCompletedOrder({ 
                 ...orderData, 
                 id: res?.order?.orderNumber || res?.order?.id || `POS-${Date.now().toString().slice(-6)}`,
+                customerName: res?.order?.customer || finalCustName,
                 paymentMode: paymentMode 
             });
             setOrderSuccess(true);
             setCart([]);
             handleClearCustomer();
+
+            // Refresh customers list so the newly created customer profile appears in autocomplete search
+            customersApi.getAll().then(custData => {
+                if (custData?.customers) setCustomers(custData.customers);
+            }).catch(() => {});
         } catch (err) {
             console.error('POS Checkout error', err);
-            setError('Failed to create order. Please try again.');
+            setError(err.message || 'Failed to create order. Please try again.');
         } finally {
             setIsSubmitting(false);
         }

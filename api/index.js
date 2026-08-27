@@ -966,11 +966,30 @@ app.post('/api/orders/staff-create', authenticate, authorize('MANAGEMENT', 'ADMI
                     }
                 }
             }
-            if (!targetUserId && finalCustomerName !== 'Walk-in Customer' && (finalCustomerEmail || finalCustomerPhone)) {
-                // Auto-create customer user profile
+            if (!targetUserId && finalCustomerName && finalCustomerName.toLowerCase() !== 'walk-in customer') {
+                const found = await prisma.user.findFirst({
+                    where: {
+                        name: { equals: finalCustomerName, mode: 'insensitive' },
+                        role: 'CUSTOMER'
+                    }
+                });
+                if (found) {
+                    targetUserId = found.id;
+                    if (!finalCustomerPhone && found.phone) finalCustomerPhone = found.phone;
+                    if (!finalCustomerEmail && found.email && !found.email.includes('@pandeygrocery.local')) {
+                        finalCustomerEmail = found.email;
+                    }
+                }
+            }
+            // Auto-create customer user profile if name is provided
+            if (!targetUserId && finalCustomerName && finalCustomerName.toLowerCase() !== 'walk-in customer') {
                 try {
                     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-                    const safeEmail = finalCustomerEmail || `cust_${finalCustomerPhone.replace(/[^0-9]/g, '')}_${randomSuffix}@pandeygrocery.local`;
+                    const safePhone = finalCustomerPhone ? finalCustomerPhone.replace(/[^0-9]/g, '') : '';
+                    const safeEmail = finalCustomerEmail || (safePhone 
+                        ? `cust_${safePhone}_${randomSuffix}@pandeygrocery.local` 
+                        : `cust_${Date.now()}_${randomSuffix}@pandeygrocery.local`);
+                    
                     const newCust = await prisma.user.create({
                         data: {
                             name: finalCustomerName,
@@ -983,6 +1002,7 @@ app.post('/api/orders/staff-create', authenticate, authorize('MANAGEMENT', 'ADMI
                     });
                     targetUserId = newCust.id;
                 } catch (e) {
+                    console.error('Auto-create customer error:', e);
                     targetUserId = req.user.id;
                 }
             }
