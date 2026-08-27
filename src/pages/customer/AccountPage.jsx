@@ -322,32 +322,38 @@ export default function AccountPage() {
                                 </form>
                             ) : (
                                 <div className="profile-view-wrapper">
-                                    <div className="profile-cards-grid">
-                                        <div className="profile-datum-card">
-                                            <span className="datum-label">Full Name</span>
-                                            <span className="datum-value">{user.name || 'Not specified'}</span>
+                                    <div className="profile-details-list">
+                                        <div className="profile-detail-row">
+                                            <span className="detail-title">Full Name</span>
+                                            <span className="detail-text">{user.name || 'Not specified'}</span>
                                         </div>
-                                        <div className="profile-datum-card">
-                                            <span className="datum-label">Email Address</span>
-                                            <span className="datum-value email-val">{user.email}</span>
+                                        <div className="profile-detail-row">
+                                            <span className="detail-title">Email Address</span>
+                                            <span className="detail-text email-text">{user.email}</span>
                                         </div>
-                                        <div className="profile-datum-card">
-                                            <span className="datum-label">Phone Contact</span>
-                                            <span className="datum-value">{user.phone || 'No phone added'}</span>
+                                        <div className="profile-detail-row">
+                                            <span className="detail-title">Phone Number</span>
+                                            <span className="detail-text">{user.phone || 'No phone added'}</span>
                                         </div>
-                                        <div className="profile-datum-card">
-                                            <span className="datum-label">Account Role</span>
-                                            <span className="datum-value role-val">{user.role || 'Customer'}</span>
+                                        <div className="profile-detail-row">
+                                            <span className="detail-title">Account Role</span>
+                                            <span className="detail-text">
+                                                <span className="role-tag-pill">{user.role || 'CUSTOMER'}</span>
+                                            </span>
+                                        </div>
+                                        <div className="profile-detail-row">
+                                            <span className="detail-title">Store Location</span>
+                                            <span className="detail-text">Haldwani, Uttarakhand</span>
                                         </div>
                                     </div>
 
                                     <div className="store-perks-banner">
                                         <div className="perk-icon-wrap">
-                                            <Sparkles size={18} color="#10b981" />
+                                            <Sparkles size={16} color="var(--primary)" />
                                         </div>
-                                        <div>
-                                            <h4>Pandey Store Preferred Customer</h4>
-                                            <p>15–30 min fast grocery doorstep delivery across Haldwani &amp; instant Xerox/Print Hub support.</p>
+                                        <div className="perk-text-wrap">
+                                            <h4>Pandey Store Customer</h4>
+                                            <p>15–30 min fast grocery doorstep delivery across Haldwani &amp; instant Xerox/Print Hub access.</p>
                                         </div>
                                     </div>
                                 </div>
