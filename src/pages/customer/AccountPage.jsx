@@ -27,7 +27,12 @@ import {
     Home,
     Briefcase,
     ShieldCheck,
-    Check
+    Check,
+    Printer,
+    Tag,
+    RotateCcw,
+    Copy,
+    AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { ordersApi, userApi, authApi } from '../../lib/api';
@@ -37,16 +42,15 @@ import './AccountPage.css';
 const tabs = [
     { id: 'profile', label: 'Profile', fullLabel: 'Personal Profile', icon: User },
     { id: 'orders', label: 'Orders', fullLabel: 'My Orders', icon: Package },
-    { id: 'addresses', label: 'Addresses', fullLabel: 'Saved Addresses', icon: MapPin },
+    { id: 'addresses', label: 'Addresses', fullLabel: 'Saved Locations', icon: MapPin },
     { id: 'security', label: 'Security', fullLabel: 'Security & Login', icon: KeyRound },
 ];
 
 export default function AccountPage() {
     const { user, isLoggedIn, logout, updateUser } = useAuth();
     const navigate = useNavigate();
+
     const [activeTab, setActiveTab] = useState('profile');
-    
-    // Orders State
     const [myOrders, setMyOrders] = useState([]);
     const [loadingOrders, setLoadingOrders] = useState(false);
     const [orderFilter, setOrderFilter] = useState('all');
@@ -60,6 +64,7 @@ export default function AccountPage() {
     });
     const [profileSaving, setProfileSaving] = useState(false);
     const [profileMessage, setProfileMessage] = useState(null);
+    const [copiedEmail, setCopiedEmail] = useState(false);
 
     // Addresses State
     const [addresses, setAddresses] = useState([]);
@@ -105,8 +110,8 @@ export default function AccountPage() {
         setPwLoading(true);
         try {
             await userApi.changePassword({ currentPassword: pwCurrent, newPassword: pwNew });
-            setPwSuccess('Password updated successfully! A security confirmation was sent to your email.');
-            setTimeout(() => setShowPasswordModal(false), 2000);
+            setPwSuccess('Password updated successfully! A security alert was sent to your email.');
+            setTimeout(() => setShowPasswordModal(false), 2200);
         } catch (err) {
             setPwError(err.message || 'Failed to update password. Current password may be incorrect.');
         } finally {
@@ -138,12 +143,18 @@ export default function AccountPage() {
         try {
             await authApi.resetPassword(user.email, pwResetCode, pwNew);
             setPwSuccess('Password reset successfully! Account secured.');
-            setTimeout(() => setShowPasswordModal(false), 2000);
+            setTimeout(() => setShowPasswordModal(false), 2200);
         } catch (err) {
             setPwError(err.message || 'Failed to reset password. Check your recovery code.');
         } finally {
             setPwLoading(false);
         }
+    };
+
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
+        setCopiedEmail(true);
+        setTimeout(() => setCopiedEmail(false), 2000);
     };
 
     // Initialize user state
@@ -249,9 +260,11 @@ export default function AccountPage() {
         setShowAddressModal(true);
     };
 
+    const activeOrdersCount = myOrders.filter(o => ['new', 'packing', 'packed', 'dispatched'].includes(o.status)).length;
+
     const filteredOrders = myOrders.filter(o => {
         if (orderFilter === 'all') return true;
-        if (orderFilter === 'active') return ['new', 'packing', 'dispatched'].includes(o.status);
+        if (orderFilter === 'active') return ['new', 'packing', 'packed', 'dispatched'].includes(o.status);
         if (orderFilter === 'delivered') return o.status === 'delivered';
         return true;
     });
@@ -259,7 +272,8 @@ export default function AccountPage() {
     return (
         <div className="account-page-root">
             <div className="account-container-wrap">
-                {/* ─── Hero Account Card ─── */}
+                
+                {/* ─── 1. Header Profile Banner ─── */}
                 <div className="account-hero-card">
                     <div className="hero-user-details">
                         <div className="hero-avatar-circle">
@@ -268,34 +282,46 @@ export default function AccountPage() {
                             ) : (
                                 <span>{user.name?.charAt(0) || user.email?.charAt(0) || 'U'}</span>
                             )}
+                            <div className="avatar-online-dot" />
                         </div>
                         <div className="hero-meta">
                             <div className="hero-name-row">
-                                <h2>{user.name || 'Pandey Store Customer'}</h2>
+                                <h2>{user.name || 'Store Customer'}</h2>
                                 <span className={`account-role-badge role-${user.role?.toLowerCase()}`}>
                                     <ShieldCheck size={12} /> {user.role || 'CUSTOMER'}
                                 </span>
                             </div>
                             <div className="hero-contact-row">
-                                <span className="hero-email-text"><Mail size={12} /> {user.email}</span>
+                                <span className="hero-email-chip" onClick={() => copyToClipboard(user.email)} title="Click to copy email">
+                                    <Mail size={12} /> {user.email}
+                                    <Copy size={10} className="copy-icon" />
+                                </span>
                                 {user.phone && <span><Phone size={12} /> {user.phone}</span>}
+                                <span className="location-chip"><MapPin size={12} /> Haldwani</span>
                             </div>
                         </div>
                     </div>
 
                     <div className="hero-quick-stats">
                         <div className="hero-stat-item" onClick={() => setActiveTab('orders')}>
-                            <span className="stat-num">{myOrders.length || 0}</span>
+                            <div className="stat-num-row">
+                                <span className="stat-num">{myOrders.length || 0}</span>
+                                {activeOrdersCount > 0 && <span className="stat-live-pulse">{activeOrdersCount} live</span>}
+                            </div>
                             <span className="stat-txt">Orders</span>
                         </div>
                         <div className="hero-stat-item" onClick={() => setActiveTab('addresses')}>
                             <span className="stat-num">{addresses.length}</span>
                             <span className="stat-txt">Addresses</span>
                         </div>
+                        <div className="hero-stat-item" onClick={() => navigate('/print-services')}>
+                            <span className="stat-icon-num"><Printer size={16} /></span>
+                            <span className="stat-txt">Print Hub</span>
+                        </div>
                     </div>
                 </div>
 
-                {/* ─── Segmented Navigation Tabs Bar ─── */}
+                {/* ─── 2. Segmented Navigation Tabs Bar ─── */}
                 <div className="account-nav-bar-container">
                     <div className="account-segmented-nav">
                         {tabs.map((tab) => {
@@ -310,21 +336,25 @@ export default function AccountPage() {
                                     <Icon size={16} />
                                     <span className="seg-label-short">{tab.label}</span>
                                     <span className="seg-label-full">{tab.fullLabel}</span>
+                                    {tab.id === 'orders' && activeOrdersCount > 0 && (
+                                        <span className="tab-pill-badge">{activeOrdersCount}</span>
+                                    )}
                                 </button>
                             );
                         })}
                     </div>
                 </div>
 
-                {/* ─── Main Content Panels ─── */}
+                {/* ─── 3. Main Content Panels ─── */}
                 <div className="account-panel-container">
+                    
                     {/* ── TAB 1: Profile ── */}
                     {activeTab === 'profile' && (
-                        <div className="account-card-panel">
+                        <div className="account-card-panel animate-fade-in">
                             <div className="panel-header-row">
                                 <div>
                                     <h2 className="panel-heading">Personal Profile</h2>
-                                    <p className="panel-subheading">Manage your name, phone, and store preferences</p>
+                                    <p className="panel-subheading">Manage your name, phone number, and store preferences</p>
                                 </div>
                                 {!isEditingProfile && (
                                     <button className="btn btn-secondary btn-sm edit-profile-btn" onClick={() => setIsEditingProfile(true)}>
@@ -334,8 +364,16 @@ export default function AccountPage() {
                             </div>
 
                             {profileMessage && (
-                                <div className={`profile-status-alert ${profileMessage.type}`}>
-                                    {profileMessage.text}
+                                <div className={`profile-status-alert ${profileMessage.type} animate-fade-in`}>
+                                    <CheckCircle2 size={16} />
+                                    <span>{profileMessage.text}</span>
+                                </div>
+                            )}
+
+                            {copiedEmail && (
+                                <div className="profile-status-alert success animate-fade-in">
+                                    <Check size={16} />
+                                    <span>Email copied to clipboard!</span>
                                 </div>
                             )}
 
@@ -349,11 +387,12 @@ export default function AccountPage() {
                                                 className="input" 
                                                 value={profileForm.name} 
                                                 onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} 
+                                                placeholder="Enter full name"
                                                 required 
                                             />
                                         </div>
                                         <div className="form-group">
-                                            <label>Email Address</label>
+                                            <label>Email Address (Verified)</label>
                                             <input 
                                                 type="email" 
                                                 className="input disabled-input" 
@@ -372,7 +411,7 @@ export default function AccountPage() {
                                             />
                                         </div>
                                         <div className="form-group">
-                                            <label>City &amp; Location</label>
+                                            <label>Service Area &amp; Hub</label>
                                             <input 
                                                 type="text" 
                                                 className="input disabled-input" 
@@ -383,11 +422,11 @@ export default function AccountPage() {
                                     </div>
 
                                     <div className="profile-action-buttons">
-                                        <button type="button" className="btn btn-secondary" onClick={() => setIsEditingProfile(false)}>
+                                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => setIsEditingProfile(false)}>
                                             Cancel
                                         </button>
-                                        <button type="submit" className="btn btn-primary" disabled={profileSaving}>
-                                            {profileSaving ? <><Loader size={15} className="spin" /> Saving...</> : <><Save size={15} /> Save Changes</>}
+                                        <button type="submit" className="btn btn-primary btn-sm" disabled={profileSaving}>
+                                            {profileSaving ? <><Loader size={14} className="spin" /> Saving...</> : <><Save size={14} /> Save Profile</>}
                                         </button>
                                     </div>
                                 </form>
@@ -395,36 +434,65 @@ export default function AccountPage() {
                                 <div className="profile-view-wrapper">
                                     <div className="profile-details-list">
                                         <div className="profile-detail-row">
-                                            <span className="detail-title">Full Name</span>
+                                            <span className="detail-title"><User size={14} /> Full Name</span>
                                             <span className="detail-text">{user.name || 'Not specified'}</span>
                                         </div>
                                         <div className="profile-detail-row">
-                                            <span className="detail-title">Email Address</span>
-                                            <span className="detail-text email-text">{user.email}</span>
+                                            <span className="detail-title"><Mail size={14} /> Email Address</span>
+                                            <span className="detail-text email-text">
+                                                {user.email}
+                                                <span className="verified-pill"><Check size={10} /> Verified</span>
+                                            </span>
                                         </div>
                                         <div className="profile-detail-row">
-                                            <span className="detail-title">Phone Number</span>
+                                            <span className="detail-title"><Phone size={14} /> Phone Number</span>
                                             <span className="detail-text">{user.phone || 'No phone added'}</span>
                                         </div>
                                         <div className="profile-detail-row">
-                                            <span className="detail-title">Account Role</span>
+                                            <span className="detail-title"><Shield size={14} /> Account Role</span>
                                             <span className="detail-text">
                                                 <span className="role-tag-pill">{user.role || 'CUSTOMER'}</span>
                                             </span>
                                         </div>
                                         <div className="profile-detail-row">
-                                            <span className="detail-title">Store Location</span>
-                                            <span className="detail-text">Haldwani, Uttarakhand</span>
+                                            <span className="detail-title"><MapPin size={14} /> Store Hub</span>
+                                            <span className="detail-text">Kusumkhera, Haldwani, Uttarakhand</span>
                                         </div>
                                     </div>
 
-                                    <div className="store-perks-banner">
-                                        <div className="perk-icon-wrap">
-                                            <Sparkles size={16} color="var(--primary)" />
+                                    {/* Store Perks & Quick Shortcuts */}
+                                    <div className="account-shortcuts-grid">
+                                        <div className="shortcut-card" onClick={() => setActiveTab('orders')}>
+                                            <div className="shortcut-icon green-icon">
+                                                <Truck size={18} />
+                                            </div>
+                                            <div className="shortcut-text">
+                                                <h4>15–30 Min Fast Delivery</h4>
+                                                <p>Fresh groceries delivered right to your doorstep.</p>
+                                            </div>
+                                            <ChevronRight size={16} className="chevron" />
                                         </div>
-                                        <div className="perk-text-wrap">
-                                            <h4>Pandey Store Customer</h4>
-                                            <p>15–30 min fast grocery doorstep delivery across Haldwani &amp; instant Xerox/Print Hub access.</p>
+
+                                        <div className="shortcut-card" onClick={() => navigate('/print-services')}>
+                                            <div className="shortcut-icon purple-icon">
+                                                <Printer size={18} />
+                                            </div>
+                                            <div className="shortcut-text">
+                                                <h4>Print &amp; Xerox Hub</h4>
+                                                <p>300 DPI high-speed color &amp; B/W printing.</p>
+                                            </div>
+                                            <ChevronRight size={16} className="chevron" />
+                                        </div>
+
+                                        <div className="shortcut-card" onClick={() => navigate('/offers')}>
+                                            <div className="shortcut-icon amber-icon">
+                                                <Tag size={18} />
+                                            </div>
+                                            <div className="shortcut-text">
+                                                <h4>Special Store Offers</h4>
+                                                <p>Save up to 30% on daily essentials &amp; bundles.</p>
+                                            </div>
+                                            <ChevronRight size={16} className="chevron" />
                                         </div>
                                     </div>
                                 </div>
@@ -434,7 +502,7 @@ export default function AccountPage() {
 
                     {/* ── TAB 2: Orders ── */}
                     {activeTab === 'orders' && (
-                        <div className="account-card-panel">
+                        <div className="account-card-panel animate-fade-in">
                             <div className="panel-header-row">
                                 <div>
                                     <h2 className="panel-heading">My Orders &amp; Tracking</h2>
@@ -445,7 +513,7 @@ export default function AccountPage() {
                                 </Link>
                             </div>
 
-                            {/* Filters */}
+                            {/* Filter Chips */}
                             <div className="orders-filter-chips">
                                 <button 
                                     className={`order-chip ${orderFilter === 'all' ? 'active' : ''}`}
@@ -457,7 +525,7 @@ export default function AccountPage() {
                                     className={`order-chip ${orderFilter === 'active' ? 'active' : ''}`}
                                     onClick={() => setOrderFilter('active')}
                                 >
-                                    Active Orders
+                                    Active ({activeOrdersCount})
                                 </button>
                                 <button 
                                     className={`order-chip ${orderFilter === 'delivered' ? 'active' : ''}`}
@@ -470,61 +538,70 @@ export default function AccountPage() {
                             {loadingOrders ? (
                                 <div className="panel-loading-state">
                                     <Loader size={28} className="spin" color="var(--primary)" />
-                                    <p>Loading your store orders...</p>
+                                    <p>Loading your orders...</p>
                                 </div>
                             ) : filteredOrders.length === 0 ? (
                                 <div className="panel-empty-state">
-                                    <ShoppingBag size={44} color="#cbd5e1" />
-                                    <h3>No orders yet</h3>
+                                    <div className="empty-icon-bubble">
+                                        <ShoppingBag size={36} color="var(--primary)" />
+                                    </div>
+                                    <h3>No orders found</h3>
                                     <p>Your grocery and print orders will appear here once placed.</p>
-                                    <Link to="/" className="btn btn-primary mt-3">Start Shopping</Link>
+                                    <Link to="/" className="btn btn-primary btn-sm mt-3">
+                                        Start Shopping Groceries
+                                    </Link>
                                 </div>
                             ) : (
                                 <div className="orders-cards-stream">
-                                    {filteredOrders.map((order) => (
-                                        <div key={order.id} className="order-summary-card">
-                                            <div className="order-summary-top">
-                                                <div>
-                                                    <span className="order-tag-id">#{order.id}</span>
-                                                    <span className="order-timestamp">
-                                                        <Clock size={11} /> {order.date ? new Date(order.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Recent'}
+                                    {filteredOrders.map((order) => {
+                                        const isLive = ['new', 'packing', 'packed', 'dispatched'].includes(order.status);
+                                        return (
+                                            <div key={order.id} className="order-summary-card">
+                                                <div className="order-summary-top">
+                                                    <div className="order-num-block">
+                                                        <span className="order-tag-id">#{order.orderNumber || order.id}</span>
+                                                        <span className="order-timestamp">
+                                                            <Clock size={12} /> {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recent'}
+                                                        </span>
+                                                    </div>
+                                                    <span 
+                                                        className={`order-status-pill status-${order.status}`}
+                                                        style={{ 
+                                                            background: `${statusColors[order.status] || '#10b981'}15`, 
+                                                            color: statusColors[order.status] || '#10b981',
+                                                            borderColor: `${statusColors[order.status] || '#10b981'}40`
+                                                        }}
+                                                    >
+                                                        {isLive && <span className="pulse-dot" style={{ background: statusColors[order.status] || '#10b981' }} />}
+                                                        {statusLabels[order.status] || order.status}
                                                     </span>
                                                 </div>
-                                                <span 
-                                                    className="order-status-badge"
-                                                    style={{ 
-                                                        background: `${statusColors[order.status] || '#10b981'}18`, 
-                                                        color: statusColors[order.status] || '#10b981' 
-                                                    }}
-                                                >
-                                                    {statusLabels[order.status] || order.status}
-                                                </span>
-                                            </div>
 
-                                            <div className="order-item-tags-wrap">
-                                                {(order.items || []).map((item, idx) => (
-                                                    <span key={idx} className="order-item-pill">
-                                                        {item.name} <strong>×{item.qty || item.quantity}</strong>
-                                                    </span>
-                                                ))}
-                                            </div>
-
-                                            <div className="order-summary-bottom">
-                                                <div className="order-amount-box">
-                                                    <span>Total:</span>
-                                                    <strong>₹{order.total}</strong>
-                                                    <span className="order-pay-type">{order.payment || 'COD'}</span>
+                                                <div className="order-item-tags-wrap">
+                                                    {(order.items || []).map((item, idx) => (
+                                                        <span key={idx} className="order-item-pill">
+                                                            {item.name} <strong>×{item.qty || item.quantity || 1}</strong>
+                                                        </span>
+                                                    ))}
                                                 </div>
 
-                                                <Link 
-                                                    to={`/track/${order.id}`} 
-                                                    className="btn btn-secondary btn-sm order-track-link"
-                                                >
-                                                    <Truck size={13} /> Live Track
-                                                </Link>
+                                                <div className="order-summary-bottom">
+                                                    <div className="order-amount-box">
+                                                        <span className="amt-label">Total Amount:</span>
+                                                        <strong className="amt-val">₹{(order.total || 0).toFixed(2)}</strong>
+                                                        <span className="order-pay-type">{order.paymentMode || order.payment || 'COD'}</span>
+                                                    </div>
+
+                                                    <Link 
+                                                        to={`/track/${order.orderNumber || order.id}`} 
+                                                        className="btn btn-secondary btn-sm order-track-link"
+                                                    >
+                                                        <Truck size={14} /> Live Track
+                                                    </Link>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -532,14 +609,14 @@ export default function AccountPage() {
 
                     {/* ── TAB 3: Addresses ── */}
                     {activeTab === 'addresses' && (
-                        <div className="account-card-panel">
+                        <div className="account-card-panel animate-fade-in">
                             <div className="panel-header-row">
                                 <div>
                                     <h2 className="panel-heading">Saved Delivery Locations</h2>
-                                    <p className="panel-subheading">Manage home, office, and family delivery addresses</p>
+                                    <p className="panel-subheading">Manage home, office, and family delivery addresses in Haldwani</p>
                                 </div>
                                 <button className="btn btn-primary btn-sm" onClick={() => { setEditingAddressId(null); setShowAddressModal(true); }}>
-                                    <Plus size={14} /> Add Address
+                                    <Plus size={14} /> Add Location
                                 </button>
                             </div>
 
@@ -557,7 +634,7 @@ export default function AccountPage() {
                                             <strong>{addr.recipientName || user.name}</strong>
                                             <p>{addr.address}</p>
                                             <span className="city-pin">{addr.city || 'Haldwani'} - {addr.pin || '263139'}</span>
-                                            {addr.phone && <span className="phone-line">Ph: {addr.phone}</span>}
+                                            {addr.phone && <span className="phone-line"><Phone size={11} /> {addr.phone}</span>}
                                         </div>
 
                                         <div className="address-tile-actions">
@@ -584,11 +661,11 @@ export default function AccountPage() {
 
                     {/* ── TAB 4: Security ── */}
                     {activeTab === 'security' && (
-                        <div className="account-card-panel">
+                        <div className="account-card-panel animate-fade-in">
                             <div className="panel-header-row">
                                 <div>
                                     <h2 className="panel-heading">Security &amp; Connected Accounts</h2>
-                                    <p className="panel-subheading">Password, Google Authentication &amp; Sessions</p>
+                                    <p className="panel-subheading">Password credentials, Google Authentication, and Active Sessions</p>
                                 </div>
                             </div>
 
@@ -599,9 +676,9 @@ export default function AccountPage() {
                                     </div>
                                     <div className="sec-feature-text">
                                         <h4>Account Password</h4>
-                                        <p>Change your password or request an email recovery code.</p>
+                                        <p>Update your password or reset it via secure email recovery code.</p>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                    <div className="sec-btn-row">
                                         <button className="btn btn-secondary btn-sm" onClick={() => openPasswordModal('change')}>
                                             Change Password
                                         </button>
@@ -628,7 +705,7 @@ export default function AccountPage() {
                                     </div>
                                     <div className="sec-feature-text">
                                         <h4>Sign Out Session</h4>
-                                        <p>Log out of Pandey Grocery Store on this browser.</p>
+                                        <p>Safely log out of Pandey Grocery Store on this device.</p>
                                     </div>
                                     <button className="btn btn-outline btn-sm text-danger" onClick={logout}>
                                         Sign Out
@@ -643,11 +720,11 @@ export default function AccountPage() {
             {/* ─── Password Change & Email Reset Modal ─── */}
             {showPasswordModal && (
                 <div className="modal-overlay animate-fade-in" onClick={() => setShowPasswordModal(false)}>
-                    <div className="address-modal-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '440px' }}>
+                    <div className="account-modal-card" onClick={e => e.stopPropagation()}>
                         <div className="modal-card-header">
                             <div className="modal-title-wrap">
                                 <KeyRound size={18} color="var(--primary)" />
-                                <h3>{pwModalMode === 'change' ? 'Update Password' : 'Reset Password with Email Code'}</h3>
+                                <h3>{pwModalMode === 'change' ? 'Update Password' : 'Reset Password via Email Code'}</h3>
                             </div>
                             <button className="btn-icon btn-ghost" onClick={() => setShowPasswordModal(false)}>
                                 <X size={20} />
@@ -655,27 +732,28 @@ export default function AccountPage() {
                         </div>
 
                         {pwError && (
-                            <div style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '10px 14px', borderRadius: '10px', fontSize: '0.85rem', margin: '14px 20px 0' }}>
-                                {pwError}
+                            <div className="modal-alert-box error animate-fade-in">
+                                <AlertCircle size={15} />
+                                <span>{pwError}</span>
                             </div>
                         )}
 
                         {pwSuccess && (
-                            <div style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: '10px 14px', borderRadius: '10px', fontSize: '0.85rem', margin: '14px 20px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <CheckCircle2 size={16} />
+                            <div className="modal-alert-box success animate-fade-in">
+                                <CheckCircle2 size={15} />
                                 <span>{pwSuccess}</span>
                             </div>
                         )}
 
                         {pwModalMode === 'change' ? (
                             <form onSubmit={handleChangePassword} className="modal-form-body">
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <div className="modal-inputs-stack">
                                     <div className="m-form-group">
                                         <label>Current Password</label>
                                         <input 
                                             type="password" 
                                             className="input" 
-                                            placeholder="Enter your current password" 
+                                            placeholder="Enter current password" 
                                             value={pwCurrent} 
                                             onChange={e => setPwCurrent(e.target.value)} 
                                             required 
@@ -709,7 +787,7 @@ export default function AccountPage() {
                                     </div>
                                 </div>
 
-                                <div className="modal-card-footer" style={{ marginTop: '1.25rem' }}>
+                                <div className="modal-card-footer">
                                     <button 
                                         type="button" 
                                         className="btn btn-ghost btn-sm" 
@@ -725,23 +803,22 @@ export default function AccountPage() {
                             </form>
                         ) : (
                             <form onSubmit={handleResetWithCode} className="modal-form-body">
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.45 }}>
+                                <div className="modal-inputs-stack">
+                                    <p className="modal-instruct-txt">
                                         Enter the 6-digit recovery code sent to <strong>{user.email}</strong> and create a new password.
                                     </p>
 
                                     <div className="m-form-group">
-                                        <label>6-Digit Email Recovery Code</label>
+                                        <label>6-Digit Recovery Code</label>
                                         <input 
                                             type="text" 
-                                            className="input" 
+                                            className="input otp-input-centered" 
                                             placeholder="• • • • • •" 
                                             value={pwResetCode} 
                                             onChange={e => setPwResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))} 
                                             maxLength={6}
                                             required 
                                             autoFocus
-                                            style={{ letterSpacing: '4px', textAlign: 'center', fontWeight: '800' }}
                                         />
                                     </div>
 
@@ -772,7 +849,7 @@ export default function AccountPage() {
                                     </div>
                                 </div>
 
-                                <div className="modal-card-footer" style={{ marginTop: '1.25rem' }}>
+                                <div className="modal-card-footer">
                                     <button 
                                         type="button" 
                                         className="btn btn-ghost btn-sm" 
@@ -795,7 +872,7 @@ export default function AccountPage() {
             {/* ─── Add / Edit Address Modal ─── */}
             {showAddressModal && (
                 <div className="modal-overlay animate-fade-in" onClick={() => setShowAddressModal(false)}>
-                    <div className="address-modal-card" onClick={e => e.stopPropagation()}>
+                    <div className="account-modal-card" onClick={e => e.stopPropagation()}>
                         <div className="modal-card-header">
                             <div className="modal-title-wrap">
                                 <MapPin size={18} color="var(--primary)" />
@@ -807,7 +884,7 @@ export default function AccountPage() {
                         </div>
 
                         <form onSubmit={handleSaveAddress} className="modal-form-body">
-                            <div className="modal-form-grid">
+                            <div className="modal-inputs-grid">
                                 <div className="m-form-group">
                                     <label>Location Label</label>
                                     <select 
@@ -822,7 +899,7 @@ export default function AccountPage() {
                                 </div>
 
                                 <div className="m-form-group">
-                                    <label>Recipient Full Name</label>
+                                    <label>Recipient Name</label>
                                     <input 
                                         type="text" 
                                         className="input" 
@@ -833,7 +910,7 @@ export default function AccountPage() {
                                     />
                                 </div>
 
-                                <div className="m-form-group full-width">
+                                <div className="m-form-group full-span">
                                     <label>Street / Flat / House Address</label>
                                     <textarea 
                                         className="input" 
@@ -865,7 +942,7 @@ export default function AccountPage() {
                                     />
                                 </div>
 
-                                <div className="m-form-group full-width">
+                                <div className="m-form-group full-span">
                                     <label>Contact Phone</label>
                                     <input 
                                         type="tel" 
@@ -878,11 +955,11 @@ export default function AccountPage() {
                             </div>
 
                             <div className="modal-card-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowAddressModal(false)}>
+                                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowAddressModal(false)}>
                                     Cancel
                                 </button>
-                                <button type="submit" className="btn btn-primary">
-                                    <Save size={15} /> Save Address
+                                <button type="submit" className="btn btn-primary btn-sm">
+                                    <Save size={14} /> Save Address
                                 </button>
                             </div>
                         </form>
