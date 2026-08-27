@@ -1,7 +1,25 @@
 import { useState, useEffect, useCallback } from 'react';
 import { categories } from '../../data/categories';
 import { productsApi, uploadApi } from '../../lib/api';
-import { Search, Plus, Edit3, Eye, EyeOff, Save, X, Upload, Loader } from 'lucide-react';
+import { 
+    Search, 
+    Plus, 
+    Edit3, 
+    Eye, 
+    EyeOff, 
+    Save, 
+    X, 
+    Upload, 
+    Loader, 
+    Package, 
+    Sparkles, 
+    Tag, 
+    Check, 
+    Trash2, 
+    RefreshCw,
+    IndianRupee,
+    ChevronDown
+} from 'lucide-react';
 import './StaffProducts.css';
 
 export default function StaffProducts() {
@@ -14,20 +32,44 @@ export default function StaffProducts() {
     const [editingId, setEditingId] = useState(null);
     const [editData, setEditData] = useState({});
     const [showAddModal, setShowAddModal] = useState(false);
-    const [newProduct, setNewProduct] = useState({ name: '', nameHi: '', brand: '', category: 'groceries', subcategory: 'rice-flour', price: '', mrp: '', stock: 100, unit: '', description: '', image: '' });
+    const [newProduct, setNewProduct] = useState({ 
+        name: '', 
+        nameHi: '', 
+        brand: '', 
+        category: 'groceries', 
+        subcategory: 'pulses-dal', 
+        price: '', 
+        mrp: '', 
+        stock: 100, 
+        unit: '', 
+        description: '', 
+        image: '' 
+    });
 
-    // Fetch products from API (fallback to mock)
     const fetchProducts = useCallback(async () => {
         setLoading(true);
-        const data = await productsApi.getAll();
-        setProductList(data?.products || []);
-        setLoading(false);
+        try {
+            const data = await productsApi.getAll();
+            setProductList(data?.products || []);
+        } catch (err) {
+            console.error('Failed to load products', err);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     useEffect(() => { fetchProducts(); }, [fetchProducts]);
 
+    const activeCategories = [
+        { id: 'all', name: 'All Departments' },
+        { id: 'groceries', name: 'Groceries & Kitchen' },
+        { id: 'stationery', name: 'Stationery & Office' },
+        { id: 'household-personal', name: 'Household & Care' },
+    ];
+
     const filtered = productList.filter((p) => {
-        const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.brand.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            (p.brand && p.brand.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchCategory = filterCategory === 'all' || p.category === filterCategory;
         return matchSearch && matchCategory;
     });
@@ -41,7 +83,7 @@ export default function StaffProducts() {
         setSaving(true);
         try {
             await productsApi.update(id, { price: Number(editData.price), stock: Number(editData.stock) });
-        } catch { /* fallback to local */ }
+        } catch { /* fallback */ }
         setProductList((prev) =>
             prev.map((p) => (p.id === id ? { ...p, price: Number(editData.price), stock: Number(editData.stock) } : p))
         );
@@ -60,7 +102,8 @@ export default function StaffProducts() {
         );
     };
 
-    const addProduct = async () => {
+    const addProduct = async (e) => {
+        e.preventDefault();
         if (!newProduct.name || !newProduct.brand || !newProduct.price || !newProduct.mrp) return;
         setSaving(true);
         try {
@@ -69,11 +112,10 @@ export default function StaffProducts() {
                 setProductList(prev => [data.product, ...prev]);
             }
         } catch {
-            // Local fallback
-            setProductList(prev => [{ ...newProduct, id: `local-${Date.now()}`, price: Number(newProduct.price), mrp: Number(newProduct.mrp), rating: 4.0, reviews: 0, isActive: true }, ...prev]);
+            setProductList(prev => [{ ...newProduct, id: `local-${Date.now()}`, price: Number(newProduct.price), mrp: Number(newProduct.mrp), rating: 4.5, reviews: 0, isActive: true }, ...prev]);
         }
         setShowAddModal(false);
-        setNewProduct({ name: '', nameHi: '', brand: '', category: 'groceries', subcategory: 'rice-flour', price: '', mrp: '', stock: 100, unit: '', description: '', image: '' });
+        setNewProduct({ name: '', nameHi: '', brand: '', category: 'groceries', subcategory: 'pulses-dal', price: '', mrp: '', stock: 100, unit: '', description: '', image: '' });
         setSaving(false);
     };
 
@@ -91,7 +133,7 @@ export default function StaffProducts() {
     };
 
     const deleteProduct = async (id) => {
-        if (!confirm('Deactivate this product?')) return;
+        if (!confirm('Are you sure you want to deactivate this product?')) return;
         try {
             await productsApi.delete(id);
         } catch { /* fallback */ }
@@ -99,169 +141,370 @@ export default function StaffProducts() {
     };
 
     return (
-        <div className="staff-products">
+        <div className="staff-products-page animate-fade-in">
             <div className="dashboard-page-header">
                 <div>
-                    <h1 className="dashboard-page-title">Product Management</h1>
-                    <p className="dashboard-page-subtitle">Add, edit, and manage inventory for all products</p>
+                    <h1 className="dashboard-page-title">Product Catalog</h1>
+                    <p className="dashboard-page-subtitle">Manage store prices, stock inventory &amp; product additions</p>
                 </div>
                 <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-                    <Plus size={18} /> Add Product
+                    <Plus size={18} /> Add New Product
                 </button>
             </div>
 
-            {/* Filters */}
-            <div className="products-toolbar card">
-                <div className="input-icon-wrapper" style={{ flex: 1, maxWidth: 360 }}>
-                    <Search size={18} />
-                    <input className="input" placeholder="Search products..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            {/* Toolbar */}
+            <div className="products-control-toolbar card">
+                <div className="toolbar-search-input">
+                    <Search size={16} />
+                    <input 
+                        placeholder="Search by product name, brand..." 
+                        value={searchQuery} 
+                        onChange={(e) => setSearchQuery(e.target.value)} 
+                    />
                 </div>
-                <select className="input" style={{ width: 'auto' }} value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
-                    <option value="all">All Categories</option>
-                    {categories.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                </select>
-                <span className="toolbar-result-count">{filtered.length} products</span>
+
+                <div className="toolbar-filter-group">
+                    <select 
+                        className="toolbar-category-select" 
+                        value={filterCategory} 
+                        onChange={(e) => setFilterCategory(e.target.value)}
+                    >
+                        {activeCategories.map((c) => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                    <span className="products-counter-badge">{filtered.length} items</span>
+                </div>
             </div>
 
-            {/* Products Table */}
+            {/* Products Table (Desktop) & Cards (Mobile) */}
             {loading ? (
-                <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
-                    <Loader size={24} className="spin" /> Loading products...
+                <div className="products-loading-state card">
+                    <Loader size={32} className="spin" color="var(--primary)" />
+                    <p>Loading store catalog...</p>
+                </div>
+            ) : filtered.length === 0 ? (
+                <div className="products-empty-state card">
+                    <Package size={48} color="#cbd5e1" />
+                    <h3>No products found</h3>
+                    <p>Try searching for a different name or switch categories.</p>
                 </div>
             ) : (
-                <div className="products-table-wrapper card">
-                    <table className="products-table">
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Brand</th>
-                                <th>Category</th>
-                                <th>Price (₹)</th>
-                                <th>MRP (₹)</th>
-                                <th>Stock</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filtered.map((product) => {
-                                const isEditing = editingId === product.id;
-                                return (
-                                    <tr key={product.id} className={`product-row ${product.stock === 0 ? 'out-of-stock' : ''}`}>
-                                        <td>
-                                            <div className="product-cell">
-                                                <img src={product.image} alt={product.name} className="product-thumb" />
-                                                <div>
-                                                    <span className="product-cell-name">{product.name}</span>
-                                                    <span className="product-cell-unit">{product.unit}</span>
+                <>
+                    {/* Desktop View Table */}
+                    <div className="products-table-wrapper card hidden-mobile-products">
+                        <table className="products-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Item Details</th>
+                                    <th>Brand</th>
+                                    <th>Category</th>
+                                    <th>Selling Price</th>
+                                    <th>MRP</th>
+                                    <th>Stock Level</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filtered.map((product) => {
+                                    const isEditing = editingId === product.id;
+                                    const discount = product.mrp > product.price 
+                                        ? Math.round(((product.mrp - product.price) / product.mrp) * 100) 
+                                        : 0;
+
+                                    return (
+                                        <tr key={product.id} className={`p-table-row ${product.stock === 0 ? 'out-of-stock-row' : ''}`}>
+                                            <td>
+                                                <div className="p-cell-wrap">
+                                                    <img src={product.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=150"} alt={product.name} className="p-table-thumb" />
+                                                    <div>
+                                                        <span className="p-table-name">{product.name}</span>
+                                                        {product.nameHi && <span className="p-table-hi">{product.nameHi}</span>}
+                                                        <span className="p-table-unit">{product.unit}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td>{product.brand}</td>
-                                        <td><span className="badge badge-primary">{product.subcategory}</span></td>
-                                        <td>
-                                            {isEditing ? (
-                                                <input className="input inline-edit" type="number" value={editData.price} onChange={(e) => setEditData({ ...editData, price: e.target.value })} />
-                                            ) : (
-                                                <strong>₹{product.price}</strong>
-                                            )}
-                                        </td>
-                                        <td className="mrp-cell">₹{product.mrp}</td>
-                                        <td>
-                                            {isEditing ? (
-                                                <input className="input inline-edit" type="number" value={editData.stock} onChange={(e) => setEditData({ ...editData, stock: e.target.value })} />
-                                            ) : (
-                                                <span className={product.stock <= 10 ? 'low-stock-text' : ''}>{product.stock}</span>
-                                            )}
-                                        </td>
-                                        <td>
-                                            {product.stock === 0 ? (
-                                                <span className="badge badge-danger">Out of Stock</span>
-                                            ) : product.stock <= 10 ? (
-                                                <span className="badge badge-warning">Low Stock</span>
-                                            ) : (
-                                                <span className="badge badge-success">In Stock</span>
-                                            )}
-                                        </td>
-                                        <td>
-                                            <div className="product-actions">
+                                            </td>
+                                            <td>
+                                                <span className="p-table-brand">{product.brand}</span>
+                                            </td>
+                                            <td>
+                                                <span className="p-cat-tag">{product.category}</span>
+                                            </td>
+                                            <td>
                                                 {isEditing ? (
-                                                    <>
-                                                        <button className="btn btn-sm btn-primary" onClick={() => saveEdit(product.id)} disabled={saving}><Save size={14} /> Save</button>
-                                                        <button className="btn btn-sm btn-ghost" onClick={() => setEditingId(null)}><X size={14} /></button>
-                                                    </>
+                                                    <input 
+                                                        className="inline-price-input" 
+                                                        type="number" 
+                                                        value={editData.price} 
+                                                        onChange={(e) => setEditData({ ...editData, price: e.target.value })} 
+                                                        autoFocus
+                                                    />
                                                 ) : (
-                                                    <>
-                                                        <button className="btn btn-sm btn-ghost" onClick={() => startEdit(product)}><Edit3 size={14} /> Edit</button>
-                                                        <button className="btn btn-sm btn-ghost" onClick={() => toggleStock(product.id)} title={product.stock === 0 ? 'Mark In Stock' : 'Mark Out of Stock'}>
-                                                            {product.stock === 0 ? <Eye size={14} /> : <EyeOff size={14} />}
-                                                        </button>
-                                                        <button className="btn btn-sm btn-ghost" onClick={() => deleteProduct(product.id)} title="Delete" style={{ color: 'var(--danger)' }}>
-                                                            <X size={14} />
-                                                        </button>
-                                                    </>
+                                                    <strong className="p-table-selling">₹{product.price}</strong>
                                                 )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
+                                            </td>
+                                            <td className="p-table-mrp">
+                                                <span>₹{product.mrp}</span>
+                                                {discount > 0 && <span className="p-table-disc">({discount}% off)</span>}
+                                            </td>
+                                            <td>
+                                                {isEditing ? (
+                                                    <input 
+                                                        className="inline-stock-input" 
+                                                        type="number" 
+                                                        value={editData.stock} 
+                                                        onChange={(e) => setEditData({ ...editData, stock: e.target.value })} 
+                                                    />
+                                                ) : (
+                                                    <span className={`p-stock-num ${product.stock <= 10 ? 'p-stock-warn' : ''}`}>
+                                                        {product.stock} units
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td>
+                                                {product.stock === 0 ? (
+                                                    <span className="p-status-pill p-status-danger">Out of Stock</span>
+                                                ) : product.stock <= 10 ? (
+                                                    <span className="p-status-pill p-status-warning">Low Stock</span>
+                                                ) : (
+                                                    <span className="p-status-pill p-status-success">In Stock</span>
+                                                )}
+                                            </td>
+                                            <td>
+                                                <div className="p-actions-cell">
+                                                    {isEditing ? (
+                                                        <>
+                                                            <button className="btn btn-sm btn-primary" onClick={() => saveEdit(product.id)} disabled={saving}>
+                                                                <Save size={14} /> Save
+                                                            </button>
+                                                            <button className="btn btn-sm btn-ghost" onClick={() => setEditingId(null)}>
+                                                                <X size={14} />
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <button className="btn btn-sm btn-ghost" onClick={() => startEdit(product)} title="Edit price & stock">
+                                                                <Edit3 size={14} /> Edit
+                                                            </button>
+                                                            <button 
+                                                                className="btn-icon btn-ghost btn-sm" 
+                                                                onClick={() => toggleStock(product.id)} 
+                                                                title={product.stock === 0 ? 'Mark In Stock' : 'Mark Out of Stock'}
+                                                            >
+                                                                {product.stock === 0 ? <Eye size={15} color="#10b981" /> : <EyeOff size={15} color="#94a3b8" />}
+                                                            </button>
+                                                            <button 
+                                                                className="btn-icon btn-ghost btn-sm text-danger" 
+                                                                onClick={() => deleteProduct(product.id)} 
+                                                                title="Deactivate item"
+                                                            >
+                                                                <Trash2 size={15} />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Mobile Product Cards Feed */}
+                    <div className="products-mobile-feed show-mobile-products">
+                        {filtered.map((product) => (
+                            <div key={product.id} className="p-mobile-card card">
+                                <div className="p-mobile-card-top">
+                                    <img src={product.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=150"} alt={product.name} className="p-mobile-thumb" />
+                                    <div className="p-mobile-info">
+                                        <h4>{product.name}</h4>
+                                        <span className="p-mobile-brand">{product.brand} • {product.unit}</span>
+                                        <div className="p-mobile-price-row">
+                                            <strong>₹{product.price}</strong>
+                                            <span className="p-mobile-mrp">MRP ₹{product.mrp}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-mobile-card-footer">
+                                    <span className={`p-status-pill ${product.stock === 0 ? 'p-status-danger' : product.stock <= 10 ? 'p-status-warning' : 'p-status-success'}`}>
+                                        {product.stock} in stock
+                                    </span>
+                                    <div className="p-mobile-actions">
+                                        <button className="btn btn-sm btn-secondary" onClick={() => startEdit(product)}>
+                                            <Edit3 size={13} /> Edit
+                                        </button>
+                                        <button className="btn-icon btn-ghost btn-sm" onClick={() => toggleStock(product.id)}>
+                                            {product.stock === 0 ? <Eye size={15} color="#10b981" /> : <EyeOff size={15} />}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
             )}
 
-            {/* Add Product Modal */}
+            {/* ─── Add Product Modal ─── */}
             {showAddModal && (
-                <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-                    <div className="modal card" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>Add New Product</h2>
-                            <button onClick={() => setShowAddModal(false)}><X size={20} /></button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                                <div className="form-group full-width"><label>Product Name *</label><input className="input" placeholder="e.g. Basmati Rice Premium" value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} /></div>
-                                <div className="form-group"><label>Hindi Name</label><input className="input" placeholder="e.g. बासमती चावल" value={newProduct.nameHi} onChange={e => setNewProduct({ ...newProduct, nameHi: e.target.value })} /></div>
-                                <div className="form-group"><label>Brand *</label><input className="input" placeholder="e.g. India Gate" value={newProduct.brand} onChange={e => setNewProduct({ ...newProduct, brand: e.target.value })} /></div>
-                                <div className="form-group"><label>Category</label>
-                                    <select className="input" value={newProduct.category} onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}>
-                                        <option value="groceries">Groceries</option><option value="utensils">Kitchen Utensils</option>
-                                    </select>
+                <div className="modal-overlay animate-fade-in" onClick={() => setShowAddModal(false)}>
+                    <div className="modal-card card" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-card-header">
+                            <div className="modal-title-wrap">
+                                <div className="modal-icon-box">
+                                    <Package size={18} color="var(--primary)" />
                                 </div>
-                                <div className="form-group"><label>Subcategory</label>
-                                    <select className="input" value={newProduct.subcategory} onChange={e => setNewProduct({ ...newProduct, subcategory: e.target.value })}>
-                                        {categories.find(c => c.id === newProduct.category)?.subcategories.map(s => (
-                                            <option key={s.id} value={s.id}>{s.name}</option>
-                                        ))}
-                                    </select>
+                                <div>
+                                    <h3>Add New Store Product</h3>
+                                    <p>Fill in product details to add to inventory</p>
                                 </div>
-                                <div className="form-group"><label>Price (₹) *</label><input className="input" type="number" placeholder="185" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} /></div>
-                                <div className="form-group"><label>MRP (₹) *</label><input className="input" type="number" placeholder="220" value={newProduct.mrp} onChange={e => setNewProduct({ ...newProduct, mrp: e.target.value })} /></div>
-                                <div className="form-group"><label>Stock</label><input className="input" type="number" placeholder="100" value={newProduct.stock} onChange={e => setNewProduct({ ...newProduct, stock: e.target.value })} /></div>
-                                <div className="form-group"><label>Unit</label><input className="input" placeholder="1 kg" value={newProduct.unit} onChange={e => setNewProduct({ ...newProduct, unit: e.target.value })} /></div>
-                                <div className="form-group full-width">
-                                    <label>Product Image</label>
-                                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                                        <label className="btn btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
-                                            <Upload size={16} /> {uploading ? 'Uploading...' : 'Choose Image'}
-                                            <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} disabled={uploading} />
-                                        </label>
-                                        <input className="input" placeholder="Or paste image URL" value={newProduct.image} onChange={e => setNewProduct({ ...newProduct, image: e.target.value })} style={{ flex: 1 }} />
-                                    </div>
-                                    {newProduct.image && <img src={newProduct.image} alt="Preview" style={{ marginTop: '0.5rem', height: 80, borderRadius: 8, objectFit: 'cover' }} />}
-                                </div>
-                                <div className="form-group full-width"><label>Description</label><textarea className="input" rows={3} placeholder="Product description..." value={newProduct.description} onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} /></div>
                             </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
-                            <button className="btn btn-primary" onClick={addProduct} disabled={saving}>
-                                {saving ? <><Loader size={14} className="spin" /> Saving...</> : 'Add Product'}
+                            <button className="btn-icon btn-ghost" onClick={() => setShowAddModal(false)} aria-label="Close">
+                                <X size={20} />
                             </button>
                         </div>
+
+                        <form onSubmit={addProduct} className="modal-form-body">
+                            <div className="modal-form-grid">
+                                <div className="m-form-group full-width">
+                                    <label>Product Name *</label>
+                                    <input 
+                                        type="text" 
+                                        className="input" 
+                                        placeholder="e.g. Fortune Sunlite Sunflower Oil" 
+                                        value={newProduct.name} 
+                                        onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} 
+                                        required 
+                                    />
+                                </div>
+
+                                <div className="m-form-group">
+                                    <label>Hindi Translation</label>
+                                    <input 
+                                        type="text" 
+                                        className="input" 
+                                        placeholder="e.g. फार्च्यून सूरजमुखी तेल" 
+                                        value={newProduct.nameHi} 
+                                        onChange={e => setNewProduct({ ...newProduct, nameHi: e.target.value })} 
+                                    />
+                                </div>
+
+                                <div className="m-form-group">
+                                    <label>Brand Name *</label>
+                                    <input 
+                                        type="text" 
+                                        className="input" 
+                                        placeholder="e.g. Fortune / Classmate / Surf Excel" 
+                                        value={newProduct.brand} 
+                                        onChange={e => setNewProduct({ ...newProduct, brand: e.target.value })} 
+                                        required 
+                                    />
+                                </div>
+
+                                <div className="m-form-group">
+                                    <label>Category Department</label>
+                                    <select 
+                                        className="input" 
+                                        value={newProduct.category} 
+                                        onChange={e => setNewProduct({ ...newProduct, category: e.target.value })}
+                                    >
+                                        <option value="groceries">Groceries &amp; Staples</option>
+                                        <option value="stationery">Stationery &amp; Office</option>
+                                        <option value="household-personal">Household &amp; Care</option>
+                                    </select>
+                                </div>
+
+                                <div className="m-form-group">
+                                    <label>Unit / Weight</label>
+                                    <input 
+                                        type="text" 
+                                        className="input" 
+                                        placeholder="e.g. 1 L, 1 kg, 500g, Pack of 6" 
+                                        value={newProduct.unit} 
+                                        onChange={e => setNewProduct({ ...newProduct, unit: e.target.value })} 
+                                        required 
+                                    />
+                                </div>
+
+                                <div className="m-form-group">
+                                    <label>Selling Price (₹) *</label>
+                                    <input 
+                                        type="number" 
+                                        className="input" 
+                                        placeholder="150" 
+                                        value={newProduct.price} 
+                                        onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} 
+                                        required 
+                                    />
+                                </div>
+
+                                <div className="m-form-group">
+                                    <label>MRP (₹) *</label>
+                                    <input 
+                                        type="number" 
+                                        className="input" 
+                                        placeholder="175" 
+                                        value={newProduct.mrp} 
+                                        onChange={e => setNewProduct({ ...newProduct, mrp: e.target.value })} 
+                                        required 
+                                    />
+                                </div>
+
+                                <div className="m-form-group">
+                                    <label>Initial Stock Units</label>
+                                    <input 
+                                        type="number" 
+                                        className="input" 
+                                        placeholder="50" 
+                                        value={newProduct.stock} 
+                                        onChange={e => setNewProduct({ ...newProduct, stock: e.target.value })} 
+                                    />
+                                </div>
+
+                                <div className="m-form-group full-width">
+                                    <label>Product Image</label>
+                                    <div className="image-upload-row">
+                                        <label className="btn btn-secondary upload-label-btn">
+                                            <Upload size={16} /> {uploading ? 'Uploading...' : 'Choose Image File'}
+                                            <input type="file" accept="image/*" onChange={handleImageUpload} hidden disabled={uploading} />
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            className="input" 
+                                            placeholder="Or paste image URL" 
+                                            value={newProduct.image} 
+                                            onChange={e => setNewProduct({ ...newProduct, image: e.target.value })} 
+                                        />
+                                    </div>
+                                    {newProduct.image && (
+                                        <div className="uploaded-preview-box">
+                                            <img src={newProduct.image} alt="Preview" />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="m-form-group full-width">
+                                    <label>Short Description</label>
+                                    <textarea 
+                                        className="input" 
+                                        rows={2} 
+                                        placeholder="Product highlights &amp; ingredients..." 
+                                        value={newProduct.description} 
+                                        onChange={e => setNewProduct({ ...newProduct, description: e.target.value })} 
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="modal-card-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary" disabled={saving}>
+                                    {saving ? <><Loader size={16} className="spin" /> Saving Item...</> : <><Plus size={16} /> Save &amp; Add to Catalog</>}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
