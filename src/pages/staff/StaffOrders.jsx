@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { statusLabels, statusColors, orderStatuses } from '../../data/orders';
-import { ordersApi, productsApi } from '../../lib/api';
+import { ordersApi, productsApi, customersApi } from '../../lib/api';
 import { 
     Clock, 
     Package, 
@@ -32,13 +32,17 @@ import {
     PlusCircle,
     BadgeAlert,
     Wallet,
-    CreditCard
+    CreditCard,
+    UserPlus,
+    User,
+    Mail
 } from 'lucide-react';
 import './StaffOrders.css';
 
 export default function StaffOrders() {
     const [orderList, setOrderList] = useState([]);
     const [productList, setProductList] = useState([]);
+    const [customerList, setCustomerList] = useState([]);
     const [loading, setLoading] = useState(true);
     
     // View mode: 'orders' | 'khata'
@@ -58,8 +62,21 @@ export default function StaffOrders() {
     const [settlePaidAmt, setSettlePaidAmt] = useState('');
     const [settleMode, setSettleMode] = useState('cash'); // 'cash' | 'upi'
 
+    // Manager Standalone "+ Create Customer Account" Modal State
+    const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
+    const [newCustName, setNewCustName] = useState('');
+    const [newCustPhone, setNewCustPhone] = useState('');
+    const [newCustEmail, setNewCustEmail] = useState('');
+    const [newCustAddress, setNewCustAddress] = useState('');
+    const [newCustSubmitting, setNewCustSubmitting] = useState(false);
+    const [newCustError, setNewCustError] = useState('');
+    const [newCustSuccess, setNewCustSuccess] = useState('');
+
     // Manager "+ Create Order / Khata Entry" Modal State
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
+    const [custSearchQuery, setCustSearchQuery] = useState('');
+    const [showInlineNewCust, setShowInlineNewCust] = useState(false);
     const [createCustomerName, setCreateCustomerName] = useState('');
     const [createCustomerPhone, setCreateCustomerPhone] = useState('');
     const [createCustomerAddress, setCreateCustomerAddress] = useState('In-store Counter Sale');
@@ -73,14 +90,16 @@ export default function StaffOrders() {
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const [orderData, prodData] = await Promise.all([
+            const [orderData, prodData, custData] = await Promise.all([
                 ordersApi.getAll(),
-                productsApi.getAll()
+                productsApi.getAll(),
+                customersApi.getAll()
             ]);
             setOrderList(orderData?.orders || []);
             if (prodData?.products) setProductList(prodData.products);
+            if (custData?.customers) setCustomerList(custData.customers);
         } catch (err) {
-            console.error('Failed to load orders/products', err);
+            console.error('Failed to load orders/products/customers', err);
         } finally {
             setLoading(false);
         }
@@ -91,13 +110,9 @@ export default function StaffOrders() {
     // Filter Logic by Status, Payment (Left vs Done), Timeframe (Week/Month/Year), and Search
     const now = new Date();
     const filteredOrders = orderList.filter((o) => {
-        // Status filter
         const matchStatus = statusFilter === 'all' || o.status === statusFilter;
-
-        // Payment status filter (Left / Done / Partial)
         const matchPayment = paymentFilter === 'all' || o.paymentStatus === paymentFilter;
 
-        // Timeframe filter (Week / Month / Year)
         let matchTimeframe = true;
         if (timeframeFilter !== 'all') {
             const orderDate = new Date(o.createdAt || o.date);
@@ -112,7 +127,6 @@ export default function StaffOrders() {
             }
         }
 
-        // Search query
         const matchSearch = searchQuery === '' || 
                             o.id?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             (o.orderNumber && o.orderNumber.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -126,6 +140,14 @@ export default function StaffOrders() {
     const totalCollectedPaid = filteredOrders.reduce((sum, o) => sum + (Number(o.paidAmount) || (o.paymentStatus === 'PAID' ? Number(o.total) : 0)), 0);
     const totalPaymentLeftDue = filteredOrders.reduce((sum, o) => sum + (Number(o.dueAmount) || (o.paymentStatus === 'PENDING' ? Number(o.total) : 0)), 0);
     const pendingDueOrdersCount = filteredOrders.filter(o => o.paymentStatus === 'PENDING' || o.paymentStatus === 'PARTIAL').length;
+
+    // Filtered Customers during Order Creation Search
+    const matchedCustomers = customerList.filter(c => 
+        !custSearchQuery || 
+        c.name.toLowerCase().includes(custSearchQuery.toLowerCase()) ||
+        (c.phone && c.phone.includes(custSearchQuery)) ||
+        (c.email && c.email.toLowerCase().includes(custSearchQuery.toLowerCase()))
+    );
 
     // Advance fulfillment status
     const updateStatus = async (order, newStatus) => {
@@ -192,6 +214,45 @@ export default function StaffOrders() {
         setUpdatingId(null);
     };
 
+    // Standalone Create Customer Account Submit
+    const handleCreateCustomerAccount = async (e) => {
+        e.preventDefault();
+        setNewCustError('');
+        setNewCustSuccess('');
+        if (!newCustName.trim()) {
+            setNewCustError('Customer name is required');
+            return;
+        }
+
+        setNewCustSubmitting(true);
+        try {
+            const res = await customersApi.create({
+                name: newCustName.trim(),
+                phone: newCustPhone.trim(),
+                email: newCustEmail.trim(),
+                address: newCustAddress.trim()
+            });
+
+            if (res?.customer) {
+                setCustomerList(prev => [res.customer, ...prev]);
+                setNewCustSuccess(`Customer account created for ${res.customer.name}!`);
+                setTimeout(() => {
+                    setShowNewCustomerModal(false);
+                    setNewCustName('');
+                    setNewCustPhone('');
+                    setNewCustEmail('');
+                    setNewCustAddress('');
+                    setNewCustSuccess('');
+                }, 1500);
+            }
+        } catch (err) {
+            console.error('Create customer error', err);
+            setNewCustError(err.message || 'Failed to create customer account');
+        } finally {
+            setNewCustSubmitting(false);
+        }
+    };
+
     // Add item to new order in creation modal
     const handleAddItemToCreate = (prod) => {
         const isWeight = prod.unit?.toLowerCase().includes('kg') || prod.description?.includes('[TYPE:weight]');
@@ -209,6 +270,7 @@ export default function StaffOrders() {
         }
     };
 
+    // Submit Manager Order on behalf of customer
     const handleCreateOrderSubmit = async (e) => {
         e.preventDefault();
         setCreateError('');
@@ -216,8 +278,12 @@ export default function StaffOrders() {
             setCreateError('Please select at least 1 product item');
             return;
         }
-        if (!createCustomerName.trim()) {
-            setCreateError('Customer name is required');
+
+        const customerFinalName = selectedCustomer ? selectedCustomer.name : createCustomerName.trim();
+        const customerFinalPhone = selectedCustomer ? selectedCustomer.phone : createCustomerPhone.trim();
+
+        if (!customerFinalName) {
+            setCreateError('Please select or enter customer name');
             return;
         }
 
@@ -237,8 +303,9 @@ export default function StaffOrders() {
         setCreateSubmitting(true);
         try {
             const res = await ordersApi.staffCreate({
-                customerName: createCustomerName,
-                customerPhone: createCustomerPhone,
+                customerId: selectedCustomer?.id,
+                customerName: customerFinalName,
+                customerPhone: customerFinalPhone,
                 customerAddress: createCustomerAddress,
                 items: createSelectedItems,
                 subtotal,
@@ -256,6 +323,7 @@ export default function StaffOrders() {
             }
             setShowCreateModal(false);
             setCreateSelectedItems([]);
+            setSelectedCustomer(null);
             setCreateCustomerName('');
             setCreateCustomerPhone('');
             fetchData();
@@ -282,14 +350,17 @@ export default function StaffOrders() {
 
     return (
         <div className="staff-orders-page animate-fade-in">
-            {/* Page Header with Dual Tabs & Create Action */}
+            {/* Page Header with Dual Actions */}
             <div className="dashboard-page-header">
                 <div className="dash-header-title-block">
                     <h1 className="dashboard-page-title">Store Orders &amp; Kirana Khata Ledger</h1>
-                    <p className="dashboard-page-subtitle">Track hand-to-hand payments, end-of-month udhar &amp; customer balances</p>
+                    <p className="dashboard-page-subtitle">Track hand-to-hand payments, customer accounts &amp; end-of-month balances</p>
                 </div>
                 <div className="dash-header-actions">
-                    <button className="btn btn-primary create-order-btn" onClick={() => setShowCreateModal(true)}>
+                    <button className="btn btn-secondary btn-sm" onClick={() => setShowNewCustomerModal(true)}>
+                        <UserPlus size={15} /> + New Customer Account
+                    </button>
+                    <button className="btn btn-primary create-order-btn" onClick={() => { setShowCreateModal(true); setSelectedCustomer(null); }}>
                         <PlusCircle size={16} /> Create Store Order / Khata
                     </button>
                     <button className="btn btn-secondary btn-sm" onClick={fetchData} title="Refresh orders">
@@ -403,7 +474,7 @@ export default function StaffOrders() {
                     <Search size={16} className="orders-search-icon" />
                     <input
                         type="text"
-                        placeholder="Search by customer name, phone, or #ORD..."
+                        placeholder="Search customer, phone, or #ORD..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -495,7 +566,6 @@ export default function StaffOrders() {
                                                 </td>
                                                 <td>
                                                     <div className="order-actions-cell">
-                                                        {/* Quick Settle Payment Button if Payment is Left */}
                                                         {isPaymentDue ? (
                                                             <>
                                                                 <button 
@@ -636,7 +706,6 @@ export default function StaffOrders() {
                     {/* Mobile View Khata Cards Feed */}
                     <div className="orders-mobile-cards-feed show-mobile-cards">
                         {filteredOrders.map((order) => {
-                            const StatusIcon = statusIcons[order.status] || Package;
                             const isExpanded = expandedId === order.id;
                             const isPaymentDue = order.paymentStatus === 'PENDING' || order.paymentStatus === 'PARTIAL';
 
@@ -728,58 +797,102 @@ export default function StaffOrders() {
             )}
 
             {/* ══════════════════════════════════════════════════════════
-                ✨ RECORD PARTIAL PAYMENT MODAL
+                ✨ STANDALONE CREATE CUSTOMER ACCOUNT MODAL
                 ══════════════════════════════════════════════════════════ */}
-            {settleModalOrder && (
-                <div className="modal-overlay animate-fade-in" onClick={() => setSettleModalOrder(null)}>
-                    <div className="settle-modal-dialog card" onClick={e => e.stopPropagation()}>
-                        <div className="settle-modal-header">
-                            <div className="settle-title">
-                                <Wallet size={18} color="var(--primary)" />
-                                <h3>Record Partial Khata Payment</h3>
+            {showNewCustomerModal && (
+                <div className="modal-overlay animate-fade-in" onClick={() => setShowNewCustomerModal(false)}>
+                    <div className="new-cust-modal-dialog card" onClick={e => e.stopPropagation()}>
+                        <div className="new-cust-modal-header">
+                            <div className="new-cust-title">
+                                <UserPlus size={20} color="var(--primary)" />
+                                <div>
+                                    <h3>Create Customer Account</h3>
+                                    <p>Add regular or monthly Khata customer (Phone &amp; Email are optional)</p>
+                                </div>
                             </div>
-                            <button className="btn-icon btn-ghost" onClick={() => setSettleModalOrder(null)}>
+                            <button className="btn-icon btn-ghost" onClick={() => setShowNewCustomerModal(false)}>
                                 <X size={18} />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSavePartialPayment} className="settle-modal-form">
-                            <div className="settle-summary-box">
-                                <div>Order: <strong>#{settleModalOrder.orderNumber || settleModalOrder.id}</strong></div>
-                                <div>Customer: <strong>{settleModalOrder.customer}</strong></div>
-                                <div>Total Bill: <strong>₹{settleModalOrder.total}</strong></div>
-                                <div>Currently Paid: <strong className="text-success">₹{settleModalOrder.paidAmount || 0}</strong></div>
-                                <div>Current Balance Due: <strong className="text-danger">₹{settleModalOrder.dueAmount || settleModalOrder.total}</strong></div>
+                        {newCustError && (
+                            <div className="ap-alert-box error animate-fade-in">
+                                <AlertCircle size={15} />
+                                <span>{newCustError}</span>
+                            </div>
+                        )}
+                        {newCustSuccess && (
+                            <div className="ap-alert-box success animate-fade-in">
+                                <CheckCircle2 size={15} />
+                                <span>{newCustSuccess}</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleCreateCustomerAccount} className="new-cust-modal-form">
+                            <div className="ap-input-group">
+                                <label>Customer Full Name * (Required)</label>
+                                <div className="input-with-icon">
+                                    <User size={15} />
+                                    <input 
+                                        type="text" 
+                                        className="input" 
+                                        placeholder="e.g. Anand Joshi, Manoj Pandey" 
+                                        value={newCustName} 
+                                        onChange={e => setNewCustName(e.target.value)} 
+                                        required 
+                                        autoFocus
+                                    />
+                                </div>
                             </div>
 
                             <div className="ap-input-group mt-2">
-                                <label>Amount Receiving Now (₹) *</label>
-                                <input 
-                                    type="number" 
-                                    className="input" 
-                                    placeholder="e.g. 200, 500" 
-                                    value={settlePaidAmt} 
-                                    onChange={e => setSettlePaidAmt(e.target.value)} 
-                                    max={settleModalOrder.dueAmount || settleModalOrder.total}
-                                    required 
-                                    autoFocus
-                                />
+                                <label>Mobile Phone Number (Optional — can be added later)</label>
+                                <div className="input-with-icon">
+                                    <Phone size={15} />
+                                    <input 
+                                        type="tel" 
+                                        className="input" 
+                                        placeholder="e.g. 98765 43210" 
+                                        value={newCustPhone} 
+                                        onChange={e => setNewCustPhone(e.target.value)} 
+                                    />
+                                </div>
                             </div>
 
                             <div className="ap-input-group mt-2">
-                                <label>Payment Method</label>
-                                <select className="input" value={settleMode} onChange={e => setSettleMode(e.target.value)}>
-                                    <option value="cash">Hand-to-Hand Cash</option>
-                                    <option value="upi">UPI / Online Transfer</option>
-                                </select>
+                                <label>Email Address (Optional — can be added later)</label>
+                                <div className="input-with-icon">
+                                    <Mail size={15} />
+                                    <input 
+                                        type="email" 
+                                        className="input" 
+                                        placeholder="e.g. customer@gmail.com" 
+                                        value={newCustEmail} 
+                                        onChange={e => setNewCustEmail(e.target.value)} 
+                                    />
+                                </div>
                             </div>
 
-                            <div className="settle-modal-footer mt-3">
-                                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSettleModalOrder(null)}>
+                            <div className="ap-input-group mt-2">
+                                <label>Locality / Address (Optional)</label>
+                                <div className="input-with-icon">
+                                    <MapPin size={15} />
+                                    <input 
+                                        type="text" 
+                                        className="input" 
+                                        placeholder="e.g. Kaladhungi Road, Kusumkhera, Haldwani" 
+                                        value={newCustAddress} 
+                                        onChange={e => setNewCustAddress(e.target.value)} 
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="new-cust-modal-footer mt-3">
+                                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowNewCustomerModal(false)}>
                                     Cancel
                                 </button>
-                                <button type="submit" className="btn btn-primary btn-sm" disabled={!settlePaidAmt || Number(settlePaidAmt) <= 0}>
-                                    <Check size={14} /> Update Khata Balance
+                                <button type="submit" className="btn btn-primary btn-sm" disabled={newCustSubmitting || !newCustName.trim()}>
+                                    {newCustSubmitting ? <><Loader size={14} className="spin" /> Creating Account...</> : <><Check size={14} /> Create Customer Profile</>}
                                 </button>
                             </div>
                         </form>
@@ -797,8 +910,8 @@ export default function StaffOrders() {
                             <div className="create-title-box">
                                 <PlusCircle size={20} color="var(--primary)" />
                                 <div>
-                                    <h3>Create Store Order / Khata Entry</h3>
-                                    <p>Bill products on behalf of walk-in or monthly credit customers</p>
+                                    <h3>Create Store Order &amp; Khata Entry</h3>
+                                    <p>Search registered customer or enter walk-in details to record order</p>
                                 </div>
                             </div>
                             <button className="btn-icon btn-ghost" onClick={() => setShowCreateModal(false)}>
@@ -816,34 +929,115 @@ export default function StaffOrders() {
                         <form onSubmit={handleCreateOrderSubmit} className="create-order-body">
                             <div className="create-order-grid">
                                 
-                                {/* Left Side: Customer & Payment Option */}
+                                {/* Left Side: Customer Search / Selection & Payment Option */}
                                 <div className="create-left-pane">
                                     <div className="create-section-card">
-                                        <h4>1. Customer Details</h4>
-                                        <div className="ap-input-group">
-                                            <label>Customer Name *</label>
-                                            <input 
-                                                type="text" 
-                                                className="input" 
-                                                placeholder="e.g. Ramesh Sharma (Khata Account)" 
-                                                value={createCustomerName} 
-                                                onChange={e => setCreateCustomerName(e.target.value)} 
-                                                required 
-                                            />
+                                        <div className="card-head-between">
+                                            <h4>1. Customer Account</h4>
+                                            <button 
+                                                type="button" 
+                                                className="btn-text-action" 
+                                                onClick={() => { setShowInlineNewCust(!showInlineNewCust); setSelectedCustomer(null); }}
+                                            >
+                                                {showInlineNewCust ? '🔍 Search Customer' : '+ New Customer'}
+                                            </button>
                                         </div>
 
-                                        <div className="ap-input-group mt-2">
-                                            <label>Phone Number (For WhatsApp / SMS)</label>
-                                            <input 
-                                                type="tel" 
-                                                className="input" 
-                                                placeholder="e.g. 9876543210" 
-                                                value={createCustomerPhone} 
-                                                onChange={e => setCreateCustomerPhone(e.target.value)} 
-                                            />
-                                        </div>
+                                        {!showInlineNewCust ? (
+                                            <div className="cust-search-selector-block">
+                                                {selectedCustomer ? (
+                                                    <div className="selected-cust-badge-box">
+                                                        <div className="cust-badge-avatar">{selectedCustomer.name.charAt(0).toUpperCase()}</div>
+                                                        <div className="cust-badge-info">
+                                                            <strong>{selectedCustomer.name}</strong>
+                                                            <span>{selectedCustomer.phone ? `📱 ${selectedCustomer.phone}` : 'No phone linked'}</span>
+                                                            {selectedCustomer.dueBalance > 0 && (
+                                                                <span className="cust-existing-due">⚠️ Existing Khata Due: ₹{selectedCustomer.dueBalance}</span>
+                                                            )}
+                                                        </div>
+                                                        <button 
+                                                            type="button" 
+                                                            className="btn-icon btn-ghost btn-xs" 
+                                                            onClick={() => setSelectedCustomer(null)}
+                                                            title="Change customer"
+                                                        >
+                                                            <X size={14} />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="cust-search-input-box">
+                                                            <Search size={14} />
+                                                            <input 
+                                                                type="text" 
+                                                                placeholder="Search customer name or mobile..."
+                                                                value={custSearchQuery}
+                                                                onChange={e => setCustSearchQuery(e.target.value)}
+                                                                autoFocus
+                                                            />
+                                                        </div>
+
+                                                        {/* Matched Customer List */}
+                                                        <div className="cust-search-dropdown-list">
+                                                            {matchedCustomers.length === 0 ? (
+                                                                <div className="no-cust-matched">
+                                                                    <span>No matching customer found.</span>
+                                                                    <button type="button" className="btn btn-xs btn-primary mt-1" onClick={() => { setShowInlineNewCust(true); setCreateCustomerName(custSearchQuery); }}>
+                                                                        + Create "{custSearchQuery || 'New'}" Profile
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                matchedCustomers.slice(0, 6).map(cust => (
+                                                                    <div 
+                                                                        key={cust.id} 
+                                                                        className="cust-dropdown-item"
+                                                                        onClick={() => { setSelectedCustomer(cust); setCustSearchQuery(''); }}
+                                                                    >
+                                                                        <div className="cust-drop-left">
+                                                                            <strong>{cust.name}</strong>
+                                                                            <span>{cust.phone || 'No phone'} • {cust.orderCount || 0} orders</span>
+                                                                        </div>
+                                                                        {cust.dueBalance > 0 ? (
+                                                                            <span className="drop-due-pill">Due: ₹{cust.dueBalance}</span>
+                                                                        ) : (
+                                                                            <span className="drop-paid-pill">Clear</span>
+                                                                        )}
+                                                                    </div>
+                                                                ))
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="inline-new-cust-form">
+                                                <div className="ap-input-group">
+                                                    <label>Customer Name *</label>
+                                                    <input 
+                                                        type="text" 
+                                                        className="input" 
+                                                        placeholder="e.g. Ramesh Sharma" 
+                                                        value={createCustomerName} 
+                                                        onChange={e => setCreateCustomerName(e.target.value)} 
+                                                        required 
+                                                    />
+                                                </div>
+
+                                                <div className="ap-input-group mt-2">
+                                                    <label>Phone Number (Optional)</label>
+                                                    <input 
+                                                        type="tel" 
+                                                        className="input" 
+                                                        placeholder="e.g. 9876543210" 
+                                                        value={createCustomerPhone} 
+                                                        onChange={e => setCreateCustomerPhone(e.target.value)} 
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
+                                    {/* 2. Payment Options */}
                                     <div className="create-section-card mt-2">
                                         <h4>2. Payment Option</h4>
                                         <div className="create-payment-options">
@@ -983,6 +1177,66 @@ export default function StaffOrders() {
                                 </button>
                                 <button type="submit" className="btn btn-primary" disabled={createSubmitting || !createSelectedItems.length}>
                                     {createSubmitting ? <><Loader size={15} className="spin" /> Generating Order...</> : <><Check size={15} /> Save &amp; Record in Khata</>}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════
+                ✨ RECORD PARTIAL PAYMENT MODAL
+                ══════════════════════════════════════════════════════════ */}
+            {settleModalOrder && (
+                <div className="modal-overlay animate-fade-in" onClick={() => setSettleModalOrder(null)}>
+                    <div className="settle-modal-dialog card" onClick={e => e.stopPropagation()}>
+                        <div className="settle-modal-header">
+                            <div className="settle-title">
+                                <Wallet size={18} color="var(--primary)" />
+                                <h3>Record Partial Khata Payment</h3>
+                            </div>
+                            <button className="btn-icon btn-ghost" onClick={() => setSettleModalOrder(null)}>
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSavePartialPayment} className="settle-modal-form">
+                            <div className="settle-summary-box">
+                                <div>Order: <strong>#{settleModalOrder.orderNumber || settleModalOrder.id}</strong></div>
+                                <div>Customer: <strong>{settleModalOrder.customer}</strong></div>
+                                <div>Total Bill: <strong>₹{settleModalOrder.total}</strong></div>
+                                <div>Currently Paid: <strong className="text-success">₹{settleModalOrder.paidAmount || 0}</strong></div>
+                                <div>Current Balance Due: <strong className="text-danger">₹{settleModalOrder.dueAmount || settleModalOrder.total}</strong></div>
+                            </div>
+
+                            <div className="ap-input-group mt-2">
+                                <label>Amount Receiving Now (₹) *</label>
+                                <input 
+                                    type="number" 
+                                    className="input" 
+                                    placeholder="e.g. 200, 500" 
+                                    value={settlePaidAmt} 
+                                    onChange={e => setSettlePaidAmt(e.target.value)} 
+                                    max={settleModalOrder.dueAmount || settleModalOrder.total}
+                                    required 
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="ap-input-group mt-2">
+                                <label>Payment Method</label>
+                                <select className="input" value={settleMode} onChange={e => setSettleMode(e.target.value)}>
+                                    <option value="cash">Hand-to-Hand Cash</option>
+                                    <option value="upi">UPI / Online Transfer</option>
+                                </select>
+                            </div>
+
+                            <div className="settle-modal-footer mt-3">
+                                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSettleModalOrder(null)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary btn-sm" disabled={!settlePaidAmt || Number(settlePaidAmt) <= 0}>
+                                    <Check size={14} /> Update Khata Balance
                                 </button>
                             </div>
                         </form>

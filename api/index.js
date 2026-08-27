@@ -739,10 +739,117 @@ app.patch('/api/orders/:id/payment', authenticate, authorize('MANAGEMENT', 'ADMI
     }
 });
 
+// ════════════════════ CUSTOMER ACCOUNTS (MANAGEMENT / ADMIN) ════════════════════
+// Get all registered customers with order counts and due balances
+app.get('/api/customers', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
+    try {
+        const customers = await prisma.user.findMany({
+            where: { role: 'CUSTOMER' },
+            include: {
+                orders: {
+                    select: { total: true, paymentMode: true, status: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        const formatted = customers.map(c => {
+            const isPlaceholderEmail = c.email.includes('@pandeygrocery.local');
+            let totalSpent = 0;
+            let dueBalance = 0;
+
+            c.orders.forEach(o => {
+                const pay = parseOrderPayment(o.paymentMode, o.total);
+                totalSpent += Number(o.total) || 0;
+                dueBalance += Number(pay.dueAmount) || 0;
+            });
+
+            return {
+                id: c.id,
+                name: c.name,
+                email: isPlaceholderEmail ? '' : c.email,
+                phone: c.phone || '',
+                orderCount: c.orders.length,
+                totalSpent,
+                dueBalance,
+                createdAt: c.createdAt
+            };
+        });
+
+        res.json({ customers: formatted });
+    } catch (err) {
+        console.error('Fetch customers error:', err);
+        res.status(500).json({ error: 'Failed to fetch customer accounts' });
+    }
+});
+
+// Manager creates a customer account (Name required, Email & Phone optional)
+app.post('/api/customers', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
+    try {
+        let { name, email, phone, address } = req.body;
+        if (!name || !name.trim()) return res.status(400).json({ error: 'Customer name is required' });
+
+        name = name.trim();
+        email = email ? email.trim().toLowerCase() : '';
+        phone = phone ? phone.trim() : '';
+
+        // If email provided, verify uniqueness
+        if (email) {
+            const existing = await prisma.user.findUnique({ where: { email } });
+            if (existing) return res.status(400).json({ error: 'A customer with this email address already exists' });
+        } else {
+            // Generate resilient placeholder email
+            const safePhone = phone ? phone.replace(/[^0-9]/g, '') : '';
+            const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+            email = safePhone 
+                ? `cust_${safePhone}_${randomSuffix}@pandeygrocery.local` 
+                : `cust_${Date.now()}_${randomSuffix}@pandeygrocery.local`;
+        }
+
+        const customer = await prisma.user.create({
+            data: {
+                name,
+                email,
+                phone: phone || null,
+                role: 'CUSTOMER',
+                provider: 'manager_created',
+                emailVerified: false,
+                ...(address ? {
+                    addresses: {
+                        create: {
+                            name,
+                            line1: address,
+                            city: 'Haldwani',
+                            state: 'Uttarakhand',
+                            pincode: '263139',
+                            phone: phone || ''
+                        }
+                    }
+                } : {})
+            }
+        });
+
+        res.status(201).json({
+            success: true,
+            customer: {
+                id: customer.id,
+                name: customer.name,
+                email: email.includes('@pandeygrocery.local') ? '' : customer.email,
+                phone: customer.phone || '',
+                orderCount: 0,
+                dueBalance: 0
+            }
+        });
+    } catch (err) {
+        console.error('Create customer account error:', err);
+        res.status(500).json({ error: 'Failed to create customer account' });
+    }
+});
+
 // Manager creates an order on behalf of customer (In-store counter or Phone/Khata order)
 app.post('/api/orders/staff-create', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
     try {
-        const { customerName, customerPhone, customerAddress, items, subtotal, discount, total, paymentType, paidAmount, dueAmount, deliveryType, notes } = req.body;
+        const { customerId, customerName, customerPhone, customerAddress, items, subtotal, discount, total, paymentType, paidAmount, dueAmount, deliveryType, notes } = req.body;
         if (!items || !items.length || !total) return res.status(400).json({ error: 'Order items and total amount are required' });
 
         let finalPaymentMode = 'paid_cash';
@@ -751,19 +858,38 @@ app.post('/api/orders/staff-create', authenticate, authorize('MANAGEMENT', 'ADMI
         else if (paymentType === 'KHATA_DUE') finalPaymentMode = 'khata_due';
         else if (paymentType === 'KHATA_PARTIAL') finalPaymentMode = `khata_partial:paid=${paidAmount || 0}:due=${dueAmount || 0}`;
 
+        // Determine user to link: provided customerId, or lookup / auto-create
+        let targetUserId = customerId;
+        let finalCustomerName = customerName?.trim() || 'Walk-in Customer';
+        let finalCustomerPhone = customerPhone?.trim() || '';
+
+        if (!targetUserId) {
+            if (finalCustomerPhone) {
+                const found = await prisma.user.findFirst({ where: { phone: finalCustomerPhone, role: 'CUSTOMER' } });
+                if (found) {
+                    targetUserId = found.id;
+                    finalCustomerName = found.name;
+                }
+            }
+            if (!targetUserId) {
+                // Link to active staff manager or create quick customer
+                targetUserId = req.user.id;
+            }
+        }
+
         const count = await prisma.order.count();
         const order = await prisma.order.create({
             data: {
                 orderNumber: `ORD-${String(count + 1001).padStart(4, '0')}`,
-                userId: req.user.id,
+                userId: targetUserId,
                 subtotal: parseFloat(subtotal) || total,
                 discount: parseFloat(discount) || 0,
                 deliveryFee: 0,
                 total: parseFloat(total),
                 deliveryType: deliveryType || 'pickup',
                 paymentMode: finalPaymentMode,
-                customer: customerName?.trim() || 'Walk-in Customer',
-                phone: customerPhone?.trim() || '',
+                customer: finalCustomerName,
+                phone: finalCustomerPhone,
                 address: customerAddress?.trim() || 'In-store Counter Sale',
                 timeSlot: notes?.trim() || 'Store Direct Sale',
                 status: 'delivered',

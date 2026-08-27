@@ -91,6 +91,12 @@ export const ordersApi = {
     updatePayment: (id, data) => request(`/orders/${id}/payment`, { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
+// ── Customer Accounts & Khata Profiles API ──
+export const customersApi = {
+    getAll: () => tryRequest('/customers'),
+    create: (data) => request('/customers', { method: 'POST', body: JSON.stringify(data) }),
+};
+
 // ── Dashboard API ──
 export const dashboardApi = {
     getStats: () => tryRequest('/dashboard/stats'),
