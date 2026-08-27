@@ -30,9 +30,8 @@ export default function Navbar() {
             <div className="top-strip">
                 <div className="container top-strip-inner">
                     <div className="top-strip-left">
-                        <span className="live-store-pulse" />
                         <MapPin size={13} className="strip-icon" />
-                        <span><strong>In-Store Shopping &amp; Print Hub:</strong> Haldwani, Uttarakhand</span>
+                        <span>Haldwani, Uttarakhand</span>
                     </div>
                     <div className="top-strip-right">
                         <a href="tel:+919410516899" className="top-link">

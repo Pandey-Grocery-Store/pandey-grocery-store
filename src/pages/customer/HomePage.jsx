@@ -41,12 +41,6 @@ export default function HomePage() {
             <section className="hero-section">
                 <div className="container hero-container">
                     <div className="hero-text-content animate-fade-in">
-                        <div className="hero-badge">
-                            <span className="live-dot" />
-                            <MapPin size={13} className="hero-badge-icon" />
-                            <span>Your Local Haldwani Grocery &amp; Print Shop</span>
-                        </div>
-
                         <h1 className="hero-title">
                             Fresh Groceries &amp; <br />
                             <span className="hero-highlight">Instant Print Hub</span>
@@ -263,11 +257,6 @@ export default function HomePage() {
                             <p className="store-address-text">
                                 Lal Danth Bypass Rd, Radhe Krishna Puram / Adarsh Nagar, Heera Nagar, Haldwani, Uttarakhand 263139
                             </p>
-                            
-                            <div className="store-timings">
-                                <Clock size={18} color="#16a34a" />
-                                <span><strong>Open Daily:</strong> 8:00 AM – 9:30 PM</span>
-                            </div>
 
                             <div className="store-actions">
                                 <a 
