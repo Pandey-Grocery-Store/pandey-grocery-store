@@ -388,6 +388,35 @@
     gap: 2px;
 }
 
+.pos-cust-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.pos-edit-cust-dialog {
+    background: #ffffff;
+    border-radius: 18px;
+    max-width: 460px;
+    width: 100%;
+    padding: 1.5rem;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+}
+
+.input-hint-txt {
+    display: block;
+    font-size: 0.72rem;
+    color: #0369a1;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-top: 6px;
+    line-height: 1.35;
+}
+
 .pos-cust-name-line {
     display: flex;
     align-items: center;

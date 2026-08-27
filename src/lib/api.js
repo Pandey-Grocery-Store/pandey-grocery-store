@@ -95,6 +95,7 @@ export const ordersApi = {
 export const customersApi = {
     getAll: () => tryRequest('/customers'),
     create: (data) => request('/customers', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id, data) => request(`/customers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 };
 
 // ── Dashboard API ──

@@ -23,7 +23,10 @@ import {
     Scale,
     Box,
     Calculator,
-    Mail
+    Mail,
+    PenLine,
+    AlertCircle,
+    Loader
 } from 'lucide-react';
 import { productsApi, ordersApi, customersApi } from '../../lib/api';
 import './StaffPOS.css';
@@ -54,6 +57,15 @@ export default function StaffPOS() {
     const [showCustDropdown, setShowCustDropdown] = useState(false);
     const [isCustomWalkIn, setIsCustomWalkIn] = useState(false);
     const [customerInfo, setCustomerInfo] = useState({ name: 'Walk-in Customer', phone: '', email: '', address: 'In-store Counter Sale' });
+
+    // Edit Customer Account State (for adding/updating email so customer can log in)
+    const [showEditCustModal, setShowEditCustModal] = useState(false);
+    const [editCustName, setEditCustName] = useState('');
+    const [editCustPhone, setEditCustPhone] = useState('');
+    const [editCustEmail, setEditCustEmail] = useState('');
+    const [editCustSubmitting, setEditCustSubmitting] = useState(false);
+    const [editCustError, setEditCustError] = useState('');
+    const [editCustSuccess, setEditCustSuccess] = useState('');
 
     // Weight Product Selection Modal State
     const [weightModalProduct, setWeightModalProduct] = useState(null);
@@ -136,6 +148,49 @@ export default function StaffPOS() {
         setCustomerInfo({ name: 'Walk-in Customer', phone: '', email: '', address: 'In-store Counter Sale' });
         setCustSearchQuery('');
         setIsCustomWalkIn(false);
+    };
+
+    const openEditCustModal = (cust) => {
+        if (!cust) return;
+        setEditCustName(cust.name || '');
+        setEditCustPhone(cust.phone || '');
+        setEditCustEmail(cust.email && !cust.email.includes('@pandeygrocery.local') ? cust.email : '');
+        setEditCustError('');
+        setEditCustSuccess('');
+        setShowEditCustModal(true);
+    };
+
+    const handleSaveCustDetails = async (e) => {
+        e.preventDefault();
+        if (!selectedCustomer) return;
+        setEditCustSubmitting(true);
+        setEditCustError('');
+        setEditCustSuccess('');
+        try {
+            const res = await customersApi.update(selectedCustomer.id, {
+                name: editCustName,
+                phone: editCustPhone,
+                email: editCustEmail
+            });
+            const updated = res.customer;
+            setSelectedCustomer(prev => ({ ...prev, ...updated }));
+            setCustomerInfo(prev => ({
+                ...prev,
+                name: updated.name,
+                phone: updated.phone || '',
+                email: updated.email || ''
+            }));
+            setCustomers(prev => prev.map(c => c.id === selectedCustomer.id ? { ...c, ...updated } : c));
+            setEditCustSuccess('Customer profile updated! They can now log in using this email.');
+            setTimeout(() => {
+                setShowEditCustModal(false);
+                setEditCustSuccess('');
+            }, 1200);
+        } catch (err) {
+            setEditCustError(err.message || 'Failed to update customer account');
+        } finally {
+            setEditCustSubmitting(false);
+        }
     };
 
     // Helper: Check if product is sold by weight
@@ -443,14 +498,24 @@ export default function StaffPOS() {
                                     {selectedCustomer.email ? ` • ✉️ ${selectedCustomer.email}` : ''}
                                 </span>
                             </div>
-                            <button 
-                                type="button" 
-                                className="btn-icon btn-ghost btn-xs" 
-                                onClick={handleClearCustomer}
-                                title="Remove customer"
-                            >
-                                <X size={15} />
-                            </button>
+                            <div className="pos-cust-card-actions">
+                                <button 
+                                    type="button" 
+                                    className="btn-icon btn-ghost btn-xs" 
+                                    onClick={() => openEditCustModal(selectedCustomer)}
+                                    title="Edit customer / Add email for login"
+                                >
+                                    <PenLine size={13} color="#2563eb" />
+                                </button>
+                                <button 
+                                    type="button" 
+                                    className="btn-icon btn-ghost btn-xs" 
+                                    onClick={handleClearCustomer}
+                                    title="Remove customer"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
                         </div>
                     ) : isCustomWalkIn ? (
                         /* State B: Custom Walk-in Text Inputs with Name, Phone & Email */
@@ -788,6 +853,98 @@ export default function StaffPOS() {
                                 <Check size={15} /> Add to Current Bill
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════
+                ✏️ EDIT CUSTOMER PROFILE / ADD EMAIL FOR LOGIN MODAL
+                ══════════════════════════════════════════════════════════ */}
+            {showEditCustModal && selectedCustomer && (
+                <div className="modal-overlay animate-fade-in" onClick={() => setShowEditCustModal(false)}>
+                    <div className="pos-edit-cust-dialog card" onClick={e => e.stopPropagation()}>
+                        <div className="new-cust-modal-header">
+                            <div className="new-cust-title">
+                                <PenLine size={20} color="#2563eb" />
+                                <div>
+                                    <h3>Update Customer Profile</h3>
+                                    <p>Link customer's real email so they can log in to view past orders &amp; Khata</p>
+                                </div>
+                            </div>
+                            <button className="btn-icon btn-ghost" onClick={() => setShowEditCustModal(false)}>
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {editCustError && (
+                            <div className="ap-alert-box error animate-fade-in">
+                                <AlertCircle size={15} />
+                                <span>{editCustError}</span>
+                            </div>
+                        )}
+                        {editCustSuccess && (
+                            <div className="ap-alert-box success animate-fade-in">
+                                <CheckCircle2 size={15} />
+                                <span>{editCustSuccess}</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSaveCustDetails} className="new-cust-modal-form">
+                            <div className="ap-input-group">
+                                <label>Customer Name *</label>
+                                <div className="input-with-icon">
+                                    <User size={15} />
+                                    <input 
+                                        type="text" 
+                                        className="input" 
+                                        value={editCustName} 
+                                        onChange={e => setEditCustName(e.target.value)} 
+                                        required 
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="ap-input-group mt-2">
+                                <label>Mobile Number (Optional)</label>
+                                <div className="input-with-icon">
+                                    <Phone size={15} />
+                                    <input 
+                                        type="tel" 
+                                        className="input" 
+                                        value={editCustPhone} 
+                                        onChange={e => setEditCustPhone(e.target.value)} 
+                                        placeholder="e.g. 98765 43210"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="ap-input-group mt-2">
+                                <label>Customer Login Email *</label>
+                                <div className="input-with-icon">
+                                    <Mail size={15} />
+                                    <input 
+                                        type="email" 
+                                        className="input" 
+                                        value={editCustEmail} 
+                                        onChange={e => setEditCustEmail(e.target.value)} 
+                                        placeholder="e.g. customer@gmail.com"
+                                        autoFocus
+                                    />
+                                </div>
+                                <span className="input-hint-txt">
+                                    💡 Once entered, customer can use this email to log in with 1-click Email OTP or register to access their store history.
+                                </span>
+                            </div>
+
+                            <div className="new-cust-modal-footer mt-3">
+                                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowEditCustModal(false)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary btn-sm" disabled={editCustSubmitting}>
+                                    {editCustSubmitting ? <><Loader size={14} className="spin" /> Saving...</> : <><Check size={14} /> Save Customer Details</>}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

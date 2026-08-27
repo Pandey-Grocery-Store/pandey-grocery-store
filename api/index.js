@@ -111,12 +111,45 @@ async function checkAndSetAdminRole(user) {
 // ════════════════════ AUTH ════════════════════
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        let { name, email, password } = req.body;
         if (!name || !email || !password) return res.status(400).json({ error: 'Name, email, and password required' });
         if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        email = email.trim().toLowerCase();
+        name = name.trim();
+
         const existing = await prisma.user.findUnique({ where: { email } });
-        if (existing) return res.status(409).json({ error: 'Email already registered' });
-        const user = await prisma.user.create({ data: { name, email, password: await bcrypt.hash(password, 10), provider: 'local' } });
+        if (existing) {
+            // If the account was created by the manager/POS and has not had a password set yet, allow the customer to claim it
+            if (!existing.password) {
+                const hashedPassword = await bcrypt.hash(password, 10);
+                const updated = await prisma.user.update({
+                    where: { id: existing.id },
+                    data: {
+                        name: existing.name || name,
+                        password: hashedPassword,
+                        emailVerified: true,
+                        provider: 'local'
+                    }
+                });
+                sendWelcomeEmail(updated.email, updated.name).catch(e => console.error('Welcome email error:', e.message));
+                return res.status(200).json({ 
+                    token: generateToken(updated), 
+                    user: { id: updated.id, name: updated.name, email: updated.email, role: updated.role, avatar: updated.avatar },
+                    message: 'Account successfully linked with your store history!'
+                });
+            }
+            return res.status(409).json({ error: 'An account with this email already exists. Please log in or use Forgot Password.' });
+        }
+
+        const user = await prisma.user.create({ 
+            data: { 
+                name, 
+                email, 
+                password: await bcrypt.hash(password, 10), 
+                provider: 'local',
+                emailVerified: false 
+            } 
+        });
         sendWelcomeEmail(user.email, user.name).catch(e => console.error('Welcome email error:', e.message));
         res.status(201).json({ token: generateToken(user), user: { id: user.id, name: user.name, email: user.email, role: user.role, avatar: user.avatar } });
     } catch (err) { console.error(err); res.status(500).json({ error: 'Registration failed' }); }
@@ -843,6 +876,56 @@ app.post('/api/customers', authenticate, authorize('MANAGEMENT', 'ADMIN'), async
     } catch (err) {
         console.error('Create customer account error:', err);
         res.status(500).json({ error: 'Failed to create customer account' });
+    }
+});
+
+// Manager updates customer account details (e.g. adding their real email so they can log in)
+app.patch('/api/customers/:id', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        let { name, email, phone } = req.body;
+        
+        const customer = await prisma.user.findUnique({ where: { id } });
+        if (!customer) return res.status(404).json({ error: 'Customer not found' });
+
+        const updateData = {};
+        if (name && name.trim()) updateData.name = name.trim();
+        if (phone !== undefined) updateData.phone = phone.trim() || null;
+
+        if (email !== undefined && email.trim()) {
+            email = email.trim().toLowerCase();
+            // If updating to a real email (not placeholder), ensure no other user has it
+            if (!email.includes('@pandeygrocery.local')) {
+                const existing = await prisma.user.findFirst({
+                    where: { 
+                        email: { equals: email, mode: 'insensitive' },
+                        id: { not: id }
+                    }
+                });
+                if (existing) return res.status(400).json({ error: 'This email is already registered to another user' });
+            }
+            updateData.email = email;
+            updateData.provider = 'manager_updated';
+        }
+
+        const updated = await prisma.user.update({
+            where: { id },
+            data: updateData
+        });
+
+        res.json({
+            success: true,
+            message: 'Customer account updated successfully',
+            customer: {
+                id: updated.id,
+                name: updated.name,
+                email: updated.email.includes('@pandeygrocery.local') ? '' : updated.email,
+                phone: updated.phone || ''
+            }
+        });
+    } catch (err) {
+        console.error('Update customer error:', err);
+        res.status(500).json({ error: 'Failed to update customer account' });
     }
 });
 
