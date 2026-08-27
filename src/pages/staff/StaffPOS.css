@@ -959,6 +959,24 @@
     backdrop-filter: blur(2px);
 }
 
+/* ─── Modal Overlay ─── */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
 /* ─── POS By-Weight Selection Modal ─── */
 .pos-weight-dialog {
     background: #ffffff;
@@ -967,6 +985,7 @@
     width: 100%;
     box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
     overflow: hidden;
+    box-sizing: border-box;
 }
 
 .pos-weight-header {
