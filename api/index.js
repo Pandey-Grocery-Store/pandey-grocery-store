@@ -397,7 +397,11 @@ app.post('/api/orders', authenticate, async (req, res) => {
         }
         
         // Send Email notifications asynchronously
-        const customerEmail = req.user?.email || (addressId ? (await prisma.user.findUnique({ where: { id: req.user.id } }))?.email : null);
+        let customerEmail = req.body.email || req.user?.email;
+        if (!customerEmail && req.user?.id) {
+            const userDoc = await prisma.user.findUnique({ where: { id: req.user.id } });
+            customerEmail = userDoc?.email;
+        }
         if (customerEmail) {
             sendOrderConfirmationEmail(customerEmail, order).catch(e => console.error('Order confirmation email error:', e.message));
         }
@@ -417,8 +421,13 @@ app.patch('/api/orders/:id/status', authenticate, authorize('MANAGEMENT', 'ADMIN
             include: { items: true, user: true } 
         });
 
-        if (order.user?.email) {
-            sendOrderStatusUpdateEmail(order.user.email, order, status).catch(e => console.error('Status update email error:', e.message));
+        let recipientEmail = order.user?.email;
+        if (!recipientEmail && order.userId) {
+            const userDoc = await prisma.user.findUnique({ where: { id: order.userId } });
+            recipientEmail = userDoc?.email;
+        }
+        if (recipientEmail) {
+            sendOrderStatusUpdateEmail(recipientEmail, order, status).catch(e => console.error('Status update email error:', e.message));
         }
 
         res.json({ order });
@@ -663,8 +672,13 @@ app.patch('/api/orders/:id/assign', authenticate, authorize('MANAGEMENT', 'ADMIN
         });
 
         // Email notifications for delivery assignment
-        if (order.user?.email) {
-            sendDeliveryAssignmentCustomerEmail(order.user.email, order, dp.name).catch(e => console.error('Delivery customer email error:', e.message));
+        let recipientEmail = order.user?.email;
+        if (!recipientEmail && order.userId) {
+            const userDoc = await prisma.user.findUnique({ where: { id: order.userId } });
+            recipientEmail = userDoc?.email;
+        }
+        if (recipientEmail) {
+            sendDeliveryAssignmentCustomerEmail(recipientEmail, order, dp.name).catch(e => console.error('Delivery customer email error:', e.message));
         }
         if (dp.email) {
             sendDeliveryAssignmentRiderEmail(dp.email, order).catch(e => console.error('Delivery rider email error:', e.message));
