@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
     Search, 
     Plus, 
@@ -15,33 +15,62 @@ import {
     Store, 
     IndianRupee,
     Tag,
-    Layers
+    Layers,
+    X,
+    UserPlus,
+    Check,
+    Wallet
 } from 'lucide-react';
-import { productsApi, ordersApi } from '../../lib/api';
+import { productsApi, ordersApi, customersApi } from '../../lib/api';
 import './StaffPOS.css';
 
 export default function StaffPOS() {
     const [products, setProducts] = useState([]);
+    const [customers, setCustomers] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [cart, setCart] = useState([]);
+
+    // Customer Selection & Dropdown State
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
+    const [custSearchQuery, setCustSearchQuery] = useState('');
+    const [showCustDropdown, setShowCustDropdown] = useState(false);
+    const [isCustomWalkIn, setIsCustomWalkIn] = useState(false);
     const [customerInfo, setCustomerInfo] = useState({ name: 'Walk-in Customer', phone: '', address: 'In-store Counter Sale' });
-    const [paymentMode, setPaymentMode] = useState('cash'); // 'cash' | 'upi'
+
+    const [paymentMode, setPaymentMode] = useState('paid_cash'); // 'paid_cash' | 'paid_upi' | 'khata_due'
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [completedOrder, setCompletedOrder] = useState(null);
     const [error, setError] = useState(null);
 
+    const custDropdownRef = useRef(null);
+
     useEffect(() => {
-        const fetchProducts = async () => {
+        const fetchInitialData = async () => {
             try {
-                const data = await productsApi.getAll();
-                if (data?.products) setProducts(data.products);
+                const [prodData, custData] = await Promise.all([
+                    productsApi.getAll(),
+                    customersApi.getAll()
+                ]);
+                if (prodData?.products) setProducts(prodData.products);
+                if (custData?.customers) setCustomers(custData.customers);
             } catch (err) {
-                console.error('Failed to load products for POS', err);
+                console.error('Failed to load products/customers for POS', err);
             }
         };
-        fetchProducts();
+        fetchInitialData();
+    }, []);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (custDropdownRef.current && !custDropdownRef.current.contains(e.target)) {
+                setShowCustDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const categories = [
@@ -57,6 +86,32 @@ export default function StaffPOS() {
         const matchCategory = selectedCategory === 'all' || p.category === selectedCategory;
         return matchSearch && matchCategory;
     });
+
+    const matchedCustomers = customers.filter(c => 
+        !custSearchQuery || 
+        c.name.toLowerCase().includes(custSearchQuery.toLowerCase()) ||
+        (c.phone && c.phone.includes(custSearchQuery)) ||
+        (c.email && c.email.toLowerCase().includes(custSearchQuery.toLowerCase()))
+    );
+
+    const handleSelectCustomer = (customer) => {
+        setSelectedCustomer(customer);
+        setCustomerInfo({
+            name: customer.name,
+            phone: customer.phone || '',
+            address: 'In-store Counter Sale'
+        });
+        setCustSearchQuery('');
+        setShowCustDropdown(false);
+        setIsCustomWalkIn(false);
+    };
+
+    const handleClearCustomer = () => {
+        setSelectedCustomer(null);
+        setCustomerInfo({ name: 'Walk-in Customer', phone: '', address: 'In-store Counter Sale' });
+        setCustSearchQuery('');
+        setIsCustomWalkIn(false);
+    };
 
     const addToCart = (product) => {
         if (product.stock === 0) return;
@@ -91,24 +146,31 @@ export default function StaffPOS() {
         setError(null);
         try {
             const orderData = {
+                customerId: selectedCustomer?.id,
+                customerName: selectedCustomer ? selectedCustomer.name : customerInfo.name || 'Walk-in Customer',
+                customerPhone: selectedCustomer ? selectedCustomer.phone : customerInfo.phone || '',
+                customerAddress: customerInfo.address || 'In-store Counter Sale',
                 items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image })),
                 subtotal,
                 discount: 0,
-                deliveryFee: 0,
                 total,
+                paymentType: paymentMode === 'paid_cash' ? 'PAID_CASH' : paymentMode === 'paid_upi' ? 'PAID_UPI' : 'KHATA_DUE',
+                paidAmount: paymentMode === 'khata_due' ? 0 : total,
+                dueAmount: paymentMode === 'khata_due' ? total : 0,
                 deliveryType: 'pickup',
-                paymentMode: paymentMode,
-                timeSlot: 'Immediate In-Store',
-                customer: customerInfo.name || 'Walk-in Customer',
-                phone: customerInfo.phone || 'Counter Cash/UPI',
-                address: customerInfo.address || 'In-store Purchase'
+                notes: 'POS Counter Sale'
             };
-            const res = await ordersApi.create(orderData);
-            setCompletedOrder({ ...orderData, id: res?.order?.id || `POS-${Date.now().toString().slice(-6)}` });
+            const res = await ordersApi.staffCreate(orderData);
+            setCompletedOrder({ 
+                ...orderData, 
+                id: res?.order?.orderNumber || res?.order?.id || `POS-${Date.now().toString().slice(-6)}`,
+                paymentMode: paymentMode 
+            });
             setOrderSuccess(true);
             setCart([]);
-            setCustomerInfo({ name: 'Walk-in Customer', phone: '', address: 'In-store Purchase' });
+            handleClearCustomer();
         } catch (err) {
+            console.error('POS Checkout error', err);
             setError('Failed to create order. Please try again.');
         } finally {
             setIsSubmitting(false);
@@ -124,7 +186,7 @@ export default function StaffPOS() {
                     </div>
                     <h2>Sale Completed!</h2>
                     <span className="receipt-order-id">Order #{completedOrder.id}</span>
-                    <p className="receipt-sub">Stock inventory has been updated automatically.</p>
+                    <p className="receipt-sub">Customer: <strong>{completedOrder.customerName}</strong> • Inventory stock updated</p>
 
                     <div className="receipt-items-summary">
                         <div className="receipt-row-header">
@@ -140,7 +202,7 @@ export default function StaffPOS() {
                             </div>
                         ))}
                         <div className="receipt-total-line">
-                            <strong>Total Received ({completedOrder.paymentMode.toUpperCase()})</strong>
+                            <strong>Payment ({completedOrder.paymentMode === 'khata_due' ? '🔴 KHATA DUE' : completedOrder.paymentMode.toUpperCase()})</strong>
                             <strong>₹{completedOrder.total.toFixed(2)}</strong>
                         </div>
                     </div>
@@ -157,36 +219,38 @@ export default function StaffPOS() {
 
     return (
         <div className="staff-pos-layout animate-fade-in">
-            {/* ─── Left Section: Product Selector ─── */}
+            {/* ─── Left Section: Product Catalog ─── */}
             <div className="pos-catalog-pane card">
                 <div className="pos-pane-header">
                     <div>
                         <h2 className="pos-main-title">
-                            <Store size={22} color="var(--primary)" /> Point of Sale (POS)
+                            <Store size={22} color="var(--primary)" /> Store POS Counter
                         </h2>
-                        <p className="pos-subtitle">Fast counter billing &amp; instant stock checkout</p>
+                        <p className="pos-subtitle">Tap products to quickly add items to current bill</p>
                     </div>
+
                     <div className="pos-search-wrapper">
-                        <Search size={18} className="pos-search-icon" />
-                        <input
-                            type="text"
-                            placeholder="Search by name or brand..."
+                        <Search size={16} className="pos-search-icon" />
+                        <input 
+                            type="text" 
+                            placeholder="Search by product name or brand..." 
+                            className="pos-search-input"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pos-search-input"
                         />
                     </div>
                 </div>
 
                 {/* Category Pills */}
                 <div className="pos-category-pills">
-                    {categories.map(c => (
+                    {categories.map((cat) => (
                         <button
-                            key={c.id}
-                            className={`pos-cat-pill ${selectedCategory === c.id ? 'active' : ''}`}
-                            onClick={() => setSelectedCategory(c.id)}
+                            key={cat.id}
+                            type="button"
+                            className={`pos-cat-pill ${selectedCategory === cat.id ? 'active' : ''}`}
+                            onClick={() => setSelectedCategory(cat.id)}
                         >
-                            {c.label}
+                            {cat.label}
                         </button>
                     ))}
                 </div>
@@ -194,9 +258,8 @@ export default function StaffPOS() {
                 {/* Products Grid */}
                 <div className="pos-items-grid">
                     {filteredProducts.length === 0 ? (
-                        <div className="pos-no-items">
-                            <Layers size={36} color="#94a3b8" />
-                            <p>No products found matching your search.</p>
+                        <div className="pos-empty-state">
+                            <p>No products found matching "{searchQuery}"</p>
                         </div>
                     ) : (
                         filteredProducts.map(product => {
@@ -249,26 +312,156 @@ export default function StaffPOS() {
                     )}
                 </div>
 
-                {/* Customer Details Pill Box */}
-                <div className="pos-customer-box">
-                    <div className="pos-input-field">
-                        <User size={15} />
-                        <input
-                            type="text"
-                            placeholder="Customer Name"
-                            value={customerInfo.name}
-                            onChange={e => setCustomerInfo({ ...customerInfo, name: e.target.value })}
-                        />
+                {/* ══════════════════════════════════════════════════════════
+                    ✨ CUSTOMER SEARCH / AUTOCOMPLETE DROPDOWN
+                    ══════════════════════════════════════════════════════════ */}
+                <div className="pos-customer-section" ref={custDropdownRef}>
+                    <div className="pos-cust-header-row">
+                        <span className="pos-sec-label">Customer Account:</span>
+                        <button 
+                            type="button" 
+                            className="pos-walkin-toggle-btn"
+                            onClick={() => {
+                                if (isCustomWalkIn) handleClearCustomer();
+                                else {
+                                    setIsCustomWalkIn(true);
+                                    setSelectedCustomer(null);
+                                }
+                            }}
+                        >
+                            {isCustomWalkIn ? '🔍 Search Customer' : '+ Custom Walk-in'}
+                        </button>
                     </div>
-                    <div className="pos-input-field">
-                        <Phone size={15} />
-                        <input
-                            type="text"
-                            placeholder="Phone (Optional)"
-                            value={customerInfo.phone}
-                            onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-                        />
-                    </div>
+
+                    {/* State A: Customer Selected */}
+                    {selectedCustomer ? (
+                        <div className="pos-selected-cust-card animate-fade-in">
+                            <div className="pos-cust-avatar">{selectedCustomer.name.charAt(0).toUpperCase()}</div>
+                            <div className="pos-cust-details">
+                                <div className="pos-cust-name-line">
+                                    <strong>{selectedCustomer.name}</strong>
+                                    {selectedCustomer.dueBalance > 0 ? (
+                                        <span className="pos-due-alert-pill">⚠️ Due: ₹{selectedCustomer.dueBalance}</span>
+                                    ) : (
+                                        <span className="pos-clear-pill">🟢 Khata Clear</span>
+                                    )}
+                                </div>
+                                <span className="pos-cust-sub">{selectedCustomer.phone ? `📱 ${selectedCustomer.phone}` : 'No mobile number'} • {selectedCustomer.orderCount || 0} orders</span>
+                            </div>
+                            <button 
+                                type="button" 
+                                className="btn-icon btn-ghost btn-xs" 
+                                onClick={handleClearCustomer}
+                                title="Remove customer"
+                            >
+                                <X size={15} />
+                            </button>
+                        </div>
+                    ) : isCustomWalkIn ? (
+                        /* State B: Custom Walk-in Text Inputs */
+                        <div className="pos-customer-box animate-fade-in">
+                            <div className="pos-input-field">
+                                <User size={15} />
+                                <input
+                                    type="text"
+                                    placeholder="Enter Customer Name"
+                                    value={customerInfo.name}
+                                    onChange={e => setCustomerInfo({ ...customerInfo, name: e.target.value })}
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="pos-input-field">
+                                <Phone size={15} />
+                                <input
+                                    type="text"
+                                    placeholder="Phone (Optional)"
+                                    value={customerInfo.phone}
+                                    onChange={e => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        /* State C: Live Customer Autocomplete Search Dropdown */
+                        <div className="pos-cust-search-container">
+                            <div className="pos-cust-search-bar" onClick={() => setShowCustDropdown(true)}>
+                                <Search size={15} color="#94a3b8" />
+                                <input 
+                                    type="text"
+                                    placeholder="Search customer name or phone..."
+                                    value={custSearchQuery}
+                                    onChange={e => { setCustSearchQuery(e.target.value); setShowCustDropdown(true); }}
+                                    onFocus={() => setShowCustDropdown(true)}
+                                />
+                                {custSearchQuery && (
+                                    <button type="button" className="clear-search-x" onClick={() => setCustSearchQuery('')}>
+                                        <X size={13} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Dropdown Results */}
+                            {showCustDropdown && (
+                                <div className="pos-cust-dropdown-menu animate-fade-in">
+                                    {/* Quick Walk-in Option */}
+                                    <div 
+                                        className="pos-dropdown-row walk-in-row"
+                                        onClick={() => {
+                                            handleClearCustomer();
+                                            setShowCustDropdown(false);
+                                        }}
+                                    >
+                                        <div className="row-left">
+                                            <span className="walk-icon">🏪</span>
+                                            <div>
+                                                <strong>General Walk-in Customer</strong>
+                                                <span>Counter direct cash sale</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {matchedCustomers.length === 0 ? (
+                                        <div className="pos-no-match-box">
+                                            <span>No registered customer found for "{custSearchQuery}"</span>
+                                            <button 
+                                                type="button" 
+                                                className="btn btn-xs btn-primary mt-1"
+                                                onClick={() => {
+                                                    setIsCustomWalkIn(true);
+                                                    setCustomerInfo({ name: custSearchQuery, phone: '', address: 'In-store Counter Sale' });
+                                                    setShowCustDropdown(false);
+                                                }}
+                                            >
+                                                + Use "{custSearchQuery}" as Walk-in
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        matchedCustomers.slice(0, 5).map(cust => (
+                                            <div 
+                                                key={cust.id} 
+                                                className="pos-dropdown-row"
+                                                onClick={() => handleSelectCustomer(cust)}
+                                            >
+                                                <div className="row-left">
+                                                    <div className="dropdown-avatar">{cust.name.charAt(0).toUpperCase()}</div>
+                                                    <div>
+                                                        <strong>{cust.name}</strong>
+                                                        <span>{cust.phone ? `📱 ${cust.phone}` : 'No phone linked'}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="row-right">
+                                                    {cust.dueBalance > 0 ? (
+                                                        <span className="pos-drop-due">Due: ₹{cust.dueBalance}</span>
+                                                    ) : (
+                                                        <span className="pos-drop-clear">Clear</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Cart Items List */}
