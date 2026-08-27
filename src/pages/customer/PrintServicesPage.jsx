@@ -1,6 +1,27 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, CreditCard, Camera, Upload, X, Crop, Download, Printer, Loader, CheckCircle2, ZoomIn, ZoomOut, Move, RotateCcw, Sparkles } from 'lucide-react';
+import { 
+    FileText, 
+    CreditCard, 
+    Camera, 
+    Upload, 
+    X, 
+    Crop, 
+    Download, 
+    Printer, 
+    Loader, 
+    CheckCircle2, 
+    ZoomIn, 
+    ZoomOut, 
+    Move, 
+    RotateCcw, 
+    RotateCw, 
+    Sparkles, 
+    RefreshCw, 
+    Maximize2,
+    SlidersHorizontal,
+    Check
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { uploadApi, printJobsApi } from '../../lib/api';
 import CategoryIcon from '../../components/CategoryIcon';
@@ -16,42 +37,104 @@ const PASSPORT_H = 531;
 const ID_W = 1012;
 const ID_H = 638;
 
-// ─── Image Cropper Component ───
+// ─── Modern Interactive Image Cropper Component ───
 function ImageCropper({ src, aspectRatio, onCrop, onCancel, title }) {
     const canvasRef = useRef(null);
-    const imgRef = useRef(null);
+    const rawImgRef = useRef(null);
+    const transformedImgRef = useRef(null);
+    const containerRef = useRef(null);
+
     const [imgLoaded, setImgLoaded] = useState(false);
+    const [rotation, setRotation] = useState(0); // 0, 90, 180, 270
     const [crop, setCrop] = useState({ x: 0, y: 0, w: 0, h: 0 });
     const [dragging, setDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-    const containerRef = useRef(null);
+    const [aspectLabel, setAspectLabel] = useState('');
 
+    // Format badge label based on target aspect ratio
+    useEffect(() => {
+        if (aspectRatio) {
+            if (Math.abs(aspectRatio - (ID_W / ID_H)) < 0.05) {
+                setAspectLabel('ID Card Standard (85.6 × 54 mm)');
+            } else if (Math.abs(aspectRatio - (PASSPORT_W / PASSPORT_H)) < 0.05) {
+                setAspectLabel('Passport Photo (35 × 45 mm)');
+            } else {
+                setAspectLabel(`Aspect Ratio ${aspectRatio.toFixed(2)} : 1`);
+            }
+        }
+    }, [aspectRatio]);
+
+    // Apply rotation transformation on offscreen canvas
+    const applyTransform = useCallback((sourceImg, deg) => {
+        if (!sourceImg) return;
+        const rad = (deg * Math.PI) / 180;
+        const isRotated = deg % 180 !== 0;
+        const nw = isRotated ? sourceImg.height : sourceImg.width;
+        const nh = isRotated ? sourceImg.width : sourceImg.height;
+
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = nw;
+        offCanvas.height = nh;
+        const ctx = offCanvas.getContext('2d');
+
+        ctx.translate(nw / 2, nh / 2);
+        ctx.rotate(rad);
+        ctx.drawImage(sourceImg, -sourceImg.width / 2, -sourceImg.height / 2);
+
+        const rotatedImg = new Image();
+        rotatedImg.onload = () => {
+            transformedImgRef.current = rotatedImg;
+            const ratio = aspectRatio || 1;
+            let cw, ch;
+            if (nw / nh > ratio) {
+                ch = nh * 0.92;
+                cw = ch * ratio;
+            } else {
+                cw = nw * 0.92;
+                ch = cw / ratio;
+            }
+            setCrop({ x: (nw - cw) / 2, y: (nh - ch) / 2, w: cw, h: ch });
+            setImgLoaded(true);
+        };
+        rotatedImg.src = offCanvas.toDataURL('image/jpeg', 0.98);
+    }, [aspectRatio]);
+
+    // Initial load
     useEffect(() => {
         const img = new Image();
         img.onload = () => {
-            imgRef.current = img;
-            const ratio = aspectRatio || 1;
-            let cw, ch;
-            if (img.width / img.height > ratio) {
-                ch = img.height;
-                cw = ch * ratio;
-            } else {
-                cw = img.width;
-                ch = cw / ratio;
-            }
-            setCrop({ x: (img.width - cw) / 2, y: (img.height - ch) / 2, w: cw, h: ch });
-            setImgLoaded(true);
+            rawImgRef.current = img;
+            setRotation(0);
+            applyTransform(img, 0);
         };
         img.src = src;
-    }, [src, aspectRatio]);
+    }, [src, applyTransform]);
 
+    const handleRotate = (dir) => {
+        const nextRot = (rotation + (dir > 0 ? 90 : 270)) % 360;
+        setRotation(nextRot);
+        applyTransform(rawImgRef.current, nextRot);
+    };
+
+    const handleReset = () => {
+        setRotation(0);
+        applyTransform(rawImgRef.current, 0);
+    };
+
+    // Render viewport to interactive Canvas
     useEffect(() => {
-        if (!imgLoaded || !imgRef.current || !canvasRef.current) return;
+        if (!imgLoaded || !transformedImgRef.current || !canvasRef.current) return;
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
-        const img = imgRef.current;
-        const dispW = Math.min(480, window.innerWidth - 64);
-        const dispH = (img.height / img.width) * dispW;
+        const img = transformedImgRef.current;
+
+        const maxDispW = Math.min(500, window.innerWidth - 64);
+        const maxDispH = Math.min(380, window.innerHeight * 0.45);
+        
+        const scale = Math.min(maxDispW / img.width, maxDispH / img.height, 1);
+        const dispW = Math.max(260, Math.round(img.width * scale));
+        const dispH = Math.round(img.height * (dispW / img.width));
+
         canvas.width = dispW;
         canvas.height = dispH;
         const sx = dispW / img.width;
@@ -59,36 +142,63 @@ function ImageCropper({ src, aspectRatio, onCrop, onCancel, title }) {
         ctx.clearRect(0, 0, dispW, dispH);
         ctx.drawImage(img, 0, 0, dispW, dispH);
 
-        // Dark overlay outside crop area
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
+        // Dark overlay mask around crop area
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.72)';
         ctx.fillRect(0, 0, dispW, crop.y * sx);
         ctx.fillRect(0, crop.y * sx, crop.x * sx, crop.h * sx);
         ctx.fillRect((crop.x + crop.w) * sx, crop.y * sx, dispW - (crop.x + crop.w) * sx, crop.h * sx);
         ctx.fillRect(0, (crop.y + crop.h) * sx, dispW, dispH - (crop.y + crop.h) * sx);
 
-        // Crop frame
-        ctx.strokeStyle = '#16a34a';
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(crop.x * sx, crop.y * sx, crop.w * sx, crop.h * sx);
-
-        // Grid lines inside crop
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-        ctx.lineWidth = 1;
         const cx = crop.x * sx;
         const cy = crop.y * sx;
         const cw = crop.w * sx;
         const ch = crop.h * sx;
-        ctx.strokeRect(cx + cw / 3, cy, cw / 3, ch);
-        ctx.strokeRect(cx, cy + ch / 3, cw, ch / 3);
 
-        // Corner handles
-        const hs = 10;
-        ctx.fillStyle = '#16a34a';
-        [[cx, cy], [cx + cw, cy], [cx, cy + ch], [cx + cw, cy + ch]].forEach(([hx, hy]) => {
-            ctx.fillRect(hx - hs / 2, hy - hs / 2, hs, hs);
-        });
-    }, [imgLoaded, crop]);
+        // Crop frame border
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(cx, cy, cw, ch);
 
+        // Rule of Thirds grid
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        
+        ctx.beginPath();
+        // Verticals
+        ctx.moveTo(cx + cw / 3, cy);
+        ctx.lineTo(cx + cw / 3, cy + ch);
+        ctx.moveTo(cx + (cw * 2) / 3, cy);
+        ctx.lineTo(cx + (cw * 2) / 3, cy + ch);
+        // Horizontals
+        ctx.moveTo(cx, cy + ch / 3);
+        ctx.lineTo(cx + cw, cy + ch / 3);
+        ctx.moveTo(cx, cy + (ch * 2) / 3);
+        ctx.lineTo(cx + cw, cy + (ch * 2) / 3);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // L-shaped Corner brackets
+        const bl = 16;
+        const bw = 3.5;
+        ctx.fillStyle = '#10b981';
+        
+        // Top-Left
+        ctx.fillRect(cx - 2, cy - 2, bl, bw);
+        ctx.fillRect(cx - 2, cy - 2, bw, bl);
+        // Top-Right
+        ctx.fillRect(cx + cw - bl + 2, cy - 2, bl, bw);
+        ctx.fillRect(cx + cw - bw + 2, cy - 2, bw, bl);
+        // Bottom-Left
+        ctx.fillRect(cx - 2, cy + ch - bw + 2, bl, bw);
+        ctx.fillRect(cx - 2, cy + ch - bl + 2, bw, bl);
+        // Bottom-Right
+        ctx.fillRect(cx + cw - bl + 2, cy + ch - bw + 2, bl, bw);
+        ctx.fillRect(cx + cw - bw + 2, cy + ch - bl + 2, bw, bl);
+
+    }, [imgLoaded, crop, rotation]);
+
+    // Drag handlers (Mouse + Touch)
     const handleMouseDown = (e) => {
         if (!canvasRef.current) return;
         const rect = canvasRef.current.getBoundingClientRect();
@@ -97,18 +207,18 @@ function ImageCropper({ src, aspectRatio, onCrop, onCancel, title }) {
     };
 
     const handleMouseMove = (e) => {
-        if (!dragging || !imgRef.current || !canvasRef.current) return;
+        if (!dragging || !transformedImgRef.current || !canvasRef.current) return;
         const rect = canvasRef.current.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
-        const sx = imgRef.current.width / canvasRef.current.width;
+        const sx = transformedImgRef.current.width / canvasRef.current.width;
         const dx = (mx - dragStart.x) * sx;
         const dy = (my - dragStart.y) * sx;
 
         setCrop(prev => ({
             ...prev,
-            x: Math.max(0, Math.min(imgRef.current.width - prev.w, prev.x + dx)),
-            y: Math.max(0, Math.min(imgRef.current.height - prev.h, prev.y + dy)),
+            x: Math.max(0, Math.min(transformedImgRef.current.width - prev.w, prev.x + dx)),
+            y: Math.max(0, Math.min(transformedImgRef.current.height - prev.h, prev.y + dy)),
         }));
         setDragStart({ x: mx, y: my });
     };
@@ -124,45 +234,52 @@ function ImageCropper({ src, aspectRatio, onCrop, onCancel, title }) {
     };
 
     const handleTouchMove = (e) => {
-        if (!dragging || !imgRef.current || !canvasRef.current || !e.touches[0]) return;
+        if (!dragging || !transformedImgRef.current || !canvasRef.current || !e.touches[0]) return;
         const rect = canvasRef.current.getBoundingClientRect();
         const mx = e.touches[0].clientX - rect.left;
         const my = e.touches[0].clientY - rect.top;
-        const sx = imgRef.current.width / canvasRef.current.width;
+        const sx = transformedImgRef.current.width / canvasRef.current.width;
         const dx = (mx - dragStart.x) * sx;
         const dy = (my - dragStart.y) * sx;
 
         setCrop(prev => ({
             ...prev,
-            x: Math.max(0, Math.min(imgRef.current.width - prev.w, prev.x + dx)),
-            y: Math.max(0, Math.min(imgRef.current.height - prev.h, prev.y + dy)),
+            x: Math.max(0, Math.min(transformedImgRef.current.width - prev.w, prev.x + dx)),
+            y: Math.max(0, Math.min(transformedImgRef.current.height - prev.h, prev.y + dy)),
         }));
         setDragStart({ x: mx, y: my });
     };
 
     const handleZoom = (dir) => {
-        if (!imgRef.current) return;
+        if (!transformedImgRef.current) return;
+        const img = transformedImgRef.current;
         setCrop(prev => {
-            const factor = dir > 0 ? 0.85 : 1.15;
-            const nw = Math.min(imgRef.current.width, Math.max(80, prev.w * factor));
-            const nh = nw / (aspectRatio || 1);
-            if (nh > imgRef.current.height) return prev;
-            return {
-                w: nw,
-                h: nh,
-                x: Math.max(0, Math.min(imgRef.current.width - nw, prev.x + (prev.w - nw) / 2)),
-                y: Math.max(0, Math.min(imgRef.current.height - nh, prev.y + (prev.h - nh) / 2)),
-            };
+            const ratio = aspectRatio || 1;
+            const factor = dir > 0 ? 0.88 : 1.14;
+            const minW = Math.min(img.width, 100);
+            let nw = Math.max(minW, Math.min(img.width, prev.w * factor));
+            let nh = nw / ratio;
+            
+            if (nh > img.height) {
+                nh = img.height;
+                nw = nh * ratio;
+            }
+
+            const nx = Math.max(0, Math.min(img.width - nw, prev.x + (prev.w - nw) / 2));
+            const ny = Math.max(0, Math.min(img.height - nh, prev.y + (prev.h - nh) / 2));
+
+            return { x: nx, y: ny, w: nw, h: nh };
         });
     };
 
     const handleCropDone = () => {
-        if (!imgRef.current) return;
+        if (!transformedImgRef.current) return;
+        const img = transformedImgRef.current;
         const out = document.createElement('canvas');
         out.width = crop.w;
         out.height = crop.h;
         const ctx = out.getContext('2d');
-        ctx.drawImage(imgRef.current, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
+        ctx.drawImage(img, crop.x, crop.y, crop.w, crop.h, 0, 0, crop.w, crop.h);
         
         const dataUrl = out.toDataURL('image/jpeg', 0.95);
         out.toBlob((blob) => {
@@ -171,38 +288,110 @@ function ImageCropper({ src, aspectRatio, onCrop, onCancel, title }) {
     };
 
     return (
-        <div className="cropper-overlay">
+        <div className="cropper-overlay animate-fade-in">
             <div className="cropper-modal">
                 <div className="cropper-header">
-                    <h3><Crop size={18} /> {title || 'Crop & Align Photo'}</h3>
-                    <button className="btn-icon btn-ghost" onClick={onCancel} aria-label="Cancel"><X size={20} /></button>
+                    <div className="cropper-header-title">
+                        <div className="cropper-icon-badge">
+                            <Crop size={18} color="var(--primary)" />
+                        </div>
+                        <div>
+                            <h3>{title || 'Crop & Align Photo'}</h3>
+                            {aspectLabel && <span className="cropper-aspect-pill">{aspectLabel}</span>}
+                        </div>
+                    </div>
+                    <button className="btn-icon btn-ghost" onClick={onCancel} aria-label="Cancel">
+                        <X size={20} />
+                    </button>
                 </div>
+
                 <div className="cropper-body" ref={containerRef}>
                     {!imgLoaded ? (
-                        <div className="cropper-loading"><Loader className="spin" size={32} /></div>
+                        <div className="cropper-loading">
+                            <Loader className="spin" size={32} color="var(--primary)" />
+                            <span>Loading image preview...</span>
+                        </div>
                     ) : (
-                        <canvas
-                            ref={canvasRef}
-                            className="cropper-canvas"
-                            onMouseDown={handleMouseDown}
-                            onMouseMove={handleMouseMove}
-                            onMouseUp={handleMouseUp}
-                            onMouseLeave={handleMouseUp}
-                            onTouchStart={handleTouchStart}
-                            onTouchMove={handleTouchMove}
-                            onTouchEnd={handleMouseUp}
-                            style={{ cursor: dragging ? 'grabbing' : 'grab' }}
-                        />
+                        <div className="canvas-wrapper-box">
+                            <canvas
+                                ref={canvasRef}
+                                className="cropper-canvas"
+                                onMouseDown={handleMouseDown}
+                                onMouseMove={handleMouseMove}
+                                onMouseUp={handleMouseUp}
+                                onMouseLeave={handleMouseUp}
+                                onTouchStart={handleTouchStart}
+                                onTouchMove={handleTouchMove}
+                                onTouchEnd={handleMouseUp}
+                                style={{ cursor: dragging ? 'grabbing' : 'grab' }}
+                            />
+                        </div>
                     )}
                 </div>
-                <div className="cropper-controls">
-                    <button className="btn btn-secondary btn-sm" onClick={() => handleZoom(-1)}><ZoomOut size={15} /> Zoom Out</button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => handleZoom(1)}><ZoomIn size={15} /> Zoom In</button>
-                    <span className="cropper-hint"><Move size={13} /> Drag to adjust area</span>
+
+                {/* ── Enhanced Interactive Toolbar ── */}
+                <div className="cropper-toolbar">
+                    <div className="tool-group">
+                        <span className="tool-label">Rotate:</span>
+                        <button 
+                            type="button" 
+                            className="tool-btn" 
+                            onClick={() => handleRotate(-1)}
+                            title="Rotate Left 90°"
+                        >
+                            <RotateCcw size={15} /> <span>-90°</span>
+                        </button>
+                        <button 
+                            type="button" 
+                            className="tool-btn" 
+                            onClick={() => handleRotate(1)}
+                            title="Rotate Right 90°"
+                        >
+                            <RotateCw size={15} /> <span>+90°</span>
+                        </button>
+                    </div>
+
+                    <div className="tool-group">
+                        <span className="tool-label">Zoom:</span>
+                        <button 
+                            type="button" 
+                            className="tool-btn" 
+                            onClick={() => handleZoom(-1)}
+                            title="Zoom Out"
+                        >
+                            <ZoomOut size={15} />
+                        </button>
+                        <button 
+                            type="button" 
+                            className="tool-btn" 
+                            onClick={() => handleZoom(1)}
+                            title="Zoom In"
+                        >
+                            <ZoomIn size={15} />
+                        </button>
+                        <button 
+                            type="button" 
+                            className="tool-btn reset-tool-btn" 
+                            onClick={handleReset}
+                            title="Reset Image Alignment"
+                        >
+                            <RefreshCw size={14} /> <span>Reset</span>
+                        </button>
+                    </div>
                 </div>
-                <div className="cropper-actions">
-                    <button className="btn btn-secondary" onClick={onCancel}>Cancel</button>
-                    <button className="btn btn-primary" onClick={handleCropDone}><Crop size={16} /> Crop &amp; Preview A4</button>
+
+                <div className="cropper-footer">
+                    <span className="cropper-drag-hint">
+                        <Move size={13} /> Drag frame to adjust position
+                    </span>
+                    <div className="cropper-footer-actions">
+                        <button className="btn btn-secondary" onClick={onCancel}>
+                            Cancel
+                        </button>
+                        <button className="btn btn-primary" onClick={handleCropDone}>
+                            <Check size={16} /> Apply &amp; Preview
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
