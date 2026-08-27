@@ -6,9 +6,9 @@ import MobileBottomNav from '../components/MobileBottomNav';
 
 export default function CustomerLayout() {
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <div className="customer-layout-wrapper">
             <Navbar />
-            <main className="customer-main-content" style={{ flex: 1 }}>
+            <main className="customer-main-content">
                 <Outlet />
             </main>
             <Footer />
