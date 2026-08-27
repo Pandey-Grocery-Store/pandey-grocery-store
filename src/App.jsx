@@ -72,6 +72,12 @@ export default function App() {
                   <Route path="/track/:orderId" element={
                     <ProtectedRoute><OrderTracking /></ProtectedRoute>
                   } />
+                  <Route path="/orders/:orderId" element={
+                    <ProtectedRoute><OrderTracking /></ProtectedRoute>
+                  } />
+                  <Route path="/order/:orderId" element={
+                    <ProtectedRoute><OrderTracking /></ProtectedRoute>
+                  } />
                   <Route path="/delivery" element={
                     <ProtectedRoute roles={['DELIVERY']}><DeliveryDashboard /></ProtectedRoute>
                   } />

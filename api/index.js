@@ -545,8 +545,32 @@ app.patch('/api/products/:id/stock', authenticate, authorize('MANAGEMENT', 'ADMI
 // User's own orders (any logged-in user)
 app.get('/api/orders/my', authenticate, async (req, res) => {
     try {
-        const orders = await prisma.order.findMany({ where: { userId: req.user.id }, include: { items: true }, orderBy: { createdAt: 'desc' } });
-        res.json({ orders: orders.map(o => ({ id: o.orderNumber, dbId: o.id, customer: o.customer || 'Customer', phone: o.phone || '', items: o.items.map(i => ({ name: i.name, qty: i.quantity, price: i.price })), total: o.total, status: o.status, payment: o.paymentMode, date: o.createdAt.toISOString().split('T')[0], address: o.address || '' })) });
+        const orders = await prisma.order.findMany({ 
+            where: { userId: req.user.id }, 
+            include: { items: true, addressRef: true }, 
+            orderBy: { createdAt: 'desc' } 
+        });
+        res.json({ 
+            orders: orders.map(o => ({ 
+                id: o.orderNumber, 
+                dbId: o.id, 
+                orderNumber: o.orderNumber,
+                customer: o.customer || req.user.name || 'Customer', 
+                phone: o.phone || '', 
+                items: o.items.map(i => ({ name: i.name, qty: i.quantity, quantity: i.quantity, price: i.price, image: i.image })), 
+                subtotal: o.subtotal,
+                discount: o.discount,
+                deliveryFee: o.deliveryFee,
+                total: o.total, 
+                status: o.status, 
+                payment: o.paymentMode, 
+                date: o.createdAt.toISOString().split('T')[0], 
+                createdAt: o.createdAt,
+                address: o.address || (o.addressRef ? `${o.addressRef.line1}, ${o.addressRef.city} - ${o.addressRef.pincode}` : ''), 
+                deliveryType: o.deliveryType === 'delivery' ? 'home' : 'pickup',
+                timeSlot: o.timeSlot || 'Standard Delivery'
+            })) 
+        });
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to fetch your orders' }); }
 });
 
@@ -555,9 +579,74 @@ app.get('/api/orders', authenticate, authorize('MANAGEMENT', 'ADMIN'), async (re
     try {
         const where = {};
         if (req.query.status && req.query.status !== 'all') where.status = req.query.status;
-        const orders = await prisma.order.findMany({ where, include: { items: true }, orderBy: { createdAt: 'desc' } });
-        res.json({ orders: orders.map(o => ({ id: o.orderNumber, dbId: o.id, customer: o.customer || 'Customer', phone: o.phone || '', items: o.items.map(i => ({ name: i.name, qty: i.quantity, price: i.price })), total: o.total, status: o.status, payment: o.paymentMode, date: o.createdAt.toISOString().split('T')[0], address: o.address || '', deliveryType: o.deliveryType === 'delivery' ? 'home' : 'pickup', timeSlot: o.timeSlot || '' })) });
+        const orders = await prisma.order.findMany({ 
+            where, 
+            include: { items: true, user: true, addressRef: true }, 
+            orderBy: { createdAt: 'desc' } 
+        });
+        res.json({ 
+            orders: orders.map(o => ({ 
+                id: o.orderNumber, 
+                dbId: o.id, 
+                orderNumber: o.orderNumber,
+                customer: o.customer || o.user?.name || 'Customer', 
+                phone: o.phone || o.user?.phone || '', 
+                email: o.user?.email || '',
+                items: o.items.map(i => ({ name: i.name, qty: i.quantity, quantity: i.quantity, price: i.price, image: i.image })), 
+                subtotal: o.subtotal,
+                discount: o.discount,
+                deliveryFee: o.deliveryFee,
+                total: o.total, 
+                status: o.status, 
+                payment: o.paymentMode, 
+                date: o.createdAt.toISOString().split('T')[0], 
+                createdAt: o.createdAt,
+                address: o.address || (o.addressRef ? `${o.addressRef.line1}, ${o.addressRef.city} - ${o.addressRef.pincode}` : ''), 
+                deliveryType: o.deliveryType === 'delivery' ? 'home' : 'pickup', 
+                timeSlot: o.timeSlot || 'Standard Delivery' 
+            })) 
+        });
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to fetch orders' }); }
+});
+
+// Single order details (for tracking / invoice)
+app.get('/api/orders/:id', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const order = await prisma.order.findFirst({
+            where: {
+                OR: [{ id }, { orderNumber: id }],
+                ...(req.user.role === 'CUSTOMER' ? { userId: req.user.id } : {})
+            },
+            include: { items: true, user: true, addressRef: true }
+        });
+        if (!order) return res.status(404).json({ error: 'Order not found' });
+        res.json({
+            order: {
+                id: order.orderNumber,
+                dbId: order.id,
+                orderNumber: order.orderNumber,
+                customer: order.customer || order.user?.name || 'Customer',
+                phone: order.phone || order.user?.phone || '',
+                email: order.user?.email || '',
+                items: order.items.map(i => ({ name: i.name, qty: i.quantity, quantity: i.quantity, price: i.price, image: i.image })),
+                subtotal: order.subtotal,
+                discount: order.discount,
+                deliveryFee: order.deliveryFee,
+                total: order.total,
+                status: order.status,
+                payment: order.paymentMode,
+                date: order.createdAt.toISOString().split('T')[0],
+                createdAt: order.createdAt,
+                address: order.address || (order.addressRef ? `${order.addressRef.line1}, ${order.addressRef.city} - ${order.addressRef.pincode}` : ''),
+                deliveryType: order.deliveryType === 'delivery' ? 'home' : 'pickup',
+                timeSlot: order.timeSlot || 'Standard Delivery'
+            }
+        });
+    } catch (err) {
+        console.error('Fetch single order error:', err);
+        res.status(500).json({ error: 'Failed to fetch order' });
+    }
 });
 
 app.post('/api/orders', authenticate, async (req, res) => {
@@ -565,15 +654,34 @@ app.post('/api/orders', authenticate, async (req, res) => {
         const { items, subtotal, discount, deliveryFee, total, deliveryType, paymentMode, addressId, timeSlot, customer, phone, address } = req.body;
         if (!items?.length || !total) return res.status(400).json({ error: 'Missing fields' });
         const count = await prisma.order.count();
-        const order = await prisma.order.create({ data: { orderNumber: `ORD-${String(count + 1001).padStart(4, '0')}`, userId: req.user.id, subtotal: parseFloat(subtotal) || total, discount: parseFloat(discount) || 0, deliveryFee: parseFloat(deliveryFee) || 0, total: parseFloat(total), deliveryType: deliveryType || 'delivery', paymentMode: paymentMode || 'cod', addressId: addressId || null, customer: customer || req.user.name, phone: phone || '', address: address || '', timeSlot: timeSlot || '', items: { create: items.map(i => ({ name: i.name, price: parseFloat(i.price), quantity: parseInt(i.quantity) || 1, image: i.image || null })) } }, include: { items: true } });
+        const order = await prisma.order.create({ 
+            data: { 
+                orderNumber: `ORD-${String(count + 1001).padStart(4, '0')}`, 
+                userId: req.user.id, 
+                subtotal: parseFloat(subtotal) || total, 
+                discount: parseFloat(discount) || 0, 
+                deliveryFee: parseFloat(deliveryFee) || 0, 
+                total: parseFloat(total), 
+                deliveryType: deliveryType || 'delivery', 
+                paymentMode: paymentMode || 'cod', 
+                addressId: addressId || null, 
+                customer: customer || req.user.name, 
+                phone: phone || '', 
+                address: address || '', 
+                timeSlot: timeSlot || '', 
+                items: { create: items.map(i => ({ name: i.name, price: parseFloat(i.price), quantity: parseInt(i.quantity) || parseInt(i.qty) || 1, image: i.image || null })) } 
+            }, 
+            include: { items: true } 
+        });
         
         // Deduct stock for each item & check for low inventory
         for (const item of items) {
-            if (item.id) {
+            if (item.id && !item.id.includes('custom')) {
                 try {
+                    const cleanId = item.id.split('-')[0];
                     const updatedProduct = await prisma.product.update({
-                        where: { id: item.id },
-                        data: { stock: { decrement: parseInt(item.quantity) || 1 } }
+                        where: { id: cleanId },
+                        data: { stock: { decrement: parseInt(item.quantity) || parseInt(item.qty) || 1 } }
                     });
                     if (updatedProduct && updatedProduct.stock <= 5) {
                         sendLowStockAlertEmail(updatedProduct).catch(e => console.error('Low stock email error:', e.message));
