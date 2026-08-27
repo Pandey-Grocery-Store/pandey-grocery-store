@@ -419,3 +419,146 @@ export async function sendBroadcastNotificationEmail({ to, subject, headline, me
         text: message,
     });
 }
+
+// ════════════════════ 8. Password Changed Security Alert ════════════════════
+export async function sendPasswordChangedAlert(toEmail, userName) {
+    if (!toEmail) return { success: false, reason: 'No recipient email' };
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="margin: 0; padding: 20px; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(0,0,0,0.05);">
+            <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 24px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">🔒 Security Notification</h1>
+                <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0; font-size: 13px;">Pandey Grocery Store Account Security</p>
+            </div>
+            <div style="padding: 24px;">
+                <h2 style="color: #0f172a; margin: 0 0 10px; font-size: 17px; font-weight: 700;">Password Updated Successfully</h2>
+                <p style="color: #475569; font-size: 14px; line-height: 1.5; margin: 0 0 16px;">
+                    Hello ${userName || 'Customer'}, the password for your account (<strong>${toEmail}</strong>) was recently modified.
+                </p>
+                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;">
+                    <p style="color: #991b1b; font-size: 12px; margin: 0; line-height: 1.4;">
+                        <strong>Did not make this change?</strong> Please contact store support immediately at <strong>+91 94120 86450</strong> to protect your account.
+                    </p>
+                </div>
+            </div>
+            <div style="background: #f8fafc; padding: 12px 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+                <p style="color: #94a3b8; font-size: 11px; margin: 0;">© ${new Date().getFullYear()} Pandey Grocery Store • Haldwani</p>
+            </div>
+        </div>
+    </body>
+    </html>`;
+
+    return sendEmail({
+        to: toEmail,
+        subject: `Security Alert: Your Pandey Grocery Store password was changed`,
+        html,
+        text: `Your password for Pandey Grocery Store was recently updated. If this wasn't you, please contact support.`,
+    });
+}
+
+// ════════════════════ 9. Print Job Ready for Pickup Email ════════════════════
+export async function sendPrintJobStatusUpdateEmail(toEmail, job, newStatus) {
+    if (!toEmail) return { success: false, reason: 'No recipient email' };
+
+    const statusTitle = newStatus === 'completed' || newStatus === 'ready' 
+        ? '✅ Your Prints are Ready for Pickup!' 
+        : `Print Job #${job.jobNumber} Status: ${newStatus}`;
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+    <body style="margin: 0; padding: 20px; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(0,0,0,0.05);">
+            <div style="background: linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%); padding: 28px 24px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800;">${statusTitle}</h1>
+                <p style="color: rgba(255,255,255,0.9); margin: 6px 0 0; font-size: 13px;">Job #${job.jobNumber}</p>
+            </div>
+            <div style="padding: 24px;">
+                <p style="color: #334155; font-size: 14px; line-height: 1.5; margin: 0 0 16px;">
+                    Great news! Your print job (${job.type}) is ready. High quality 300 DPI print output is completed and packaged.
+                </p>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 20px;">
+                    <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;"><strong>Job Number:</strong> #${job.jobNumber}</div>
+                    <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;"><strong>Type:</strong> ${job.type}</div>
+                    <div style="font-size: 13px; color: #64748b;"><strong>Status:</strong> <span style="color: #7c3aed; font-weight: 800; text-transform: uppercase;">${newStatus}</span></div>
+                </div>
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px 14px;">
+                    <p style="color: #166534; font-size: 13px; margin: 0; font-weight: 600;">
+                        📍 Pickup at Pandey Store Counter, Kusumkhera, Haldwani
+                    </p>
+                </div>
+            </div>
+            <div style="background: #f8fafc; padding: 14px 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+                <p style="color: #94a3b8; font-size: 11px; margin: 0;">© ${new Date().getFullYear()} Pandey Grocery Store Print Hub • Haldwani</p>
+            </div>
+        </div>
+    </body>
+    </html>`;
+
+    return sendEmail({
+        to: toEmail,
+        subject: `Your Prints are Ready #${job.jobNumber} — Pandey Store Print Hub`,
+        html,
+        text: `Your print job #${job.jobNumber} is now ready for pickup at Pandey Store.`,
+    });
+}
+
+// ════════════════════ 10. Delivery Rider Assignment Email ════════════════════
+export async function sendDeliveryAssignmentCustomerEmail(toEmail, order, riderName) {
+    if (!toEmail) return { success: false, reason: 'No recipient email' };
+
+    const trackUrl = `${appBaseUrl}/track/${order.orderNumber || order.id}`;
+
+    const html = `
+    <div style="font-family: sans-serif; padding: 20px; background: #f8fafc;">
+        <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 14px; padding: 24px; border: 1px solid #e2e8f0;">
+            <h2 style="color: #059669; margin: 0 0 8px;">🛵 Delivery Partner Assigned!</h2>
+            <p style="color: #334155; font-size: 14px; line-height: 1.5;">
+                <strong>${riderName || 'Our Rider'}</strong> has been assigned to deliver Order <strong>#${order.orderNumber || order.id}</strong> to your doorstep in Haldwani.
+            </p>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin: 16px 0;">
+                <div style="font-size: 13px; color: #64748b; margin-bottom: 4px;"><strong>Delivery Location:</strong> ${order.address}</div>
+                <div style="font-size: 13px; color: #64748b;"><strong>Order Total:</strong> ₹${order.total}</div>
+            </div>
+            <a href="${trackUrl}" style="background: #059669; color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 700; font-size: 13px;">
+                Live Track Delivery
+            </a>
+        </div>
+    </div>`;
+
+    return sendEmail({
+        to: toEmail,
+        subject: `🛵 Delivery Partner Assigned: Order #${order.orderNumber || order.id} is On The Way`,
+        html,
+        text: `Your delivery partner ${riderName} has been assigned for Order #${order.orderNumber || order.id}. Track at ${trackUrl}`,
+    });
+}
+
+// ════════════════════ 11. Low Stock Inventory Alert Email ════════════════════
+export async function sendLowStockAlertEmail(product) {
+    if (!adminAlertEmail) return;
+
+    const html = `
+    <div style="font-family: sans-serif; padding: 20px; background: #f8fafc;">
+        <div style="max-width: 480px; margin: 0 auto; background: #ffffff; border-radius: 12px; padding: 20px; border: 1px solid #fecaca;">
+            <h3 style="color: #dc2626; margin: 0 0 10px;">⚠️ Low Stock Alert: ${product.name}</h3>
+            <p style="color: #334155; font-size: 14px;"><strong>Current Remaining Stock:</strong> <span style="color: #dc2626; font-weight: 800;">${product.stock} ${product.unit || 'units'}</span></p>
+            <p style="color: #64748b; font-size: 13px;"><strong>Category:</strong> ${product.category} • <strong>Price:</strong> ₹${product.price}</p>
+            <a href="${appBaseUrl}/staff/inventory" style="background: #dc2626; color: #fff; padding: 8px 16px; border-radius: 6px; text-decoration: none; display: inline-block; font-size: 12px; font-weight: 700; margin-top: 10px;">
+                Open Reorder & Inventory Management
+            </a>
+        </div>
+    </div>`;
+
+    return sendEmail({
+        to: adminAlertEmail,
+        subject: `⚠️ Low Stock Alert (${product.stock} left): ${product.name}`,
+        html,
+        text: `Low stock alert for ${product.name}. Only ${product.stock} units remaining.`,
+    });
+}

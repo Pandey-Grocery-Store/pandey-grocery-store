@@ -13,6 +13,11 @@ import {
     sendAdminNewOrderAlert,
     sendWelcomeEmail,
     sendBroadcastNotificationEmail,
+    sendPasswordChangedAlert,
+    sendPrintJobStatusUpdateEmail,
+    sendDeliveryAssignmentCustomerEmail,
+    sendDeliveryAssignmentRiderEmail,
+    sendLowStockAlertEmail,
     verifySmtpConnection,
     sendEmail
 } from './emailService.js';
@@ -112,8 +117,12 @@ app.post('/api/auth/google', async (req, res) => {
         const g = await verifyGoogleToken(req.body.idToken);
         if (!g) return res.status(401).json({ error: 'Invalid Google token' });
         let user = await prisma.user.findUnique({ where: { email: g.email } });
-        if (user) { if (!user.googleId) user = await prisma.user.update({ where: { id: user.id }, data: { googleId: g.googleId, avatar: user.avatar || g.avatar, emailVerified: true } }); }
-        else { user = await prisma.user.create({ data: { name: g.name, email: g.email, googleId: g.googleId, avatar: g.avatar, provider: 'google', emailVerified: true } }); }
+        if (user) { 
+            if (!user.googleId) user = await prisma.user.update({ where: { id: user.id }, data: { googleId: g.googleId, avatar: user.avatar || g.avatar, emailVerified: true } }); 
+        } else { 
+            user = await prisma.user.create({ data: { name: g.name, email: g.email, googleId: g.googleId, avatar: g.avatar, provider: 'google', emailVerified: true } });
+            sendWelcomeEmail(user.email, user.name).catch(e => console.error('Google welcome email error:', e.message));
+        }
         user = await checkAndSetAdminRole(user);
         res.json({ token: generateToken(user), user: { id: user.id, name: user.name, email: user.email, role: user.role, avatar: user.avatar } });
     } catch (err) { console.error(err); res.status(500).json({ error: 'Google auth failed' }); }
@@ -148,8 +157,12 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         if (!otp) return res.status(401).json({ error: 'Invalid or expired OTP' });
         await prisma.otp.update({ where: { id: otp.id }, data: { used: true } });
         let user = await prisma.user.findUnique({ where: { email } });
-        if (!user) user = await prisma.user.create({ data: { name: email.split('@')[0], email, provider: 'otp', emailVerified: true } });
-        else await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } });
+        if (!user) {
+            user = await prisma.user.create({ data: { name: email.split('@')[0], email, provider: 'otp', emailVerified: true } });
+            sendWelcomeEmail(user.email, user.name).catch(e => console.error('OTP welcome email error:', e.message));
+        } else {
+            await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true } });
+        }
         res.json({ token: generateToken(user), user: { id: user.id, name: user.name, email: user.email, role: user.role, avatar: user.avatar } });
     } catch (err) { console.error(err); res.status(500).json({ error: 'OTP verification failed' }); }
 });
@@ -178,6 +191,12 @@ app.put('/api/user/password', authenticate, async (req, res) => {
         const user = await prisma.user.findUnique({ where: { id: req.user.id } });
         if (user.password) { if (!currentPassword || !(await bcrypt.compare(currentPassword, user.password))) return res.status(401).json({ error: 'Current password incorrect' }); }
         await prisma.user.update({ where: { id: req.user.id }, data: { password: await bcrypt.hash(newPassword, 10) } });
+        
+        // Security notification email
+        if (user.email) {
+            sendPasswordChangedAlert(user.email, user.name).catch(e => console.error('Password alert email error:', e.message));
+        }
+
         res.json({ message: 'Password updated' });
     } catch (err) { res.status(500).json({ error: 'Failed to change password' }); }
 });
@@ -284,14 +303,17 @@ app.post('/api/orders', authenticate, async (req, res) => {
         const count = await prisma.order.count();
         const order = await prisma.order.create({ data: { orderNumber: `ORD-${String(count + 1001).padStart(4, '0')}`, userId: req.user.id, subtotal: parseFloat(subtotal) || total, discount: parseFloat(discount) || 0, deliveryFee: parseFloat(deliveryFee) || 0, total: parseFloat(total), deliveryType: deliveryType || 'delivery', paymentMode: paymentMode || 'cod', addressId: addressId || null, customer: customer || req.user.name, phone: phone || '', address: address || '', timeSlot: timeSlot || '', items: { create: items.map(i => ({ name: i.name, price: parseFloat(i.price), quantity: parseInt(i.quantity) || 1, image: i.image || null })) } }, include: { items: true } });
         
-        // Deduct stock for each item
+        // Deduct stock for each item & check for low inventory
         for (const item of items) {
             if (item.id) {
                 try {
-                    await prisma.product.update({
+                    const updatedProduct = await prisma.product.update({
                         where: { id: item.id },
                         data: { stock: { decrement: parseInt(item.quantity) || 1 } }
                     });
+                    if (updatedProduct && updatedProduct.stock <= 5) {
+                        sendLowStockAlertEmail(updatedProduct).catch(e => console.error('Low stock email error:', e.message));
+                    }
                 } catch (e) {
                     console.error('Failed to deduct stock for', item.id, e);
                 }
@@ -465,7 +487,16 @@ app.patch('/api/print-jobs/:id/status', authenticate, authorize('MANAGEMENT', 'A
         }
         const data = { status };
         if (price !== undefined) data.price = parseFloat(price);
-        const job = await prisma.printJob.update({ where: { id: req.params.id }, data });
+        const job = await prisma.printJob.update({ 
+            where: { id: req.params.id }, 
+            data, 
+            include: { user: { select: { email: true, name: true } } } 
+        });
+
+        if (job.user?.email && (status === 'done' || status === 'paid')) {
+            sendPrintJobStatusUpdateEmail(job.user.email, job, status).catch(e => console.error('Print job status email error:', e.message));
+        }
+
         res.json({ job: { ...job, fileUrls: JSON.parse(job.fileUrls || '[]') } });
     } catch (err) {
         console.error(err);
@@ -545,7 +576,7 @@ app.patch('/api/orders/:id/assign', authenticate, authorize('MANAGEMENT', 'ADMIN
         const order = await prisma.order.update({
             where: { id: req.params.id },
             data: { status: 'dispatched', customer: `Assigned: ${dp.name}` },
-            include: { items: true },
+            include: { items: true, user: true },
         });
         // Store assignment in memory for tracking
         deliveryLocations.set(req.params.id, {
@@ -554,6 +585,15 @@ app.patch('/api/orders/:id/assign', authenticate, authorize('MANAGEMENT', 'ADMIN
             lat: 29.2183, lng: 79.5130, // Default: Haldwani center
             updatedAt: new Date().toISOString(),
         });
+
+        // Email notifications for delivery assignment
+        if (order.user?.email) {
+            sendDeliveryAssignmentCustomerEmail(order.user.email, order, dp.name).catch(e => console.error('Delivery customer email error:', e.message));
+        }
+        if (dp.email) {
+            sendDeliveryAssignmentRiderEmail(dp.email, order).catch(e => console.error('Delivery rider email error:', e.message));
+        }
+
         res.json({ order, deliveryPerson: { id: dp.id, name: dp.name } });
     } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to assign delivery' }); }
 });
