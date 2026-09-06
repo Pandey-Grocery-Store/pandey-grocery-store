@@ -29,7 +29,16 @@ async function request(endpoint, options = {}) {
         data = { error: text || `Server error (${res.status})` };
     }
 
-    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+    if (!res.ok) {
+        if (res.status === 401) {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('pandey_user');
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new Event('auth_session_expired'));
+            }
+        }
+        throw new Error(data.error || `Request failed (${res.status})`);
+    }
     return data;
 }
 
@@ -94,7 +103,7 @@ export const ordersApi = {
 
 // ── Customer Accounts & Khata Profiles API ──
 export const customersApi = {
-    getAll: () => tryRequest('/customers'),
+    getAll: () => request('/customers'),
     create: (data) => request('/customers', { method: 'POST', body: JSON.stringify(data) }),
     update: (id, data) => request(`/customers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     sendMonthlyReminders: () => request('/khata/send-monthly-reminders', { method: 'POST' }),

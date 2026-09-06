@@ -59,6 +59,14 @@ export default function StaffPOS() {
     const [showCustDropdown, setShowCustDropdown] = useState(false);
     const [isCustomWalkIn, setIsCustomWalkIn] = useState(false);
     const [customerInfo, setCustomerInfo] = useState({ name: 'Walk-in Customer', phone: '', email: '', address: 'In-store Counter Sale' });
+    const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
+    const [customerError, setCustomerError] = useState('');
+
+    // Quick Add New Customer Modal State
+    const [showNewCustModal, setShowNewCustModal] = useState(false);
+    const [newCustForm, setNewCustForm] = useState({ name: '', phone: '', email: '', address: '' });
+    const [isCreatingCust, setIsCreatingCust] = useState(false);
+    const [newCustError, setNewCustError] = useState('');
 
     // ── Direct Customer Charge State (staff adds money directly into customer account/bill) ──
     const [directChargeAmount, setDirectChargeAmount] = useState('');
@@ -137,18 +145,36 @@ export default function StaffPOS() {
             ? `${weightCalcProduct.name} (${activeWeightLabel} @ ₹${pricePerKg}/kg)`
             : `Loose Item (${activeWeightLabel} @ ₹${pricePerKg}/kg)`;
 
+    const fetchCustomers = async () => {
+        setIsLoadingCustomers(true);
+        setCustomerError('');
+        try {
+            const custData = await customersApi.getAll();
+            if (custData?.customers) {
+                setCustomers(custData.customers);
+            }
+        } catch (err) {
+            console.error('Failed to load customers for POS', err);
+            const msg = err.message || '';
+            if (msg.includes('401') || msg.includes('token') || msg.includes('Authentication') || msg.includes('Access denied')) {
+                setCustomerError('Session expired. Please log in again to load customers.');
+            } else {
+                setCustomerError('Could not load customers from database.');
+            }
+        } finally {
+            setIsLoadingCustomers(false);
+        }
+    };
+
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
-                const [prodData, custData] = await Promise.all([
-                    productsApi.getAll(),
-                    customersApi.getAll()
-                ]);
+                const prodData = await productsApi.getAll();
                 if (prodData?.products) setProducts(prodData.products);
-                if (custData?.customers) setCustomers(custData.customers);
             } catch (err) {
-                console.error('Failed to load products/customers for POS', err);
+                console.error('Failed to load products for POS', err);
             }
+            fetchCustomers();
         };
         fetchInitialData();
     }, []);
@@ -178,12 +204,14 @@ export default function StaffPOS() {
         return matchSearch && matchCategory;
     });
 
-    const matchedCustomers = customers.filter(c => 
-        !custSearchQuery || 
-        c.name.toLowerCase().includes(custSearchQuery.toLowerCase()) ||
-        (c.phone && c.phone.includes(custSearchQuery)) ||
-        (c.email && c.email.toLowerCase().includes(custSearchQuery.toLowerCase()))
-    );
+    const matchedCustomers = customers.filter(c => {
+        if (!custSearchQuery.trim()) return true;
+        const q = custSearchQuery.trim().toLowerCase();
+        const nameMatch = c.name && c.name.toLowerCase().includes(q);
+        const phoneMatch = c.phone && String(c.phone).includes(q);
+        const emailMatch = c.email && c.email.toLowerCase().includes(q);
+        return nameMatch || phoneMatch || emailMatch;
+    });
 
     const handleSelectCustomer = (customer) => {
         setSelectedCustomer(customer);
@@ -245,6 +273,38 @@ export default function StaffPOS() {
             setEditCustError(err.message || 'Failed to update customer account');
         } finally {
             setEditCustSubmitting(false);
+        }
+    };
+
+    // Register a new customer profile directly into database from POS
+    const handleCreateNewCustomer = async (e) => {
+        e.preventDefault();
+        if (!newCustForm.name.trim()) {
+            setNewCustError('Customer name is required');
+            return;
+        }
+        setIsCreatingCust(true);
+        setNewCustError('');
+        try {
+            const res = await customersApi.create({
+                name: newCustForm.name.trim(),
+                phone: newCustForm.phone.trim(),
+                email: newCustForm.email.trim(),
+                address: newCustForm.address.trim() || 'In-store Counter Customer'
+            });
+
+            const created = res?.customer || res;
+            if (created) {
+                setCustomers(prev => [created, ...prev.filter(c => c.id !== created.id)]);
+                handleSelectCustomer(created);
+                setShowNewCustModal(false);
+                setNewCustForm({ name: '', phone: '', email: '', address: '' });
+            }
+        } catch (err) {
+            console.error('Failed to create customer in DB', err);
+            setNewCustError(err.message || 'Failed to create customer account');
+        } finally {
+            setIsCreatingCust(false);
         }
     };
 
@@ -446,9 +506,7 @@ export default function StaffPOS() {
             handleClearCustomer();
 
             // Refresh customers list so the newly created customer profile appears in autocomplete search
-            customersApi.getAll().then(custData => {
-                if (custData?.customers) setCustomers(custData.customers);
-            }).catch(() => {});
+            fetchCustomers();
         } catch (err) {
             console.error('POS Checkout error', err);
             setError(err.message || 'Failed to create order. Please try again.');
@@ -626,20 +684,43 @@ export default function StaffPOS() {
                     ══════════════════════════════════════════════════════════ */}
                 <div className="pos-customer-section" ref={custDropdownRef}>
                     <div className="pos-cust-header-row">
-                        <span className="pos-sec-label">Customer Account:</span>
-                        <button 
-                            type="button" 
-                            className="pos-walkin-toggle-btn"
-                            onClick={() => {
-                                if (isCustomWalkIn) handleClearCustomer();
-                                else {
-                                    setIsCustomWalkIn(true);
-                                    setSelectedCustomer(null);
-                                }
-                            }}
-                        >
-                            {isCustomWalkIn ? '🔍 Search Customer' : '+ Custom Walk-in'}
-                        </button>
+                        <div className="pos-cust-header-left">
+                            <span className="pos-sec-label">Customer Account:</span>
+                            <button 
+                                type="button" 
+                                className="pos-cust-refresh-btn"
+                                onClick={fetchCustomers}
+                                title="Reload customers from database"
+                                disabled={isLoadingCustomers}
+                            >
+                                <RefreshCw size={12} className={isLoadingCustomers ? 'spin' : ''} />
+                            </button>
+                        </div>
+                        <div className="pos-cust-header-actions">
+                            <button 
+                                type="button" 
+                                className="pos-new-cust-btn"
+                                onClick={() => {
+                                    setShowNewCustModal(true);
+                                    setNewCustForm(p => ({ ...p, name: custSearchQuery.trim() || '' }));
+                                }}
+                            >
+                                <UserPlus size={12} /> + New Customer
+                            </button>
+                            <button 
+                                type="button" 
+                                className="pos-walkin-toggle-btn"
+                                onClick={() => {
+                                    if (isCustomWalkIn) handleClearCustomer();
+                                    else {
+                                        setIsCustomWalkIn(true);
+                                        setSelectedCustomer(null);
+                                    }
+                                }}
+                            >
+                                {isCustomWalkIn ? '🔍 Search Customer' : '+ Custom Walk-in'}
+                            </button>
+                        </div>
                     </div>
 
                     {/* State A: Customer Selected */}
@@ -746,49 +827,110 @@ export default function StaffPOS() {
                                             <span className="walk-icon">🏪</span>
                                             <div>
                                                 <strong>General Walk-in Customer</strong>
-                                                <span>Counter direct cash sale</span>
+                                                <span>Counter direct cash sale (No account)</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {matchedCustomers.length === 0 ? (
-                                        <div className="pos-no-match-box">
-                                            <span>No registered customer found for "{custSearchQuery}"</span>
-                                            <button 
-                                                type="button" 
-                                                className="btn btn-xs btn-primary mt-1"
-                                                onClick={() => {
-                                                    setIsCustomWalkIn(true);
-                                                    setCustomerInfo({ name: custSearchQuery, phone: '', email: '', address: 'In-store Counter Sale' });
-                                                    setShowCustDropdown(false);
-                                                }}
-                                            >
-                                                + Use "{custSearchQuery}" as Walk-in
-                                            </button>
+                                    {/* Loading State */}
+                                    {isLoadingCustomers && (
+                                        <div className="pos-cust-dropdown-notice">
+                                            <Loader size={14} className="spin" color="#16a34a" />
+                                            <span>Loading customers from database...</span>
                                         </div>
-                                    ) : (
-                                        matchedCustomers.slice(0, 5).map(cust => (
-                                            <div 
-                                                key={cust.id} 
-                                                className="pos-dropdown-row"
-                                                onClick={() => handleSelectCustomer(cust)}
-                                            >
-                                                <div className="row-left">
-                                                    <div className="dropdown-avatar">{cust.name.charAt(0).toUpperCase()}</div>
-                                                    <div>
-                                                        <strong>{cust.name}</strong>
-                                                        <span>{cust.phone ? `📱 ${cust.phone}` : ''} {cust.email ? `• ✉️ ${cust.email}` : ''}</span>
+                                    )}
+
+                                    {/* Session Expired / Error State */}
+                                    {customerError && (
+                                        <div className="pos-cust-dropdown-error">
+                                            <span>⚠️ {customerError}</span>
+                                            <div className="pos-cust-error-actions">
+                                                <button type="button" className="btn btn-xs btn-outline" onClick={fetchCustomers}>
+                                                    <RefreshCw size={11} /> Retry
+                                                </button>
+                                                <a href="/login" className="btn btn-xs btn-primary">
+                                                    Log In
+                                                </a>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Results List */}
+                                    {!isLoadingCustomers && !customerError && (
+                                        <>
+                                            {!custSearchQuery.trim() && customers.length > 0 && (
+                                                <div className="pos-cust-dropdown-header-tag">
+                                                    <span>Database Customers ({customers.length})</span>
+                                                </div>
+                                            )}
+
+                                            {matchedCustomers.length > 0 ? (
+                                                matchedCustomers.slice(0, 6).map(cust => (
+                                                    <div 
+                                                        key={cust.id} 
+                                                        className="pos-dropdown-row"
+                                                        onClick={() => handleSelectCustomer(cust)}
+                                                    >
+                                                        <div className="row-left">
+                                                            <div className="dropdown-avatar">{cust.name ? cust.name.charAt(0).toUpperCase() : 'C'}</div>
+                                                            <div>
+                                                                <strong>{cust.name}</strong>
+                                                                <span>{cust.phone ? `📱 ${cust.phone}` : ''} {cust.email ? `• ✉️ ${cust.email}` : ''}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="row-right">
+                                                            {cust.dueBalance > 0 ? (
+                                                                <span className="pos-drop-due">Due: ₹{cust.dueBalance}</span>
+                                                            ) : (
+                                                                <span className="pos-drop-clear">Clear</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : custSearchQuery.trim() ? (
+                                                <div className="pos-no-match-box">
+                                                    <span>No registered customer found for "{custSearchQuery}"</span>
+                                                    <div className="pos-no-match-btns">
+                                                        <button 
+                                                            type="button" 
+                                                            className="btn btn-xs btn-outline"
+                                                            onClick={() => {
+                                                                setIsCustomWalkIn(true);
+                                                                setCustomerInfo({ name: custSearchQuery, phone: '', email: '', address: 'In-store Counter Sale' });
+                                                                setShowCustDropdown(false);
+                                                            }}
+                                                        >
+                                                            + Use "{custSearchQuery}" as Walk-in
+                                                        </button>
+                                                        <button 
+                                                            type="button" 
+                                                            className="btn btn-xs btn-primary"
+                                                            onClick={() => {
+                                                                setShowNewCustModal(true);
+                                                                setNewCustForm(p => ({ ...p, name: custSearchQuery }));
+                                                                setShowCustDropdown(false);
+                                                            }}
+                                                        >
+                                                            <UserPlus size={11} /> Save to Database
+                                                        </button>
                                                     </div>
                                                 </div>
-                                                <div className="row-right">
-                                                    {cust.dueBalance > 0 ? (
-                                                        <span className="pos-drop-due">Due: ₹{cust.dueBalance}</span>
-                                                    ) : (
-                                                        <span className="pos-drop-clear">Clear</span>
-                                                    )}
+                                            ) : (
+                                                <div className="pos-no-match-box">
+                                                    <span>No customer accounts in database yet.</span>
+                                                    <button 
+                                                        type="button" 
+                                                        className="btn btn-xs btn-primary mt-1"
+                                                        onClick={() => {
+                                                            setShowNewCustModal(true);
+                                                            setShowCustDropdown(false);
+                                                        }}
+                                                    >
+                                                        <UserPlus size={11} /> + Register New Customer
+                                                    </button>
                                                 </div>
-                                            </div>
-                                        ))
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             )}
@@ -1391,6 +1533,94 @@ export default function StaffPOS() {
                                 </button>
                                 <button type="submit" className="btn btn-primary btn-sm" disabled={editCustSubmitting}>
                                     {editCustSubmitting ? <><Loader size={14} className="spin" /> Saving...</> : <><Check size={14} /> Save Customer Details</>}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════
+                ✨ QUICK REGISTER NEW CUSTOMER MODAL
+                ══════════════════════════════════════════════════════════ */}
+            {showNewCustModal && (
+                <div className="modal-overlay animate-fade-in" onClick={() => setShowNewCustModal(false)}>
+                    <div className="pos-new-prod-dialog card" onClick={e => e.stopPropagation()}>
+                        <div className="new-cust-modal-header">
+                            <div className="new-cust-title">
+                                <UserPlus size={20} color="#16a34a" />
+                                <div>
+                                    <h3>Register New Customer</h3>
+                                    <p>Save customer profile to database for POS billing &amp; Khata ledger</p>
+                                </div>
+                            </div>
+                            <button className="btn-icon btn-ghost" onClick={() => setShowNewCustModal(false)}>
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {newCustError && (
+                            <div className="ap-alert-box error animate-fade-in mx-3 mt-3">
+                                <AlertCircle size={15} />
+                                <span>{newCustError}</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleCreateNewCustomer} className="pos-new-prod-body">
+                            <div className="ap-input-group">
+                                <label>Customer Full Name *</label>
+                                <input 
+                                    type="text" 
+                                    className="input" 
+                                    placeholder="e.g. Ramesh Kumar" 
+                                    value={newCustForm.name}
+                                    onChange={e => setNewCustForm({ ...newCustForm, name: e.target.value })}
+                                    required 
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="pos-direct-inputs-grid">
+                                <div className="ap-input-group">
+                                    <label>Mobile Number (Optional)</label>
+                                    <input 
+                                        type="tel" 
+                                        className="input" 
+                                        placeholder="e.g. 9876543210" 
+                                        value={newCustForm.phone}
+                                        onChange={e => setNewCustForm({ ...newCustForm, phone: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="ap-input-group">
+                                    <label>Email Address (Optional)</label>
+                                    <input 
+                                        type="email" 
+                                        className="input" 
+                                        placeholder="e.g. customer@gmail.com" 
+                                        value={newCustForm.email}
+                                        onChange={e => setNewCustForm({ ...newCustForm, email: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="ap-input-group">
+                                <label>Address / Khata Notes (Optional)</label>
+                                <input 
+                                    type="text" 
+                                    className="input" 
+                                    placeholder="e.g. Near Shiv Mandir, Haldwani" 
+                                    value={newCustForm.address}
+                                    onChange={e => setNewCustForm({ ...newCustForm, address: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="new-cust-modal-footer mt-2">
+                                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowNewCustModal(false)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary btn-sm" disabled={isCreatingCust || !newCustForm.name.trim()}>
+                                    {isCreatingCust ? <><Loader size={14} className="spin" /> Saving...</> : <><Check size={14} /> Register Customer</>}
                                 </button>
                             </div>
                         </form>
