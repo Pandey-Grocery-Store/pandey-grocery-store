@@ -108,6 +108,7 @@ export default function StaffPOS() {
     const [quickProductMsg, setQuickProductMsg] = useState({ type: '', text: '' });
 
     const [paymentMode, setPaymentMode] = useState('paid_cash'); // 'paid_cash' | 'paid_upi' | 'khata_due'
+    const [mobileTab, setMobileTab] = useState('catalog'); // 'catalog' | 'bill'
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [completedOrder, setCompletedOrder] = useState(null);
@@ -557,13 +558,40 @@ export default function StaffPOS() {
 
     return (
         <div className="staff-pos-layout animate-fade-in">
+            {/* Mobile Navigation Tabs (visible on mobile < 960px) */}
+            <div className="pos-mobile-nav-tabs">
+                <button 
+                    type="button" 
+                    className={`pos-mobile-tab-btn ${mobileTab === 'catalog' ? 'active' : ''}`}
+                    onClick={() => setMobileTab('catalog')}
+                >
+                    <Store size={16} />
+                    <span>Catalog</span>
+                    <span className="pos-tab-pill">{filteredProducts.length}</span>
+                </button>
+                <button 
+                    type="button" 
+                    className={`pos-mobile-tab-btn ${mobileTab === 'bill' ? 'active' : ''}`}
+                    onClick={() => setMobileTab('bill')}
+                >
+                    <Receipt size={16} />
+                    <span>Current Bill</span>
+                    {cart.length > 0 && (
+                        <span className="pos-tab-cart-badge">{cart.reduce((s, i) => s + i.quantity, 0)}</span>
+                    )}
+                </button>
+            </div>
+
             {/* ─── Left Section: Product Catalog ─── */}
-            <div className="pos-catalog-pane card">
+            <div className={`pos-catalog-pane card ${mobileTab !== 'catalog' ? 'pos-mobile-hidden' : ''}`}>
                 <div className="pos-pane-header">
-                    <div>
-                        <h2 className="pos-main-title">
-                            <Store size={22} color="var(--primary)" /> Store POS Counter
-                        </h2>
+                    <div className="pos-title-area">
+                        <div className="pos-title-with-badge">
+                            <h2 className="pos-main-title">
+                                <Store size={22} color="var(--primary)" /> Store POS Counter
+                            </h2>
+                            <span className="pos-status-live-badge">🟢 Live Counter</span>
+                        </div>
                         <p className="pos-subtitle">Tap products to add units or custom weight to current bill</p>
                     </div>
 
@@ -597,6 +625,11 @@ export default function StaffPOS() {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
+                        {searchQuery && (
+                            <button type="button" className="pos-search-clear" onClick={() => setSearchQuery('')}>
+                                <X size={13} />
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -618,25 +651,35 @@ export default function StaffPOS() {
                 <div className="pos-items-grid">
                     {filteredProducts.length === 0 ? (
                         <div className="pos-empty-state">
+                            <Store size={40} color="#cbd5e1" />
                             <p>No products found matching "{searchQuery}"</p>
+                            <button type="button" className="btn btn-outline btn-sm mt-2" onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}>
+                                Show All Products
+                            </button>
                         </div>
                     ) : (
                         filteredProducts.map(product => {
                             const isOutOfStock = product.stock === 0;
                             const isWeight = isWeightTypeProduct(product);
                             const inCartCount = cart.filter(c => c.id === product.id || c.baseId === product.id).reduce((s, i) => s + i.quantity, 0);
+                            const hasDiscount = product.mrp && Number(product.mrp) > Number(product.price);
+                            const discountPct = hasDiscount 
+                                ? Math.round(((Number(product.mrp) - Number(product.price)) / Number(product.mrp)) * 100) 
+                                : 0;
 
                             return (
                                 <div 
                                     key={product.id} 
                                     className={`pos-item-card ${isOutOfStock ? 'disabled-stock' : ''} ${inCartCount > 0 ? 'in-cart' : ''}`}
                                     onClick={() => !isOutOfStock && handleProductCardClick(product)}
+                                    title={isOutOfStock ? 'Out of stock' : `Click to add ${product.name}`}
                                 >
                                     <div className="pos-item-thumb-wrap">
                                         <img 
                                             src={product.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=200"} 
                                             alt={product.name} 
                                             className="pos-item-img"
+                                            loading="lazy"
                                         />
                                         
                                         {/* Product Type Tag (Weight vs Pack) */}
@@ -644,16 +687,29 @@ export default function StaffPOS() {
                                             {isWeight ? <><Scale size={10} /> By Weight</> : <><Box size={10} /> Pack</>}
                                         </span>
 
-                                        {inCartCount > 0 && (
-                                            <span className="cart-qty-badge">{inCartCount}</span>
+                                        {hasDiscount && discountPct > 0 && (
+                                            <span className="pos-card-disc-pill">{discountPct}% OFF</span>
                                         )}
+
+                                        {inCartCount > 0 && (
+                                            <span className="cart-qty-badge">{inCartCount} in bill</span>
+                                        )}
+
+                                        <div className="pos-card-tap-overlay">
+                                            {isWeight ? <><Scale size={13} /> Weigh Item</> : <><Plus size={13} /> Add to Bill</>}
+                                        </div>
                                     </div>
                                     <div className="pos-item-meta">
-                                        <h4>{product.name}</h4>
+                                        <h4 className="pos-product-name">{product.name}</h4>
                                         <div className="pos-price-row">
-                                            <span className="pos-item-price">₹{product.price}{isWeight ? '/kg' : ''}</span>
-                                            <span className={`pos-stock-tag ${product.stock <= 5 ? 'low-stock' : 'good-stock'}`}>
-                                                {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                                            <div className="pos-price-stack">
+                                                <span className="pos-item-price">₹{product.price}{isWeight ? '/kg' : ''}</span>
+                                                {hasDiscount && (
+                                                    <span className="pos-item-mrp">₹{product.mrp}</span>
+                                                )}
+                                            </div>
+                                            <span className={`pos-stock-tag ${product.stock <= 5 && product.stock > 0 ? 'low-stock' : product.stock === 0 ? 'out-stock' : 'good-stock'}`}>
+                                                {product.stock > 0 ? `${product.stock} left` : 'Out of stock'}
                                             </span>
                                         </div>
                                     </div>
@@ -665,7 +721,7 @@ export default function StaffPOS() {
             </div>
 
             {/* ─── Right Section: Current Order Cart ─── */}
-            <div className="pos-checkout-pane card">
+            <div className={`pos-checkout-pane card ${mobileTab !== 'bill' ? 'pos-mobile-hidden' : ''}`}>
                 <div className="pos-cart-header">
                     <div className="cart-title-row">
                         <ShoppingCart size={20} color="var(--primary)" />
@@ -1086,6 +1142,26 @@ export default function StaffPOS() {
                     </button>
                 </div>
             </div>
+
+            {/* Floating Mobile Bottom Checkout Bar (visible < 960px when in catalog and cart has items) */}
+            {cart.length > 0 && mobileTab === 'catalog' && (
+                <div className="pos-mobile-bottom-bar animate-fade-in" onClick={() => setMobileTab('bill')}>
+                    <div className="pos-bottom-cart-info">
+                        <div className="pos-bottom-cart-icon">
+                            <ShoppingCart size={18} />
+                            <span className="pos-bottom-cart-qty">{cart.reduce((s, i) => s + i.quantity, 0)}</span>
+                        </div>
+                        <div className="pos-bottom-cart-txt">
+                            <span className="pos-bottom-cart-lbl">Current Bill</span>
+                            <strong className="pos-bottom-cart-total">₹{total.toFixed(2)}</strong>
+                        </div>
+                    </div>
+                    <button type="button" className="pos-bottom-view-btn">
+                        <span>View Bill &amp; Pay</span>
+                        <ArrowRight size={15} />
+                    </button>
+                </div>
+            )}
 
             {/* ══════════════════════════════════════════════════════════
                 ⚖️ BI-DIRECTIONAL PRICE ↔ WEIGHT CALCULATOR & PRICING & STOCK MODAL
