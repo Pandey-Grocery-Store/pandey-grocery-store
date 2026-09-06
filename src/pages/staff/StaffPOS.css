@@ -977,13 +977,210 @@
     box-sizing: border-box;
 }
 
-/* ─── POS By-Weight Selection Modal ─── */
+/* ─── POS Counter Action Buttons in Catalog Header ─── */
+.pos-counter-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pos-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 13px;
+    border-radius: var(--radius-full);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    border: 1.5px solid transparent;
+    text-decoration: none;
+}
+
+.pos-action-btn.calc-btn {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+}
+
+.pos-action-btn.calc-btn:hover {
+    background: #dbeafe;
+    border-color: #3b82f6;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+}
+
+.pos-action-btn.add-btn {
+    background: #f0fdf4;
+    color: #15803d;
+    border-color: #bbf7d0;
+}
+
+.pos-action-btn.add-btn:hover {
+    background: #dcfce7;
+    border-color: #22c55e;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
+}
+
+/* ─── ⚡ Direct Customer Charge Card (in Customer / Current Bill Pane) ─── */
+.pos-direct-charge-card {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1.5px solid #fde68a;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08);
+}
+
+.pos-direct-charge-header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.pos-direct-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.825rem;
+    color: #92400e;
+    font-weight: 800;
+}
+
+.pos-direct-subtitle {
+    font-size: 0.7rem;
+    color: #b45309;
+}
+
+.pos-direct-inputs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+@media (max-width: 540px) {
+    .pos-direct-inputs-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.pos-direct-input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pos-direct-input-wrap label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #78350f;
+}
+
+.pos-input-with-symbol {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.pos-input-with-symbol span {
+    position: absolute;
+    left: 10px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: #92400e;
+    pointer-events: none;
+}
+
+.pos-input-with-symbol input {
+    padding-left: 26px !important;
+}
+
+.pos-direct-amt-input {
+    font-size: 1rem !important;
+    font-weight: 800;
+    color: #92400e !important;
+    border-color: #fcd34d !important;
+    background: #ffffff !important;
+}
+
+.pos-direct-amt-input:focus {
+    border-color: #d97706 !important;
+    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15) !important;
+}
+
+.pos-direct-quick-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.pos-quick-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #92400e;
+}
+
+.pos-quick-pills {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.pos-quick-pill {
+    background: #ffffff;
+    border: 1px solid #fcd34d;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #92400e;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.pos-quick-pill:hover,
+.pos-quick-pill.active {
+    background: #d97706;
+    border-color: #b45309;
+    color: #ffffff;
+}
+
+.pos-add-direct-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-weight: 800;
+    background: #d97706 !important;
+    border-color: #b45309 !important;
+    color: #ffffff !important;
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25);
+    cursor: pointer;
+    font-size: 0.8125rem;
+}
+
+.pos-add-direct-btn:hover:not(:disabled) {
+    background: #b45309 !important;
+    transform: translateY(-1px);
+}
+
+/* ─── POS By-Weight & Bi-Directional Calculator Modal ─── */
 .pos-weight-dialog {
     background: #ffffff;
-    border-radius: 18px;
-    max-width: 480px;
+    border-radius: 20px;
+    max-width: 580px;
     width: 100%;
-    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
     overflow: hidden;
     box-sizing: border-box;
 }
@@ -992,193 +1189,418 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 14px 18px;
+    padding: 16px 20px;
     border-bottom: 1px solid #f1f5f9;
+    background: #f8fafc;
 }
 
 .pos-wt-title-row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 .pos-wt-title-row h3 {
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 800;
     color: #0f172a;
     margin: 0;
 }
 
 .pos-wt-title-row p {
-    font-size: 0.75rem;
+    font-size: 0.78rem;
     color: #64748b;
     margin: 2px 0 0;
 }
 
 .pos-weight-body {
-    padding: 16px 18px;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
+    max-height: 75vh;
+    overflow-y: auto;
 }
 
-.pos-weight-tabs {
+/* Pricing & Stock Card inside Calculator */
+.pos-calc-section-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+}
+
+.pos-calc-pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+@media (max-width: 480px) {
+    .pos-calc-pricing-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.pos-pricing-field {
     display: flex;
-    background: #f1f5f9;
-    padding: 3px;
-    border-radius: 8px;
+    flex-direction: column;
     gap: 4px;
 }
 
-.pos-wt-tab {
-    flex: 1;
-    padding: 6px 8px;
-    border: none;
-    border-radius: 6px;
-    background: transparent;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #64748b;
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.15s ease;
-}
-
-.pos-wt-tab.active {
-    background: #2563eb;
-    color: #ffffff;
-    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
-}
-
-.pos-wt-chips-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-}
-
-.pos-wt-chip {
-    background: #ffffff;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    padding: 8px 6px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    cursor: pointer;
-    transition: all 0.12s ease;
-}
-
-.pos-wt-chip:hover,
-.pos-wt-chip.active {
-    background: #eff6ff;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-}
-
-.wt-chip-label {
-    font-size: 0.78rem;
-    font-weight: 800;
-    color: #0f172a;
-}
-
-.wt-chip-price {
+.pos-pricing-field label {
     font-size: 0.72rem;
-    font-weight: 800;
-    color: #059669;
-}
-
-.pos-custom-calc-pane {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.pos-calc-lbl {
-    font-size: 0.75rem;
     font-weight: 700;
     color: #334155;
+    white-space: nowrap;
 }
 
-.pos-input-with-rs {
+.pos-pricing-input-symbol {
     position: relative;
     display: flex;
     align-items: center;
 }
 
-.pos-input-with-rs span {
+.pos-pricing-input-symbol span {
+    position: absolute;
+    left: 10px;
+    font-weight: 800;
+    color: #64748b;
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+.pos-pricing-input-symbol input {
+    padding-left: 24px !important;
+    font-size: 0.925rem !important;
+    font-weight: 700;
+}
+
+/* Dynamic Discount Notice */
+.pos-discount-badge-notice {
+    background: #fdf2f8;
+    border: 1px solid #fbcfe8;
+    color: #be185d;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+
+/* Bi-directional Price <-> Weight Live Calculator Widget */
+.ap-weight-calc-widget {
+    background: #ffffff;
+    border: 1.5px solid #bfdbfe;
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.06);
+}
+
+.calc-widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.calc-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.825rem;
+    color: #1e3a8a;
+}
+
+.rate-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    background: #eff6ff;
+    color: #2563eb;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1.5px solid #bfdbfe;
+}
+
+.calc-tabs-row {
+    display: flex;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 10px;
+    gap: 4px;
+}
+
+.calc-mode-tab {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+}
+
+.calc-mode-tab.active {
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+.calc-interactive-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.calc-input-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+@media (max-width: 480px) {
+    .calc-input-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .calc-arrow {
+        display: none;
+    }
+}
+
+.calc-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.calc-field label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #334155;
+}
+
+.input-with-symbol {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-symbol span {
     position: absolute;
     left: 12px;
     font-size: 1rem;
-    font-weight: 900;
+    font-weight: 800;
     color: #64748b;
+    pointer-events: none;
 }
 
-.pos-rs-input {
+.input-with-symbol input {
     padding-left: 28px !important;
     font-size: 1rem !important;
     font-weight: 800;
 }
 
-.pos-calculated-badge {
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    border-radius: 8px;
-    padding: 8px 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.calc-arrow {
+    color: #3b82f6;
+    padding-top: 16px;
+    flex-shrink: 0;
 }
 
-.pos-calculated-badge span {
-    font-size: 0.72rem;
+.calc-result-box {
+    flex: 1;
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.res-label {
+    font-size: 0.7rem;
     color: #047857;
+    font-weight: 700;
+}
+
+.res-val {
+    font-size: 1.35rem;
+    font-weight: 900;
+    color: #059669;
+    line-height: 1.1;
+    margin: 2px 0;
+}
+
+.res-sub {
+    font-size: 0.75rem;
+    color: #475569;
     font-weight: 600;
 }
 
-.pos-calculated-badge strong {
-    font-size: 0.95rem;
-    color: #059669;
-    font-weight: 900;
-}
-
-.pos-quick-rs-pills {
+.calc-quick-pills {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 5px;
 }
 
-.pos-quick-rs-pills span {
-    font-size: 0.7rem;
-    font-weight: 700;
+.calc-quick-pills span {
+    font-size: 0.72rem;
+    font-weight: 800;
     color: #64748b;
 }
 
-.quick-rs-btn {
+.calc-pill {
     background: #f8fafc;
     border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    padding: 3px 8px;
-    font-size: 0.72rem;
+    border-radius: 7px;
+    padding: 3px 9px;
+    font-size: 0.74rem;
     font-weight: 700;
     color: #334155;
     cursor: pointer;
+    transition: all 0.12s ease;
 }
 
-.quick-rs-btn:hover,
-.quick-rs-btn.active {
+.calc-pill:hover,
+.calc-pill.active {
     background: #2563eb;
     border-color: #2563eb;
     color: #ffffff;
+    box-shadow: 0 1px 4px rgba(37, 99, 235, 0.2);
+}
+
+/* Default Naming & Calculation Details Box */
+.pos-calc-default-name-box {
+    background: #f0fdf4;
+    border: 1.5px dashed #86efac;
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pos-calc-default-name-box .label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    color: #047857;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.pos-calc-default-name-box .preview-text {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #065f46;
+}
+
+.pos-calc-name-input {
+    background: #ffffff !important;
+    border: 1px solid #bbf7d0 !important;
+    font-size: 0.85rem !important;
+    font-weight: 600;
+}
+
+.pos-calc-name-input:focus {
+    border-color: #059669 !important;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15) !important;
 }
 
 .pos-weight-footer {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
-    padding: 12px 18px;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
     border-top: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+
+.pos-btn-add-calc {
+    background: #10b981 !important;
+    border-color: #059669 !important;
+    color: #ffffff !important;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+    cursor: pointer;
+}
+
+.pos-btn-add-calc:hover {
+    background: #059669 !important;
+    transform: translateY(-1px);
+}
+
+/* ─── Quick Add Product Modal ─── */
+.pos-new-prod-dialog {
+    background: #ffffff;
+    border-radius: 20px;
+    max-width: 520px;
+    width: 100%;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+.pos-new-prod-body {
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pos-type-toggle-row {
+    display: flex;
+    gap: 8px;
+}
+
+.pos-type-toggle-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.pos-type-toggle-btn.active {
+    border-color: #2563eb;
+    background: #eff6ff;
+    color: #1d4ed8;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
 /* ─── Mobile Media Queries (Zero Overflow) ─── */

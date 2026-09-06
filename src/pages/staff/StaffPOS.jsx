@@ -26,23 +26,25 @@ import {
     Mail,
     PenLine,
     AlertCircle,
-    Loader
+    Loader,
+    ArrowRightLeft,
+    Percent,
+    Zap
 } from 'lucide-react';
 import { productsApi, ordersApi, customersApi } from '../../lib/api';
 import './StaffPOS.css';
 
-const POS_WEIGHT_PRESETS = [
-    { label: '250 g', multiplier: 0.25, grams: 250 },
-    { label: '500 g', multiplier: 0.5, grams: 500 },
-    { label: '1 kg', multiplier: 1, grams: 1000 },
-    { label: '1.5 kg', multiplier: 1.5, grams: 1500 },
-    { label: '2 kg', multiplier: 2, grams: 2000 },
-    { label: '5 kg', multiplier: 5, grams: 5000 },
-    { label: '10 kg', multiplier: 10, grams: 10000 },
-    { label: '25 kg', multiplier: 25, grams: 25000 },
-];
+const QUICK_RUPEE_PRESETS = [20, 50, 100, 200, 500, 1000];
 
-const POS_RUPEE_SHORTCUTS = [20, 50, 100, 200, 500, 1000];
+const QUICK_WEIGHT_PRESETS = [
+    { label: '250 g', weightKg: 0.25 },
+    { label: '500 g', weightKg: 0.5 },
+    { label: '1 kg', weightKg: 1 },
+    { label: '1.5 kg', weightKg: 1.5 },
+    { label: '2 kg', weightKg: 2 },
+    { label: '5 kg', weightKg: 5 },
+    { label: '10 kg', weightKg: 10 },
+];
 
 export default function StaffPOS() {
     const [products, setProducts] = useState([]);
@@ -58,6 +60,10 @@ export default function StaffPOS() {
     const [isCustomWalkIn, setIsCustomWalkIn] = useState(false);
     const [customerInfo, setCustomerInfo] = useState({ name: 'Walk-in Customer', phone: '', email: '', address: 'In-store Counter Sale' });
 
+    // ── Direct Customer Charge State (staff adds money directly into customer account/bill) ──
+    const [directChargeAmount, setDirectChargeAmount] = useState('');
+    const [directChargeDesc, setDirectChargeDesc] = useState('');
+
     // Edit Customer Account State (for adding/updating email so customer can log in)
     const [showEditCustModal, setShowEditCustModal] = useState(false);
     const [editCustName, setEditCustName] = useState('');
@@ -67,12 +73,31 @@ export default function StaffPOS() {
     const [editCustError, setEditCustError] = useState('');
     const [editCustSuccess, setEditCustSuccess] = useState('');
 
-    // Weight Product Selection Modal State
-    const [weightModalProduct, setWeightModalProduct] = useState(null);
-    const [selectedWeightPreset, setSelectedWeightPreset] = useState(POS_WEIGHT_PRESETS[2]); // 1 kg
-    const [weightCalcMode, setWeightCalcMode] = useState('preset'); // 'preset' | 'custom-rs' | 'custom-weight'
-    const [customRsVal, setCustomRsVal] = useState('50');
-    const [customWeightKgVal, setCustomWeightKgVal] = useState('1.5');
+    // ── Bi-directional Price ↔ Weight Calculator State ──
+    const [showWeightCalcModal, setShowWeightCalcModal] = useState(false);
+    const [weightCalcProduct, setWeightCalcProduct] = useState(null); // null if custom loose item
+    const [calcSellingPrice, setCalcSellingPrice] = useState('33');
+    const [calcMrp, setCalcMrp] = useState('14');
+    const [calcStock, setCalcStock] = useState('50');
+    const [calcMode, setCalcMode] = useState('rs-to-weight'); // 'rs-to-weight' | 'weight-to-rs'
+    const [calcRs, setCalcRs] = useState('50');
+    const [calcWeightKg, setCalcWeightKg] = useState('1.5');
+    const [customItemName, setCustomItemName] = useState('');
+
+    // ── Quick Add Product Modal State ──
+    const [showQuickAddProductModal, setShowQuickAddProductModal] = useState(false);
+    const [newProductForm, setNewProductForm] = useState({
+        name: '',
+        category: 'groceries',
+        productType: 'weight',
+        price: '33',
+        mrp: '14',
+        stock: '50',
+        unit: 'kg',
+        image: ''
+    });
+    const [isSavingProduct, setIsSavingProduct] = useState(false);
+    const [quickProductMsg, setQuickProductMsg] = useState({ type: '', text: '' });
 
     const [paymentMode, setPaymentMode] = useState('paid_cash'); // 'paid_cash' | 'paid_upi' | 'khata_due'
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -81,6 +106,36 @@ export default function StaffPOS() {
     const [error, setError] = useState(null);
 
     const custDropdownRef = useRef(null);
+
+    // Live calculations for Bi-directional Price ↔ Weight Calculator
+    const pricePerKg = Number(calcSellingPrice) > 0 ? Number(calcSellingPrice) : 33;
+    const mrpPerKg = Number(calcMrp) > 0 ? Number(calcMrp) : 0;
+    const calculatedDiscount = (mrpPerKg > pricePerKg && mrpPerKg > 0)
+        ? Math.round(((mrpPerKg - pricePerKg) / mrpPerKg) * 100)
+        : 0;
+
+    const computedWeightFromRs = pricePerKg > 0 
+        ? Math.round((Number(calcRs || 0) / pricePerKg) * 1000) 
+        : 0;
+    const computedRsFromWeight = Math.round(Number(calcWeightKg || 0) * pricePerKg);
+
+    const deliveredWeightGrams = computedWeightFromRs;
+    const deliveredWeightKg = (computedWeightFromRs / 1000).toFixed(2);
+
+    const activeWeightLabel = calcMode === 'rs-to-weight'
+        ? (computedWeightFromRs >= 1000 ? `${deliveredWeightKg} kg` : `${deliveredWeightGrams} g`)
+        : `${calcWeightKg} kg`;
+
+    const activeCalculatedPrice = calcMode === 'rs-to-weight'
+        ? (Number(calcRs) || 0)
+        : computedRsFromWeight;
+
+    // Default item naming by details
+    const defaultCalculatedItemName = customItemName.trim()
+        ? customItemName.trim()
+        : weightCalcProduct 
+            ? `${weightCalcProduct.name} (${activeWeightLabel} @ ₹${pricePerKg}/kg)`
+            : `Loose Item (${activeWeightLabel} @ ₹${pricePerKg}/kg)`;
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -204,12 +259,16 @@ export default function StaffPOS() {
     const handleProductCardClick = (product) => {
         if (product.stock === 0) return;
         if (isWeightTypeProduct(product)) {
-            // Open interactive weight/price calculator modal
-            setWeightModalProduct(product);
-            setSelectedWeightPreset(POS_WEIGHT_PRESETS[2]); // Default 1 kg
-            setWeightCalcMode('preset');
-            setCustomRsVal('50');
-            setCustomWeightKgVal('1.5');
+            // Open interactive Bi-directional Price ↔ Weight Calculator modal
+            setWeightCalcProduct(product);
+            setCustomItemName(product.name || '');
+            setCalcSellingPrice(String(product.price || 33));
+            setCalcMrp(String(product.mrp || product.price || 14));
+            setCalcStock(String(product.stock || 50));
+            setCalcMode('rs-to-weight');
+            setCalcRs('50');
+            setCalcWeightKg('1.5');
+            setShowWeightCalcModal(true);
         } else {
             // Regular fixed pack product: increment or add
             const existing = cart.find(item => item.id === product.id);
@@ -221,44 +280,111 @@ export default function StaffPOS() {
         }
     };
 
-    // Add Loose / By-Weight item with chosen weight/₹ to Cart
-    const handleAddWeightItemToCart = () => {
-        if (!weightModalProduct) return;
-        const baseRate = Number(weightModalProduct.price) || 0;
-        let finalWeightLabel = '1 kg';
-        let calculatedPrice = baseRate;
+    // Open Loose Produce / Custom Calculator directly from counter toolbar
+    const handleOpenLooseCalculator = () => {
+        setWeightCalcProduct(null);
+        setCustomItemName('Loose Item');
+        setCalcSellingPrice('33');
+        setCalcMrp('14');
+        setCalcStock('50');
+        setCalcMode('rs-to-weight');
+        setCalcRs('50');
+        setCalcWeightKg('1.5');
+        setShowWeightCalcModal(true);
+    };
 
-        if (weightCalcMode === 'preset') {
-            finalWeightLabel = selectedWeightPreset.label;
-            calculatedPrice = Math.round(baseRate * selectedWeightPreset.multiplier);
-        } else if (weightCalcMode === 'custom-rs') {
-            const enteredRs = Number(customRsVal) || 0;
-            calculatedPrice = enteredRs;
-            const grams = baseRate > 0 ? Math.round((enteredRs / baseRate) * 1000) : 0;
-            finalWeightLabel = grams >= 1000 ? `${(grams / 1000).toFixed(2)} kg` : `${grams} g`;
-        } else if (weightCalcMode === 'custom-weight') {
-            const enteredKg = Number(customWeightKgVal) || 0;
-            calculatedPrice = Math.round(enteredKg * baseRate);
-            finalWeightLabel = `${enteredKg} kg`;
-        }
+    // Add Calculated Loose / Weighed Item to Bill with details and default naming
+    const handleAddCalculatedItemToCart = () => {
+        if (activeCalculatedPrice <= 0) return;
 
-        const customItemId = `${weightModalProduct.id}-${finalWeightLabel.replace(/[^a-zA-Z0-9]/g, '')}`;
-        const existing = cart.find(item => item.id === customItemId);
+        const finalItemName = defaultCalculatedItemName;
+        const itemId = weightCalcProduct
+            ? `${weightCalcProduct.id}-${activeWeightLabel.replace(/[^a-zA-Z0-9]/g, '')}`
+            : `custom-calc-${Date.now()}`;
 
+        const existing = cart.find(item => item.id === itemId);
         if (existing) {
-            setCart(cart.map(item => item.id === customItemId ? { ...item, quantity: item.quantity + 1 } : item));
+            setCart(cart.map(item => item.id === itemId ? { ...item, quantity: item.quantity + 1 } : item));
         } else {
-            setCart([...cart, {
-                id: customItemId,
-                baseId: weightModalProduct.id,
-                name: `${weightModalProduct.name} (${finalWeightLabel})`,
-                price: calculatedPrice,
+            setCart(prev => [...prev, {
+                id: itemId,
+                baseId: weightCalcProduct ? weightCalcProduct.id : undefined,
+                name: finalItemName,
+                price: activeCalculatedPrice,
                 quantity: 1,
-                image: weightModalProduct.image
+                image: weightCalcProduct?.image || null
             }]);
         }
 
-        setWeightModalProduct(null);
+        setShowWeightCalcModal(false);
+        setWeightCalcProduct(null);
+        setCustomItemName('');
+    };
+
+    // ── Direct Customer Money Entry: Add directly to Customer Account / Bill ──
+    const handleAddDirectCharge = (e) => {
+        if (e) e.preventDefault();
+        const amt = parseFloat(directChargeAmount);
+        if (!amt || amt <= 0) return;
+
+        const customerTarget = selectedCustomer ? selectedCustomer.name : 'Counter Sale';
+        const finalName = directChargeDesc.trim() 
+            ? directChargeDesc.trim() 
+            : `Direct Charge (${customerTarget}) — ₹${amt}`;
+
+        const newItem = {
+            id: `custom-charge-${Date.now()}`,
+            name: finalName,
+            price: amt,
+            quantity: 1,
+            image: null
+        };
+
+        setCart(prev => [...prev, newItem]);
+        setDirectChargeAmount('');
+        setDirectChargeDesc('');
+    };
+
+    // Quick Add Product to Inventory
+    const handleCreateQuickProduct = async (e) => {
+        e.preventDefault();
+        setIsSavingProduct(true);
+        setQuickProductMsg({ type: '', text: '' });
+        try {
+            const payload = {
+                name: newProductForm.name.trim(),
+                category: newProductForm.category,
+                price: parseFloat(newProductForm.price),
+                mrp: parseFloat(newProductForm.mrp || newProductForm.price),
+                stock: parseInt(newProductForm.stock) || 0,
+                unit: newProductForm.productType === 'weight' ? 'kg' : (newProductForm.unit || 'pack'),
+                description: `[TYPE:${newProductForm.productType}] Counter added product`,
+                image: newProductForm.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=300'
+            };
+
+            const res = await productsApi.create(payload);
+            const created = res.product || res;
+            setProducts(prev => [created, ...prev]);
+            setQuickProductMsg({ type: 'success', text: `Product "${created.name}" created and added to POS catalog!` });
+            setTimeout(() => {
+                setShowQuickAddProductModal(false);
+                setQuickProductMsg({ type: '', text: '' });
+                setNewProductForm({
+                    name: '',
+                    category: 'groceries',
+                    productType: 'weight',
+                    price: '33',
+                    mrp: '14',
+                    stock: '50',
+                    unit: 'kg',
+                    image: ''
+                });
+            }, 1000);
+        } catch (err) {
+            setQuickProductMsg({ type: 'error', text: err.message || 'Failed to create product' });
+        } finally {
+            setIsSavingProduct(false);
+        }
     };
 
     const updateQuantity = (id, delta) => {
@@ -381,6 +507,27 @@ export default function StaffPOS() {
                             <Store size={22} color="var(--primary)" /> Store POS Counter
                         </h2>
                         <p className="pos-subtitle">Tap products to add units or custom weight to current bill</p>
+                    </div>
+
+                    <div className="pos-counter-actions">
+                        <button 
+                            type="button" 
+                            className="pos-action-btn calc-btn"
+                            onClick={handleOpenLooseCalculator}
+                            title="Calculate price <-> weight for loose items"
+                        >
+                            <Calculator size={15} />
+                            <span>Bi-directional Calculator</span>
+                        </button>
+                        <button 
+                            type="button" 
+                            className="pos-action-btn add-btn"
+                            onClick={() => setShowQuickAddProductModal(true)}
+                            title="Quickly add new product to store"
+                        >
+                            <Plus size={15} />
+                            <span>Add Product</span>
+                        </button>
                     </div>
 
                     <div className="pos-search-wrapper">
@@ -649,6 +796,73 @@ export default function StaffPOS() {
                     )}
                 </div>
 
+                {/* ══════════════════════════════════════════════════════════
+                    ⚡ DIRECT CUSTOMER CHARGE / MONEY IN CUSTOMER ACCOUNT
+                    ══════════════════════════════════════════════════════════ */}
+                <div className="pos-direct-charge-card animate-fade-in">
+                    <div className="pos-direct-charge-header">
+                        <div className="pos-direct-title">
+                            <Zap size={16} color="#d97706" />
+                            <strong>Direct Money in Customer Account</strong>
+                        </div>
+                        <span className="pos-direct-subtitle">Staff adds amount customer owes or pays directly</span>
+                    </div>
+
+                    <div className="pos-direct-inputs-grid">
+                        <div className="pos-direct-input-wrap">
+                            <label>Amount Customer Pays (₹):</label>
+                            <div className="pos-input-with-symbol">
+                                <span>₹</span>
+                                <input 
+                                    type="number" 
+                                    className="input pos-direct-amt-input"
+                                    placeholder="50"
+                                    value={directChargeAmount}
+                                    onChange={e => setDirectChargeAmount(e.target.value)}
+                                    min="1"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="pos-direct-input-wrap">
+                            <label>Note / Item Details (Optional):</label>
+                            <input 
+                                type="text" 
+                                className="input"
+                                placeholder={`Counter Bill (${selectedCustomer ? selectedCustomer.name : 'Walk-in'})`}
+                                value={directChargeDesc}
+                                onChange={e => setDirectChargeDesc(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Quick ₹ Shortcuts */}
+                    <div className="pos-direct-quick-row">
+                        <span className="pos-quick-label">Quick ₹:</span>
+                        <div className="pos-quick-pills">
+                            {QUICK_RUPEE_PRESETS.map(r => (
+                                <button 
+                                    key={r} 
+                                    type="button" 
+                                    className={`pos-quick-pill ${directChargeAmount === String(r) ? 'active' : ''}`}
+                                    onClick={() => setDirectChargeAmount(String(r))}
+                                >
+                                    ₹{r}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <button 
+                        type="button" 
+                        className="btn pos-add-direct-btn"
+                        disabled={!directChargeAmount || Number(directChargeAmount) <= 0}
+                        onClick={handleAddDirectCharge}
+                    >
+                        <Plus size={15} /> Add ₹{directChargeAmount || 0} Directly to {selectedCustomer ? `${selectedCustomer.name}'s Bill` : 'Current Bill'}
+                    </button>
+                </div>
+
                 {/* Cart Items List */}
                 <div className="pos-cart-list">
                     {cart.length === 0 ? (
@@ -732,142 +946,362 @@ export default function StaffPOS() {
             </div>
 
             {/* ══════════════════════════════════════════════════════════
-                ⚖️ POS BY-WEIGHT & CUSTOM ₹ SELECTION MODAL
+                ⚖️ BI-DIRECTIONAL PRICE ↔ WEIGHT CALCULATOR & PRICING & STOCK MODAL
                 ══════════════════════════════════════════════════════════ */}
-            {weightModalProduct && (
-                <div className="modal-overlay animate-fade-in" onClick={() => setWeightModalProduct(null)}>
+            {showWeightCalcModal && (
+                <div className="modal-overlay animate-fade-in" onClick={() => setShowWeightCalcModal(false)}>
                     <div className="pos-weight-dialog card" onClick={e => e.stopPropagation()}>
                         <div className="pos-weight-header">
                             <div className="pos-wt-title-row">
-                                <Scale size={20} color="#2563eb" />
+                                <Scale size={22} color="#2563eb" />
                                 <div>
-                                    <h3>{weightModalProduct.name}</h3>
-                                    <p>Rate: <strong>₹{weightModalProduct.price} / kg</strong> • Loose Item</p>
+                                    <h3>{weightCalcProduct ? weightCalcProduct.name : 'Counter Scale / Loose Produce'}</h3>
+                                    <p>Pricing &amp; Stock • Live Bi-directional Weight ↔ ₹ Calculator</p>
                                 </div>
                             </div>
-                            <button className="btn-icon btn-ghost" onClick={() => setWeightModalProduct(null)}>
+                            <button className="btn-icon btn-ghost" onClick={() => setShowWeightCalcModal(false)}>
                                 <X size={18} />
                             </button>
                         </div>
 
                         <div className="pos-weight-body">
-                            {/* Mode Tabs */}
-                            <div className="pos-weight-tabs">
-                                <button 
-                                    type="button" 
-                                    className={`pos-wt-tab ${weightCalcMode === 'preset' ? 'active' : ''}`}
-                                    onClick={() => setWeightCalcMode('preset')}
-                                >
-                                    Standard Packs
-                                </button>
-                                <button 
-                                    type="button" 
-                                    className={`pos-wt-tab ${weightCalcMode === 'custom-rs' ? 'active' : ''}`}
-                                    onClick={() => setWeightCalcMode('custom-rs')}
-                                >
-                                    Enter ₹ Amount
-                                </button>
-                                <button 
-                                    type="button" 
-                                    className={`pos-wt-tab ${weightCalcMode === 'custom-weight' ? 'active' : ''}`}
-                                    onClick={() => setWeightCalcMode('custom-weight')}
-                                >
-                                    Enter Weight (kg)
-                                </button>
+                            {/* 1. Item Name / Description Field */}
+                            <div className="pos-pricing-field">
+                                <label>Item Name / Description:</label>
+                                <input 
+                                    type="text"
+                                    className="input"
+                                    placeholder="e.g. Loose Rice, Fresh Potato, Sugar"
+                                    value={customItemName}
+                                    onChange={e => setCustomItemName(e.target.value)}
+                                />
                             </div>
 
-                            {/* Mode 1: Quick Weight Preset Chips */}
-                            {weightCalcMode === 'preset' && (
-                                <div className="pos-wt-chips-grid">
-                                    {POS_WEIGHT_PRESETS.map((preset) => {
-                                        const isSelected = selectedWeightPreset.label === preset.label;
-                                        const cost = Math.round(Number(weightModalProduct.price) * preset.multiplier);
-                                        return (
-                                            <button
-                                                type="button"
-                                                key={preset.label}
-                                                className={`pos-wt-chip ${isSelected ? 'active' : ''}`}
-                                                onClick={() => setSelectedWeightPreset(preset)}
-                                            >
-                                                <span className="wt-chip-label">{preset.label}</span>
-                                                <span className="wt-chip-price">₹{cost}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                            {/* 2. Pricing & Stock Section */}
+                            <div>
+                                <span className="pos-calc-section-label">Pricing &amp; Stock</span>
+                                <div className="pos-calc-pricing-grid mt-1">
+                                    <div className="pos-pricing-field">
+                                        <label>Selling Price (₹ / kg) *</label>
+                                        <div className="pos-pricing-input-symbol">
+                                            <span>₹</span>
+                                            <input 
+                                                type="number"
+                                                className="input"
+                                                value={calcSellingPrice}
+                                                onChange={e => setCalcSellingPrice(e.target.value)}
+                                                placeholder="33"
+                                                min="1"
+                                            />
+                                        </div>
+                                    </div>
 
-                            {/* Mode 2: Custom ₹ Input */}
-                            {weightCalcMode === 'custom-rs' && (
-                                <div className="pos-custom-calc-pane">
-                                    <label className="pos-calc-lbl">How much ₹ worth did customer ask for?</label>
-                                    <div className="pos-input-with-rs">
-                                        <span>₹</span>
+                                    <div className="pos-pricing-field">
+                                        <label>MRP (₹ / kg) *</label>
+                                        <div className="pos-pricing-input-symbol">
+                                            <span>₹</span>
+                                            <input 
+                                                type="number"
+                                                className="input"
+                                                value={calcMrp}
+                                                onChange={e => setCalcMrp(e.target.value)}
+                                                placeholder="14"
+                                                min="1"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="pos-pricing-field">
+                                        <label>Total Stock (kg)</label>
                                         <input 
                                             type="number"
-                                            className="input pos-rs-input"
-                                            value={customRsVal}
-                                            onChange={e => setCustomRsVal(e.target.value)}
-                                            placeholder="e.g. 50, 100"
-                                            autoFocus
+                                            className="input"
+                                            value={calcStock}
+                                            onChange={e => setCalcStock(e.target.value)}
+                                            placeholder="50"
+                                            min="0"
                                         />
                                     </div>
+                                </div>
+                            </div>
 
-                                    <div className="pos-calculated-badge">
-                                        <span>Weighed Quantity:</span>
-                                        <strong>
-                                            {Number(weightModalProduct.price) > 0 
-                                                ? `${Math.round((Number(customRsVal) / Number(weightModalProduct.price)) * 1000)} grams`
-                                                : '0 g'}
-                                        </strong>
-                                    </div>
-
-                                    <div className="pos-quick-rs-pills">
-                                        <span>Quick ₹:</span>
-                                        {POS_RUPEE_SHORTCUTS.map(r => (
-                                            <button 
-                                                key={r}
-                                                type="button" 
-                                                className={`quick-rs-btn ${customRsVal === String(r) ? 'active' : ''}`}
-                                                onClick={() => setCustomRsVal(String(r))}
-                                            >
-                                                ₹{r}
-                                            </button>
-                                        ))}
-                                    </div>
+                            {/* Discount notice if MRP > Selling Price */}
+                            {calculatedDiscount > 0 && (
+                                <div className="pos-discount-badge-notice">
+                                    <Percent size={14} />
+                                    <span>Discount: <strong>{calculatedDiscount}% OFF</strong> (Customer saves ₹{(mrpPerKg - pricePerKg).toFixed(0)} per kg)</span>
                                 </div>
                             )}
 
-                            {/* Mode 3: Custom Weight in Kilograms */}
-                            {weightCalcMode === 'custom-weight' && (
-                                <div className="pos-custom-calc-pane">
-                                    <label className="pos-calc-lbl">Enter exact weighed quantity in Kilograms (kg):</label>
-                                    <input 
-                                        type="number"
-                                        step="0.1"
-                                        className="input"
-                                        value={customWeightKgVal}
-                                        onChange={e => setCustomWeightKgVal(e.target.value)}
-                                        placeholder="e.g. 1.25, 3.5"
-                                        autoFocus
-                                    />
-
-                                    <div className="pos-calculated-badge">
-                                        <span>Calculated Amount:</span>
-                                        <strong>₹{Math.round(Number(customWeightKgVal) * Number(weightModalProduct.price))}</strong>
+                            {/* 3. Live Bi-directional Price <-> Weight Live Calculator Widget */}
+                            <div className="ap-weight-calc-widget">
+                                <div className="calc-widget-header">
+                                    <div className="calc-title">
+                                        <Calculator size={16} color="var(--primary)" />
+                                        <strong>Bi-directional Price ↔ Weight Calculator</strong>
                                     </div>
+                                    <span className="rate-badge">Rate: ₹{pricePerKg} / kg</span>
                                 </div>
-                            )}
+
+                                <div className="calc-tabs-row">
+                                    <button 
+                                        type="button" 
+                                        className={`calc-mode-tab ${calcMode === 'rs-to-weight' ? 'active' : ''}`}
+                                        onClick={() => setCalcMode('rs-to-weight')}
+                                    >
+                                        ₹ Amount ➔ Weight
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        className={`calc-mode-tab ${calcMode === 'weight-to-rs' ? 'active' : ''}`}
+                                        onClick={() => setCalcMode('weight-to-rs')}
+                                    >
+                                        Weight ➔ ₹ Amount
+                                    </button>
+                                </div>
+
+                                {calcMode === 'rs-to-weight' ? (
+                                    <div className="calc-interactive-body">
+                                        <div className="calc-input-row">
+                                            <div className="calc-field">
+                                                <label>Customer enters ₹ Amount:</label>
+                                                <div className="input-with-symbol">
+                                                    <span>₹</span>
+                                                    <input 
+                                                        type="number" 
+                                                        className="input" 
+                                                        value={calcRs} 
+                                                        onChange={e => setCalcRs(e.target.value)} 
+                                                        autoFocus
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="calc-arrow">
+                                                <ArrowRightLeft size={18} />
+                                            </div>
+                                            <div className="calc-result-box">
+                                                <span className="res-label">Delivered Weight:</span>
+                                                <strong className="res-val">{computedWeightFromRs} g</strong>
+                                                <span className="res-sub">({deliveredWeightKg} kg)</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Quick Rupee Presets */}
+                                        <div className="calc-quick-pills">
+                                            <span>Quick ₹:</span>
+                                            {QUICK_RUPEE_PRESETS.map(r => (
+                                                <button 
+                                                    type="button" 
+                                                    key={r} 
+                                                    className={`calc-pill ${calcRs === String(r) ? 'active' : ''}`}
+                                                    onClick={() => setCalcRs(String(r))}
+                                                >
+                                                    ₹{r}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="calc-interactive-body">
+                                        <div className="calc-input-row">
+                                            <div className="calc-field">
+                                                <label>Customer enters Weight (kg):</label>
+                                                <input 
+                                                    type="number" 
+                                                    step="0.1" 
+                                                    className="input" 
+                                                    value={calcWeightKg} 
+                                                    onChange={e => setCalcWeightKg(e.target.value)} 
+                                                    autoFocus
+                                                />
+                                            </div>
+                                            <div className="calc-arrow">
+                                                <ArrowRightLeft size={18} />
+                                            </div>
+                                            <div className="calc-result-box">
+                                                <span className="res-label">Calculated Price:</span>
+                                                <strong className="res-val">₹{computedRsFromWeight}</strong>
+                                                <span className="res-sub">for {calcWeightKg} kg</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Quick Weight Presets */}
+                                        <div className="calc-quick-pills">
+                                            <span>Quick Weight:</span>
+                                            {QUICK_WEIGHT_PRESETS.map(w => (
+                                                <button 
+                                                    type="button" 
+                                                    key={w.label} 
+                                                    className={`calc-pill ${calcWeightKg === String(w.weightKg) ? 'active' : ''}`}
+                                                    onClick={() => setCalcWeightKg(String(w.weightKg))}
+                                                >
+                                                    {w.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 4. Default Naming / Details Preview */}
+                            <div className="pos-calc-default-name-box">
+                                <div className="label-row">
+                                    <span>Item Added to Bill</span>
+                                    <span>Price: ₹{activeCalculatedPrice}</span>
+                                </div>
+                                <div className="preview-text">
+                                    "{defaultCalculatedItemName}"
+                                </div>
+                            </div>
                         </div>
 
                         <div className="pos-weight-footer">
-                            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setWeightModalProduct(null)}>
+                            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowWeightCalcModal(false)}>
                                 Cancel
                             </button>
-                            <button type="button" className="btn btn-primary btn-sm" onClick={handleAddWeightItemToCart}>
-                                <Check size={15} /> Add to Current Bill
+                            <button 
+                                type="button" 
+                                className="btn pos-btn-add-calc" 
+                                onClick={handleAddCalculatedItemToCart}
+                                disabled={activeCalculatedPrice <= 0}
+                            >
+                                <Check size={16} /> Add to Current Bill (₹{activeCalculatedPrice})
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════
+                📦 QUICK ADD PRODUCT TO INVENTORY MODAL
+                ══════════════════════════════════════════════════════════ */}
+            {showQuickAddProductModal && (
+                <div className="modal-overlay animate-fade-in" onClick={() => setShowQuickAddProductModal(false)}>
+                    <div className="pos-new-prod-dialog card" onClick={e => e.stopPropagation()}>
+                        <div className="new-cust-modal-header">
+                            <div className="new-cust-title">
+                                <Plus size={20} color="#16a34a" />
+                                <div>
+                                    <h3>Quick Add Product</h3>
+                                    <p>Register a new product into store catalog &amp; counter</p>
+                                </div>
+                            </div>
+                            <button className="btn-icon btn-ghost" onClick={() => setShowQuickAddProductModal(false)}>
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {quickProductMsg.text && (
+                            <div className={`ap-alert-box ${quickProductMsg.type} animate-fade-in mx-3 mt-3`}>
+                                {quickProductMsg.type === 'success' ? <CheckCircle2 size={15} /> : <AlertCircle size={15} />}
+                                <span>{quickProductMsg.text}</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleCreateQuickProduct} className="pos-new-prod-body">
+                            <div className="ap-input-group">
+                                <label>Product Name *</label>
+                                <input 
+                                    type="text" 
+                                    className="input" 
+                                    placeholder="e.g. Aashirvaad Shudh Chakki Atta" 
+                                    value={newProductForm.name}
+                                    onChange={e => setNewProductForm({ ...newProductForm, name: e.target.value })}
+                                    required 
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="pos-direct-inputs-grid">
+                                <div className="ap-input-group">
+                                    <label>Category</label>
+                                    <select 
+                                        className="input" 
+                                        value={newProductForm.category}
+                                        onChange={e => setNewProductForm({ ...newProductForm, category: e.target.value })}
+                                    >
+                                        <option value="groceries">Groceries</option>
+                                        <option value="stationery">Stationery</option>
+                                        <option value="household-personal">Household &amp; Care</option>
+                                    </select>
+                                </div>
+
+                                <div className="ap-input-group">
+                                    <label>Product Selling Mode</label>
+                                    <div className="pos-type-toggle-row">
+                                        <button 
+                                            type="button" 
+                                            className={`pos-type-toggle-btn ${newProductForm.productType === 'weight' ? 'active' : ''}`}
+                                            onClick={() => setNewProductForm({ ...newProductForm, productType: 'weight', unit: 'kg' })}
+                                        >
+                                            <Scale size={13} /> Weight (kg)
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            className={`pos-type-toggle-btn ${newProductForm.productType === 'unit' ? 'active' : ''}`}
+                                            onClick={() => setNewProductForm({ ...newProductForm, productType: 'unit', unit: 'pack' })}
+                                        >
+                                            <Box size={13} /> Pack / Unit
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="pos-calc-pricing-grid">
+                                <div className="pos-pricing-field">
+                                    <label>Selling Price (₹) *</label>
+                                    <div className="pos-pricing-input-symbol">
+                                        <span>₹</span>
+                                        <input 
+                                            type="number" 
+                                            className="input" 
+                                            value={newProductForm.price}
+                                            onChange={e => setNewProductForm({ ...newProductForm, price: e.target.value })}
+                                            placeholder="33"
+                                            required 
+                                            min="1"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="pos-pricing-field">
+                                    <label>MRP (₹) *</label>
+                                    <div className="pos-pricing-input-symbol">
+                                        <span>₹</span>
+                                        <input 
+                                            type="number" 
+                                            className="input" 
+                                            value={newProductForm.mrp}
+                                            onChange={e => setNewProductForm({ ...newProductForm, mrp: e.target.value })}
+                                            placeholder="14"
+                                            required 
+                                            min="1"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="pos-pricing-field">
+                                    <label>Stock ({newProductForm.productType === 'weight' ? 'kg' : 'units'})</label>
+                                    <input 
+                                        type="number" 
+                                        className="input" 
+                                        value={newProductForm.stock}
+                                        onChange={e => setNewProductForm({ ...newProductForm, stock: e.target.value })}
+                                        placeholder="50"
+                                        min="0"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="new-cust-modal-footer mt-2">
+                                <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowQuickAddProductModal(false)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary btn-sm" disabled={isSavingProduct || !newProductForm.name}>
+                                    {isSavingProduct ? <><Loader size={14} className="spin" /> Saving...</> : <><Check size={14} /> Save Product</>}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
